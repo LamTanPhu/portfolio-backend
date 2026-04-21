@@ -1,0 +1,306 @@
+// =============================================================================
+// prisma/schema.prisma
+// Portfolio Backend — Database Schema
+// Author : Lâm Tấn Phú
+// Standard: Google Developer Style Guide + Prisma Best Practices
+// =============================================================================
+
+generator client {
+  provider      = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// =============================================================================
+// ENUMS
+// =============================================================================
+
+enum SkillCategory {
+  frontend
+  backend
+  devops
+  database
+  other
+
+  @@map("skill_category")
+}
+
+// =============================================================================
+// CORE — User
+// Single record. The portfolio owner.
+// =============================================================================
+
+model User {
+  id           Int       @id @default(autoincrement())
+  firstname    String    @db.VarChar(45)
+  lastname     String    @db.VarChar(45)
+  // RFC 5321 defines max email length as 254 characters
+  email        String    @unique @db.VarChar(254)
+  hashPassword String    @map("hash_password") @db.Text
+  aboutme      String?   @db.Text
+  lastLogin    DateTime? @map("last_login")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  educations     Education[]
+  jobs           Job[]
+  certifications Certification[]
+  socialAccounts SocialAccount[]
+  skills         Skill[]
+  projects       Project[]
+  blogs          Blog[]
+
+  @@map("users")
+}
+
+model RevokedToken {
+  id        Int      @id @default(autoincrement())
+  jti       String   @unique @db.VarChar(255)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([jti])
+  @@index([expiresAt])
+  @@map("revoked_tokens")
+}
+
+// =============================================================================
+// EXPERIENCE
+// =============================================================================
+
+model Education {
+  id            Int       @id @default(autoincrement())
+  degreeName    String    @map("degree_name") @db.VarChar(255)
+  instituteName String    @map("institute_name") @db.VarChar(255)
+  instituteUrl  String?   @map("institute_url") @db.Text
+  startedAt     DateTime  @map("started_at")
+  endedAt       DateTime? @map("ended_at")
+  isCompleted   Boolean   @default(false) @map("is_completed")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("educations")
+}
+
+model Job {
+  id          Int       @id @default(autoincrement())
+  companyName String    @map("company_name") @db.VarChar(255)
+  role        String    @db.Text
+  startedAt   DateTime  @map("started_at")
+  endedAt     DateTime? @map("ended_at")
+  isEnded     Boolean   @default(false) @map("is_ended")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("jobs")
+}
+
+model Certification {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  url         String    @db.Text
+  isPublished Boolean   @default(false) @map("is_published")
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublished])
+  @@map("certifications")
+}
+
+model SocialAccount {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(100)
+  url       String   @db.Text
+  imageUrl  String?  @map("image_url") @db.Text
+  isPublic  Boolean  @default(true) @map("is_public")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublic])
+  @@map("social_accounts")
+}
+
+// =============================================================================
+// SKILLS
+// =============================================================================
+
+model Skill {
+  id        Int           @id @default(autoincrement())
+  name      String        @db.VarChar(45)
+  imageUrl  String?       @map("image_url") @db.Text
+  category  SkillCategory @default(other)
+  isPublic  Boolean       @default(true) @map("is_public")
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isPublic])
+  @@index([category])
+  @@map("skills")
+}
+
+// =============================================================================
+// PROJECTS
+// Aggregate Root: Project owns ProjectView.
+// ProjectView has no standalone repository — always accessed via Project.
+// =============================================================================
+
+model Project {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  description  String   @db.Text
+  slug         String   @unique @db.VarChar(255)
+  // JSONB column — stores string[] e.g. ["React Native", "TypeScript"]
+  // Queryable and indexable unlike plain TEXT storage
+  techStack    Json     @map("tech_stack")
+  repoUrl      String?  @map("repo_url") @db.Text
+  liveUrl      String?  @map("live_url") @db.Text
+  thumbnailUrl String?  @map("thumbnail_url") @db.Text
+  isPublished  Boolean  @default(false) @map("is_published")
+  isOpenSource Boolean  @default(true) @map("is_open_source")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  views ProjectView[]
+
+  @@index([userId])
+  @@index([isPublished])
+  @@index([slug])
+  @@map("projects")
+}
+
+// Owned by Project aggregate.
+// Raw view logs — not just a counter — enables time-based analytics.
+model ProjectView {
+  id       Int      @id @default(autoincrement())
+  viewedAt DateTime @default(now()) @map("viewed_at")
+
+  projectId Int     @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([viewedAt])
+  @@map("project_views")
+}
+
+// =============================================================================
+// BLOG
+// Aggregate Root: Blog owns BlogTag.
+// BlogTag has no standalone repository — always accessed via Blog.
+// Full-text search via PostgreSQL native tsvector — see migration note below.
+// =============================================================================
+
+model Blog {
+  id          Int       @id @default(autoincrement())
+  title       String    @db.VarChar(255)
+  slug        String    @unique @db.VarChar(255)
+  content     String    @db.Text
+  excerpt     String?   @db.VarChar(300)
+  isPublished Boolean   @default(false) @map("is_published")
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // PostgreSQL native full-text search vector.
+  // Populated automatically by DB trigger defined in raw migration SQL.
+  // Prisma does not manage this column — Unsupported() prevents interference.
+  searchVector Unsupported("tsvector")? @map("search_vector")
+
+  userId Int  @map("user_id")
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  tags BlogTag[]
+
+  @@index([userId])
+  @@index([isPublished])
+  @@index([publishedAt])
+  @@index([slug])
+  @@map("blogs")
+}
+
+// Owned by Blog aggregate.
+// Unique constraint on [blogId, name] prevents duplicate tags per post.
+model BlogTag {
+  id   Int    @id @default(autoincrement())
+  name String @db.VarChar(45)
+
+  blogId Int  @map("blog_id")
+  blog   Blog @relation(fields: [blogId], references: [id], onDelete: Cascade)
+
+  @@unique([blogId, name])
+  @@index([blogId])
+  @@map("blog_tags")
+}
+
+// =============================================================================
+// CONTACT
+// Write-only. No updatedAt — messages are never edited.
+// No userId FK — contact form is public, not tied to admin user.
+// =============================================================================
+
+model ContactMe {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(60)
+  email       String   @db.VarChar(254)
+  message     String   @db.VarChar(300)
+  ipAddress   String   @map("ip_address") @db.VarChar(45)
+  browserInfo String?  @map("browser_info") @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("contact_me")
+}
+
+// =============================================================================
+// ANALYTICS
+// =============================================================================
+
+// Per-route view counter.
+// @updatedAt ensures lastViewedAt reflects the actual last increment time.
+model PageView {
+  id           Int      @id @default(autoincrement())
+  route        String   @unique @db.VarChar(255)
+  count        Int      @default(0)
+  lastViewedAt DateTime @updatedAt @map("last_viewed_at")
+
+  @@index([route])
+  @@map("page_views")
+}
+
+// Tracks resume PDF downloads for analytics.
+// Write-only — no updatedAt needed.
+model ResumeDownload {
+  id           Int      @id @default(autoincrement())
+  ipAddress    String   @map("ip_address") @db.VarChar(45)
+  browserInfo  String?  @map("browser_info") @db.Text
+  downloadedAt DateTime @default(now()) @map("downloaded_at")
+
+  @@index([downloadedAt])
+  @@map("resume_downloads")
+}
