@@ -1,30 +1,27 @@
-import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../../../../../infrastructure/database/prisma/prisma.service'
+import { Injectable, Inject } from '@nestjs/common'
+import type { IJobReadRepository } from '../../../../../domain/repositories/job/IJobReadRepository'
+import type { JobDTO } from '../../../../dtos/JobDTO'
 
-export interface JobDTO {
-    id: number
-    companyName: string
-    role: string
-    startedAt: string
-    endedAt: string | null
-    isEnded: boolean
-}
-
+// =============================================================================
+// GetJobsQuery
+// Returns all work experience ordered by most recent first.
+// =============================================================================
 @Injectable()
 export class GetJobsQuery {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        @Inject('IJobReadRepository')
+        private readonly repo: IJobReadRepository,
+    ) {}
 
     async execute(): Promise<JobDTO[]> {
-        const rows = await this.prisma.client.job.findMany({
-        orderBy: { startedAt: 'desc' },
-        })
-        return rows.map((r) => ({
-        id: r.id,
-        companyName: r.companyName,
-        role: r.role,
-        startedAt: r.startedAt.toISOString(),
-        endedAt: r.endedAt?.toISOString() ?? null,
-        isEnded: r.isEnded,
+        const jobs = await this.repo.findAll()
+        return jobs.map((j) => ({
+            id:          j.id,
+            companyName: j.companyName,
+            role:        j.role,
+            startedAt:   j.startedAt.toISOString(),
+            endedAt:     j.endedAt?.toISOString() ?? null,
+            isEnded:     j.isEnded,
         }))
     }
 }

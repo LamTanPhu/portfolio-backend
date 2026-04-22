@@ -1,29 +1,26 @@
-import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../../../../../infrastructure/database/prisma/prisma.service'
+import { Inject, Injectable } from '@nestjs/common'
+import type { ICertificationReadRepository } from '../../../../../domain/repositories/certification/ICertificationReadRepository'
+import type { CertificationDTO } from '../../../../dtos/CertificationDTO'
 
-export interface CertificationDTO {
-    id: number
-    name: string
-    url: string
-    startDate: string
-    endDate: string | null
-}
-
+// =============================================================================
+// GetCertificationsQuery
+// Returns only published certifications ordered by most recent first.
+// =============================================================================
 @Injectable()
 export class GetCertificationsQuery {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        @Inject('ICertificationReadRepository')
+        private readonly repo: ICertificationReadRepository,
+    ) {}
 
     async execute(): Promise<CertificationDTO[]> {
-        const rows = await this.prisma.client.certification.findMany({
-        where: { isPublished: true },
-        orderBy: { startDate: 'desc' },
-        })
-        return rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        url: r.url,
-        startDate: r.startDate.toISOString(),
-        endDate: r.endDate?.toISOString() ?? null,
+        const certs = await this.repo.findPublished()
+        return certs.map((c) => ({
+            id:        c.id,
+            name:      c.name,
+            url:       c.url,
+            startDate: c.startDate.toISOString(),
+            endDate:   c.endDate?.toISOString() ?? null,
         }))
     }
 }
