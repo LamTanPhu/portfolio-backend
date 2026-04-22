@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { ThrottlerModule } from '@nestjs/throttler'
 import { JwtModule } from '@nestjs/jwt'
+import { ScheduleModule } from '@nestjs/schedule'
 import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import { ThrottlerGuard } from '@nestjs/throttler'
 
@@ -11,6 +12,8 @@ import { ThrottlerGuard } from '@nestjs/throttler'
 // ConfigModule is @Global() — loads .env before any other module initializes.
 // =============================================================================
 import { PrismaModule } from './infrastructure/database/prisma/prisma.service'
+import { PrismaRevokedTokenRepository } from './infrastructure/database/repositories/PrismaRevokedTokenRepository'
+import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
 
 // =============================================================================
 // Feature Modules
@@ -38,6 +41,11 @@ import { DomainExceptionFilter } from './interface-adapters/filters/DomainExcept
       isGlobal:    true,
       envFilePath: '.env',
     }),
+
+    // ─── Scheduler ────────────────────────────────────────────────────────
+    // Enables @Cron decorators throughout the application.
+    // Used by TokenCleanupTask — runs daily at 2am UTC.
+    ScheduleModule.forRoot(),
 
     // ─── Rate Limiting ────────────────────────────────────────────────────
     // Two throttle tiers:
@@ -75,6 +83,7 @@ import { DomainExceptionFilter } from './interface-adapters/filters/DomainExcept
     }),
 
     // ─── Infrastructure ───────────────────────────────────────────────────
+    // Must be before feature modules — they depend on PrismaService.
     PrismaModule,
 
     // ─── Auth — before feature modules ───────────────────────────────────
@@ -90,12 +99,21 @@ import { DomainExceptionFilter } from './interface-adapters/filters/DomainExcept
     AboutModule,
   ],
   providers: [
+    // ─── Global Guards ────────────────────────────────────────────────────
     // Apply rate limiting to every route by default.
     // Individual routes can override with @Throttle() or @SkipThrottle().
     { provide: APP_GUARD,  useClass: ThrottlerGuard },
 
+    // ─── Global Filters ───────────────────────────────────────────────────
     // Map all DomainError subclasses to correct HTTP status codes globally.
     { provide: APP_FILTER, useClass: DomainExceptionFilter },
+
+    // ─── Scheduled Tasks ──────────────────────────────────────────────────
+    // PrismaRevokedTokenRepository provided here — TokenCleanupTask depends on it.
+    // Infrastructure concern — not inside AuthModule.
+    // Runs daily at 2am UTC — deletes expired revoked tokens in batches.
+    PrismaRevokedTokenRepository,
+    TokenCleanupTask,
   ],
 })
 export class AppModule {}

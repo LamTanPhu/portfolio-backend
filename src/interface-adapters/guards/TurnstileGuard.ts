@@ -4,13 +4,15 @@ import {
   ExecutionContext,
   ForbiddenException,
   Logger,
+  Inject,
 } from '@nestjs/common'
 import type { Request } from 'express'
-import { TurnstileVerifier } from '../../infrastructure/cloudflare/TurnstileVerifier'
+import type { ITurnstileVerifier } from '../../application/ports/ITurnstileVerifier'
 
 // =============================================================================
 // TurnstileGuard
 // Verifies Cloudflare Turnstile token before any use case executes.
+// Depends on ITurnstileVerifier interface — never on concrete implementation.
 // Placed at interface-adapters layer — use cases stay unaware of HTTP context.
 // Applied only on public mutation endpoints (contact form).
 // =============================================================================
@@ -18,7 +20,10 @@ import { TurnstileVerifier } from '../../infrastructure/cloudflare/TurnstileVeri
 export class TurnstileGuard implements CanActivate {
   private readonly logger = new Logger(TurnstileGuard.name)
 
-  constructor(private readonly turnstile: TurnstileVerifier) {}
+  constructor(
+    @Inject('ITurnstileVerifier')
+    private readonly turnstile: ITurnstileVerifier,
+  ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>()
@@ -31,7 +36,7 @@ export class TurnstileGuard implements CanActivate {
     const isValid = await this.turnstile.verifyToken(token)
 
     if (!isValid) {
-      // Log failed verifications — useful for detecting bot activity
+      // Log failed verifications — useful for detecting bot activity patterns
       this.logger.warn(
         `Turnstile verification failed — IP: ${req.ip ?? 'unknown'}`,
       )

@@ -161,7 +161,6 @@ model Skill {
   @@index([category])
   @@map("skills")
 }
-
 // =============================================================================
 // PROJECTS
 // Aggregate Root: Project owns ProjectView.
@@ -195,17 +194,25 @@ model Project {
   @@map("projects")
 }
 
-// Owned by Project aggregate.
-// Raw view logs — not just a counter — enables time-based analytics.
+// Owned by Project aggregate — no standalone repository.
+// Daily view counter — one row per project per day.
+// Upsert pattern: O(1) atomic increment, never unbounded row growth.
+// Composite unique key enforces one record per project per day.
+// Enables time-range queries: views this week, this month, all time.
 model ProjectView {
-  id       Int      @id @default(autoincrement())
-  viewedAt DateTime @default(now()) @map("viewed_at")
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date              @map("date")
+  count     Int      @default(0)
+  createdAt DateTime @default(now())       @map("created_at")
+  updatedAt DateTime @updatedAt            @map("updated_at")
 
   projectId Int     @map("project_id")
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
+  // One record per project per day — upsert uses this constraint
+  @@unique([projectId, date])
   @@index([projectId])
-  @@index([viewedAt])
+  @@index([date])
   @@map("project_views")
 }
 
