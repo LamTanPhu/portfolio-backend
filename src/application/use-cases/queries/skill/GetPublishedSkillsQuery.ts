@@ -4,8 +4,9 @@ import type { SkillDTO } from '../../../dtos/SkillDTO'
 
 // =============================================================================
 // GetPublishedSkillsQuery
-// Returns only public skills — grouped by category for frontend display.
-// Depends on ISkillReadRepository interface — zero infrastructure knowledge.
+// Returns only public skills ordered by category alphabetically.
+// isPublic filter applied at repository level — private skills never exposed.
+// category serialized as string — SkillCategory enum never crosses layer boundary.
 // =============================================================================
 @Injectable()
 export class GetPublishedSkillsQuery {

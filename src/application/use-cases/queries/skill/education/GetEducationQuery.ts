@@ -5,6 +5,9 @@ import type { EducationDTO } from '../../../../dtos/EducationDTO'
 // =============================================================================
 // GetEducationQuery
 // Returns all education records ordered by most recent first.
+// No publish filter — all education records shown publicly.
+// endedAt null = currently enrolled.
+// Dates serialized as ISO 8601 strings — domain Date objects never cross layers.
 // =============================================================================
 @Injectable()
 export class GetEducationQuery {

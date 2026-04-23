@@ -1,8 +1,8 @@
 // =============================================================================
-// ProjectView
-// Owned by Project aggregate — no standalone repository.
-// Represents a daily view count for a project.
-// Daily bucketing prevents unbounded row growth.
+// ProjectView — Owned by Project aggregate
+// Daily view counter — one record per project per day.
+// Never fetched standalone — always via Project or IProjectViewRepository.
+// Upsert pattern prevents unbounded row growth.
 // =============================================================================
 export class ProjectView {
     constructor(

@@ -2,6 +2,12 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
 import type { BlogDTO } from '../../../dtos/BlogDTO'
 
+// =============================================================================
+// GetPublishedBlogsQuery
+// Returns summaries of all published blogs — content is empty string.
+// content excluded at repository level — list views never render full post body.
+// O(n) — filtered by isPublished index, ordered by publishedAt desc.
+// =============================================================================
 @Injectable()
 export class GetPublishedBlogsQuery {
   constructor(
@@ -12,15 +18,15 @@ export class GetPublishedBlogsQuery {
   async execute(): Promise<BlogDTO[]> {
     const blogs = await this.repo.findPublished()
     return blogs.map((b) => ({
-      id: b.id,
-      title: b.title,
-      slug: b.slug,
-      content: b.content,
-      excerpt: b.excerpt,
-      tags: b.tags.map((t) => t.name),
+      id:          b.id,
+      title:       b.title,
+      slug:        b.slug,
+      content:     b.content,  // empty string on list queries — see PrismaBlogRepository
+      excerpt:     b.excerpt,
+      tags:        b.tags.map((t) => t.name),
       isPublished: b.isPublished,
       publishedAt: b.publishedAt?.toISOString() ?? null,
-      createdAt: b.createdAt.toISOString(),
+      createdAt:   b.createdAt.toISOString(),
     }))
   }
 }

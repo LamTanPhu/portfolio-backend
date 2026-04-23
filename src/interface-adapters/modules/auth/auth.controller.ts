@@ -1,20 +1,20 @@
 import {
-  Controller,
-  Post,
   Body,
-  Res,
-  Req,
-  UseGuards,
+  Controller,
   HttpCode,
   HttpStatus,
+  Post,
+  Req,
+  Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common'
-import type { Request, Response } from 'express'
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
+import type { Request, Response } from 'express'
+import type { AccessTokenPayload } from '../../../application/services/AuthService'
 import { AuthService } from '../../../application/services/AuthService'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
-import type { AccessTokenPayload } from '../../../application/services/AuthService'
 import { LoginDto } from './login.dto'
 
 // =============================================================================
@@ -55,6 +55,7 @@ export class AuthController {
     const { accessToken, refreshToken } = await this.authService.login(
       dto.password,
       fingerprint,
+      1,  // portfolio has one admin — userId always 1
     )
 
     // Store refresh token in httpOnly cookie — inaccessible to JavaScript.

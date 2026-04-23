@@ -1,11 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Injectable, Inject } from '@nestjs/common'
 import type { IProjectViewRepository } from '../../../../domain/repositories/project/IProjectViewRepository'
 
 // =============================================================================
 // TrackProjectViewCommand
-// Increments daily view counter for a project.
-// Called when a visitor views a project detail page.
-// Uses daily bucketing — O(1) upsert, never unbounded row growth.
+// Increments daily view counter for a specific project.
+// Called when a visitor opens a project detail page.
+// Daily bucketing in repository — O(1) upsert, never unbounded row growth.
 // =============================================================================
 @Injectable()
 export class TrackProjectViewCommand {

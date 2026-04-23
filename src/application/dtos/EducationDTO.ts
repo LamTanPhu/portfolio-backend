@@ -1,6 +1,8 @@
 // =============================================================================
 // EducationDTO
-// Dates serialized as ISO strings — domain Date objects never cross boundaries.
+// Output shape for education records.
+// Dates serialized as ISO 8601 strings — domain Date objects never cross layers.
+// endedAt null = currently enrolled.
 // =============================================================================
 export interface EducationDTO {
     id:            number

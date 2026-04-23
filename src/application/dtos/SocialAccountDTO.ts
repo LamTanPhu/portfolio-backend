@@ -1,7 +1,7 @@
 // =============================================================================
 // SocialAccountDTO
-// Output shape for public social accounts.
-// imageUrl optional — not all platforms have a custom icon.
+// Output shape for public social accounts — GitHub, LinkedIn, etc.
+// imageUrl null when platform has no custom icon configured.
 // =============================================================================
 export interface SocialAccountDTO {
     id:       number
