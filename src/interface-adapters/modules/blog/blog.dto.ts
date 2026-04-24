@@ -4,9 +4,9 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 // =============================================================================
 // CreateBlogDto
 // Validates admin blog post creation request.
-// slug auto-generated from title in CreateBlogCommand — not accepted from client.
-// publishedAt set automatically when isPublished is true.
-// userId extracted from JWT payload in controller — not accepted from client.
+// slug auto-generated from title in CreateBlogCommand — never accepted from client.
+// publishedAt set server-side when isPublished is true — never accepted from client.
+// userId extracted from JWT payload in controller — never accepted from client.
 // =============================================================================
 export class CreateBlogDto {
     @ApiProperty({
@@ -54,7 +54,7 @@ export class CreateBlogDto {
 
 // =============================================================================
 // UpdateBlogDto
-// All fields optional — PATCH semantics, only provided fields are updated.
+// All fields optional — PATCH semantics, only provided fields updated.
 // Tags replaced in full when provided — partial tag updates not supported.
 // =============================================================================
 export class UpdateBlogDto {
@@ -82,7 +82,7 @@ export class UpdateBlogDto {
     @IsOptional()
     tags?: string[]
 
-    @ApiPropertyOptional({ description: 'Published status',  example: true })
+    @ApiPropertyOptional({ description: 'Published status', example: true })
     @IsBoolean()
     @IsOptional()
     isPublished?: boolean

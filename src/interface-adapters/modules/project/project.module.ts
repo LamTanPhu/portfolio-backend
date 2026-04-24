@@ -8,15 +8,19 @@ import { PrismaProjectRepository } from '../../../infrastructure/database/reposi
 
 // =============================================================================
 // ProjectModule
-// Imports AuthModule — JwtAuthGuard depends on AuthService from AuthModule.
+// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
+// PrismaProjectRepository implements both read and write interfaces.
 // =============================================================================
 @Module({
   imports: [AuthModule],
   controllers: [ProjectController],
   providers: [
+    // ─── Repositories ───────────────────────────────────────────────────────
     PrismaProjectRepository,
     { provide: 'IProjectReadRepository',  useExisting: PrismaProjectRepository },
     { provide: 'IProjectWriteRepository', useExisting: PrismaProjectRepository },
+
+    // ─── Use cases ──────────────────────────────────────────────────────────
     {
       provide:    GetPublishedProjectsQuery,
       useFactory: (repo: PrismaProjectRepository) =>

@@ -5,8 +5,8 @@ import { SpotifyService } from '../../../infrastructure/spotify/SpotifyService'
 
 // =============================================================================
 // SpotifyModule
-// SpotifyService is singleton — cache lives for the lifetime of the process.
-// No AuthModule import needed — now-playing is a public endpoint.
+// SpotifyService is singleton — in-memory cache lives for process lifetime.
+// No AuthModule import — now-playing is a fully public endpoint.
 // =============================================================================
 @Module({
     controllers: [SpotifyController],

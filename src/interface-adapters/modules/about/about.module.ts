@@ -14,55 +14,55 @@ import { PrismaSocialAccountRepository } from '../../../infrastructure/database/
 // =============================================================================
 // AboutModule
 // Serves all public portfolio data.
-// No AuthModule import — all endpoints are public.
+// No AuthModule import — all endpoints are public, no JWT needed.
 // =============================================================================
 @Module({
     controllers: [AboutController],
     providers: [
-        // ─── Repositories ─────────────────────────────────────────────────────
+        // ─── Repositories ───────────────────────────────────────────────────────
         PrismaSkillRepository,
         PrismaEducationRepository,
         PrismaJobRepository,
         PrismaCertificationRepository,
         PrismaSocialAccountRepository,
 
-        // ─── Interface tokens ─────────────────────────────────────────────────
-        { provide: 'ISkillReadRepository',          useExisting: PrismaSkillRepository },
-        { provide: 'IEducationReadRepository',      useExisting: PrismaEducationRepository },
-        { provide: 'IJobReadRepository',            useExisting: PrismaJobRepository },
-        { provide: 'ICertificationReadRepository',  useExisting: PrismaCertificationRepository },
-        { provide: 'ISocialAccountReadRepository',  useExisting: PrismaSocialAccountRepository },
+        // ─── Interface tokens ───────────────────────────────────────────────────
+        { provide: 'ISkillReadRepository',         useExisting: PrismaSkillRepository },
+        { provide: 'IEducationReadRepository',     useExisting: PrismaEducationRepository },
+        { provide: 'IJobReadRepository',           useExisting: PrismaJobRepository },
+        { provide: 'ICertificationReadRepository', useExisting: PrismaCertificationRepository },
+        { provide: 'ISocialAccountReadRepository', useExisting: PrismaSocialAccountRepository },
 
-        // ─── Use cases ────────────────────────────────────────────────────────
+        // ─── Use cases ──────────────────────────────────────────────────────────
         {
-        provide:    GetPublishedSkillsQuery,
-        useFactory: (repo: PrismaSkillRepository) =>
-            new GetPublishedSkillsQuery(repo),
-        inject: [PrismaSkillRepository],
+            provide:    GetPublishedSkillsQuery,
+            useFactory: (repo: PrismaSkillRepository) =>
+                new GetPublishedSkillsQuery(repo),
+            inject: [PrismaSkillRepository],
         },
         {
-        provide:    GetEducationQuery,
-        useFactory: (repo: PrismaEducationRepository) =>
-            new GetEducationQuery(repo),
-        inject: [PrismaEducationRepository],
+            provide:    GetEducationQuery,
+            useFactory: (repo: PrismaEducationRepository) =>
+                new GetEducationQuery(repo),
+            inject: [PrismaEducationRepository],
         },
         {
-        provide:    GetJobsQuery,
-        useFactory: (repo: PrismaJobRepository) =>
-            new GetJobsQuery(repo),
-        inject: [PrismaJobRepository],
+            provide:    GetJobsQuery,
+            useFactory: (repo: PrismaJobRepository) =>
+                new GetJobsQuery(repo),
+            inject: [PrismaJobRepository],
         },
         {
-        provide:    GetCertificationsQuery,
-        useFactory: (repo: PrismaCertificationRepository) =>
-            new GetCertificationsQuery(repo),
-        inject: [PrismaCertificationRepository],
+            provide:    GetCertificationsQuery,
+            useFactory: (repo: PrismaCertificationRepository) =>
+                new GetCertificationsQuery(repo),
+            inject: [PrismaCertificationRepository],
         },
         {
-        provide:    GetPublicSocialAccountsQuery,
-        useFactory: (repo: PrismaSocialAccountRepository) =>
-            new GetPublicSocialAccountsQuery(repo),
-        inject: [PrismaSocialAccountRepository],
+            provide:    GetPublicSocialAccountsQuery,
+            useFactory: (repo: PrismaSocialAccountRepository) =>
+                new GetPublicSocialAccountsQuery(repo),
+            inject: [PrismaSocialAccountRepository],
         },
     ],
 })

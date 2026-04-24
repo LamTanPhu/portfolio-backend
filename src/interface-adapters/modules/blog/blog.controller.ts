@@ -1,23 +1,30 @@
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Post,
-    Req,
-    UseGuards,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger'
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
 import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
 import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
-import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
+import type { BlogDTO } from '../../../application/dtos/BlogDTO'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { CreateBlogDto } from './blog.dto'
 import { BlogPresenter } from './blog.presenter'
 
@@ -39,28 +46,27 @@ export class BlogController {
 
     // ===========================================================================
     // GET /api/blogs
-    // Returns all published blogs — public, no auth required.
-    // Content excluded — list views never need full post body.
+    // Returns published blog summaries — content excluded, no auth required.
     // ===========================================================================
     @Get()
     @ApiOperation({ summary: 'Get all published blog posts' })
     @ApiResponse({ status: 200, description: 'List of published blog posts' })
-    async findAll() {
+    async findAll(): Promise<BlogDTO[]> {
         const dtos = await this.getPublishedQuery.execute()
         return BlogPresenter.toListResponse(dtos)
     }
 
     // ===========================================================================
     // GET /api/blogs/:slug
-    // Returns a single blog post by slug — public, no auth required.
-    // Full content included — single post view needs complete body.
+    // Returns full blog post including content — public, no auth required.
+    // Slug is unique indexed — O(1) lookup.
     // ===========================================================================
     @Get(':slug')
     @ApiOperation({ summary: 'Get blog post by slug' })
     @ApiParam({ name: 'slug', example: 'building-clean-architecture-nestjs' })
     @ApiResponse({ status: 200, description: 'Blog post found' })
     @ApiResponse({ status: 404, description: 'Blog post not found' })
-    async findBySlug(@Param('slug') slug: string) {
+    async findBySlug(@Param('slug') slug: string): Promise<BlogDTO> {
         const dto = await this.getBySlugQuery.execute(slug)
         return BlogPresenter.toResponse(dto)
     }
@@ -80,24 +86,22 @@ export class BlogController {
     async create(
         @Body() dto: CreateBlogDto,
         @Req() req: AuthenticatedRequest,
-    ) {
-        // Extract userId from verified JWT payload — not from client input
-        const userId = req.user.sub
-
+    ): Promise<BlogDTO> {
         const result = await this.createCommand.execute({
         title:       dto.title,
         content:     dto.content,
         excerpt:     dto.excerpt     ?? null,
         tags:        dto.tags        ?? [],
         isPublished: dto.isPublished ?? false,
-        userId,
+        // userId extracted from verified JWT payload — never from client input
+        userId:      req.user.sub,
         })
         return BlogPresenter.toResponse(result)
     }
 
     // ===========================================================================
     // DELETE /api/blogs/:id
-    // Deletes a blog post by id — admin only, JWT required.
+    // Deletes a blog post — admin only, JWT required.
     // BlogTags cascade deleted automatically via onDelete: Cascade in schema.
     // ===========================================================================
     @Delete(':id')
@@ -108,6 +112,7 @@ export class BlogController {
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 204, description: 'Blog post deleted' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'Blog post not found' })
     async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
         await this.deleteCommand.execute(id)
     }

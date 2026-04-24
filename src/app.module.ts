@@ -26,6 +26,7 @@ import { ContactModule } from './interface-adapters/modules/contact/contact.modu
 import { SpotifyModule } from './interface-adapters/modules/spotify/spotify.module'
 import { AnalyticsModule } from './interface-adapters/modules/analytics/analytics.module'
 import { AboutModule } from './interface-adapters/modules/about/about.module'
+import { SkillModule } from './interface-adapters/modules/skill/skill.module'
 
 // =============================================================================
 // Global Providers
@@ -97,6 +98,7 @@ import { DomainExceptionFilter } from './interface-adapters/filters/DomainExcept
     SpotifyModule,
     AnalyticsModule,
     AboutModule,
+    SkillModule,
   ],
   providers: [
     // ─── Global Guards ────────────────────────────────────────────────────

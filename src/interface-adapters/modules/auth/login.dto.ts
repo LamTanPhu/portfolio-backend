@@ -9,12 +9,12 @@ import { IsNotEmpty, IsString, MinLength } from 'class-validator'
 // =============================================================================
 export class LoginDto {
     @ApiProperty({
-        description: 'Admin password — minimum 8 characters',
+        description: 'Admin password — minimum 10 characters',
         example:     'your-secure-password',
-        minLength:   8,
+        minLength:   10,
     })
     @IsString()
     @IsNotEmpty()
-    @MinLength(8)
+    @MinLength(10)
     password!: string
 }

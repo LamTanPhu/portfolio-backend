@@ -20,12 +20,13 @@ export interface AuthenticatedRequest extends Request {
 
 // =============================================================================
 // JwtAuthGuard
-// Protects admin routes. Validates:
+// Protects admin routes. Full validation chain:
 //   1. Token presence and valid Bearer format
-//   2. JWT signature and expiry
+//   2. JWT signature and expiry (JwtService)
 //   3. Token not revoked — logout protection via DB blacklist
 //   4. Fingerprint match — stolen token from different device rejected
 // Attaches verified AccessTokenPayload to request.user for downstream use.
+// All auth failures logged at warn — repeated patterns indicate attacks.
 // =============================================================================
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -39,6 +40,9 @@ export class JwtAuthGuard implements CanActivate {
     // Extract Bearer token from Authorization header
     const authHeader = req.headers.authorization
     if (!authHeader?.startsWith('Bearer ')) {
+      this.logger.warn(
+        `Missing auth token — IP: ${req.ip ?? 'unknown'} — ${req.method} ${req.url}`,
+      )
       throw new UnauthorizedException('Missing authorization token')
     }
 
@@ -46,7 +50,7 @@ export class JwtAuthGuard implements CanActivate {
     const token = authHeader.slice(7)
 
     // Build fingerprint from current request context
-    // Ties token to the browser/device that originally logged in
+    // Ties token validation to the browser/device that originally logged in
     const fingerprint = AuthService.buildFingerprint(
       req.headers['user-agent'] ?? '',
       req.ip ?? '',
@@ -60,8 +64,9 @@ export class JwtAuthGuard implements CanActivate {
 
       return true
     } catch (error) {
+      // Log with IP and route — helps identify brute force or replay attempts
       this.logger.warn(
-        `Auth failed — IP: ${req.ip ?? 'unknown'} — ${(error as Error).message}`,
+        `Auth failed — IP: ${req.ip ?? 'unknown'} — ${req.method} ${req.url} — ${(error as Error).message}`,
       )
       throw new UnauthorizedException((error as Error).message)
     }

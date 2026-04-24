@@ -4,23 +4,25 @@ import { PrismaService } from '../prisma/prisma.service'
 
 // =============================================================================
 // PrismaUnitOfWork
-// Wraps Prisma's $transaction for atomic multi-operation writes.
-// begin/commit/rollback are no-ops — Prisma handles atomicity internally.
-// Use transaction() for any operation that must succeed or fail together.
+// Implements IUnitOfWork using Prisma's $transaction API.
+// begin/commit/rollback are intentional no-ops — Prisma manages atomicity
+// internally via $transaction. Callers always use transaction() directly.
 //
-// Example:
+// Usage:
 //   await uow.transaction(async () => {
-//     await repo.create(blogData)
-//     await analytics.increment('/blog/my-post')
+//     await blogRepo.create(data)
+//     await pageViewRepo.increment('/blog/new-post')
 //   })
+//
+// On error inside fn(): Prisma automatically rolls back — no manual rollback needed.
 // =============================================================================
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
   constructor(private readonly prisma: PrismaService) {}
 
-  // No-ops — Prisma $transaction handles begin/commit/rollback automatically
-  async begin(): Promise<void> {}
-  async commit(): Promise<void> {}
+  // Intentional no-ops — Prisma $transaction handles lifecycle automatically
+  async begin(): Promise<void>    {}
+  async commit(): Promise<void>   {}
   async rollback(): Promise<void> {}
 
   async transaction<T>(fn: () => Promise<T>): Promise<T> {

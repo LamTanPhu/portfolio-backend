@@ -3,7 +3,8 @@ import type { Job } from '../../entities/Job'
 // =============================================================================
 // IJobReadRepository
 // Read interface for Job aggregate.
-// All job records shown publicly — ordered by start date descending.
+// No publish filter — all job records shown publicly.
+// Ordered by startedAt descending at repository level.
 // =============================================================================
 export interface IJobReadRepository {
     findAll(): Promise<Job[]>

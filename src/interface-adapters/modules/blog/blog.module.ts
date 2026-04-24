@@ -9,15 +9,20 @@ import { PrismaBlogRepository } from '../../../infrastructure/database/repositor
 
 // =============================================================================
 // BlogModule
-// Imports AuthModule — JwtAuthGuard depends on AuthService from AuthModule.
+// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
+// PrismaBlogRepository implements both read and write interfaces.
+// DeleteBlogCommand receives same repo instance for both read and write.
 // =============================================================================
 @Module({
     imports: [AuthModule],
     controllers: [BlogController],
     providers: [
+        // ─── Repositories ───────────────────────────────────────────────────────
         PrismaBlogRepository,
         { provide: 'IBlogReadRepository',  useExisting: PrismaBlogRepository },
         { provide: 'IBlogWriteRepository', useExisting: PrismaBlogRepository },
+
+        // ─── Use cases ──────────────────────────────────────────────────────────
         {
         provide:    GetPublishedBlogsQuery,
         useFactory: (repo: PrismaBlogRepository) =>
@@ -38,6 +43,7 @@ import { PrismaBlogRepository } from '../../../infrastructure/database/repositor
         },
         {
         provide:    DeleteBlogCommand,
+        // Same repo instance serves both read and write interfaces
         useFactory: (repo: PrismaBlogRepository) =>
             new DeleteBlogCommand(repo, repo),
         inject: [PrismaBlogRepository],

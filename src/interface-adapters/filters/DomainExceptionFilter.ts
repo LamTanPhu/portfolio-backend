@@ -14,8 +14,11 @@ import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 // =============================================================================
 // DomainExceptionFilter
 // Catches all DomainError subclasses thrown from use cases.
-// Maps them to appropriate HTTP status codes at the interface-adapters layer.
+// Maps them to correct HTTP status codes at the interface-adapters layer.
 // Domain layer stays clean — zero HTTP knowledge inside use cases.
+// Logs 401/403 at warn — repeated patterns indicate probing attacks.
+// Logs 5xx at error — always needs investigation.
+// Never leaks internal error details in production.
 // =============================================================================
 @Catch(DomainError)
 export class DomainExceptionFilter implements ExceptionFilter {
@@ -28,7 +31,14 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
     const status = DomainExceptionFilter.resolveStatus(exception)
 
-    // Log server errors — skip expected client errors (4xx) to reduce noise
+    // Log unauthorized attempts at warn — useful for detecting probing attacks
+    if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
+      this.logger.warn(
+        `[${exception.name}] ${exception.message} — IP: ${req.ip ?? 'unknown'} — ${req.method} ${req.url}`,
+      )
+    }
+
+    // Log server errors at error — always requires investigation
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
         `[${exception.name}] ${exception.message}`,
@@ -44,9 +54,9 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
     res.status(status).json({
       statusCode: status,
-      error: exception.code,
+      error:      exception.code,
       message,
-      // Include request path for easier debugging in development
+      // Include request path in development only — never in production
       ...(process.env.NODE_ENV !== 'production' && { path: req.url }),
     })
   }

@@ -9,30 +9,35 @@ type PrismaEducation = Prisma.EducationGetPayload<Record<string, never>>
 // =============================================================================
 // PrismaEducationRepository
 // Read-only — education records managed via seed or admin.
+// No publish filter — all education records shown publicly.
 // Ordered by startedAt descending — most recent degree shown first.
 // =============================================================================
 @Injectable()
 export class PrismaEducationRepository implements IEducationReadRepository {
     constructor(private readonly prisma: PrismaService) {}
 
+  // ===========================================================================
+  // Mapper — Prisma model → Domain entity
+  // ===========================================================================
     private static toDomain(raw: PrismaEducation): Education {
         return new Education(
-            raw.id,
-            raw.degreeName,
-            raw.instituteName,
-            raw.instituteUrl,
-            raw.startedAt,
-            raw.endedAt,
-            raw.isCompleted,
-            raw.userId,
-            raw.createdAt,
-            raw.updatedAt,
+        raw.id,
+        raw.degreeName,
+        raw.instituteName,
+        raw.instituteUrl,
+        raw.startedAt,
+        raw.endedAt,
+        raw.isCompleted,
+        raw.userId,
+        raw.createdAt,
+        raw.updatedAt,
         )
     }
 
+    // O(n) — no filter, ordered by startedAt desc
     async findAll(): Promise<Education[]> {
         const rows = await this.prisma.client.education.findMany({
-            orderBy: { startedAt: 'desc' },
+        orderBy: { startedAt: 'desc' },
         })
         return rows.map(PrismaEducationRepository.toDomain)
     }

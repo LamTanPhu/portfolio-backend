@@ -5,6 +5,11 @@ import { GetCertificationsQuery } from '../../../application/use-cases/queries/s
 import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
 import { GetJobsQuery } from '../../../application/use-cases/queries/skill/jobs/GetJobsQuery'
 import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/queries/social/GetPublicSocialAccountsQuery'
+import type { SkillDTO } from '../../../application/dtos/SkillDTO'
+import type { EducationDTO } from '../../../application/dtos/EducationDTO'
+import type { JobDTO } from '../../../application/dtos/JobDTO'
+import type { CertificationDTO } from '../../../application/dtos/CertificationDTO'
+import type { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
 
 // =============================================================================
 // AboutController
@@ -27,35 +32,35 @@ export class AboutController {
     @Get('skills')
     @ApiOperation({ summary: 'Get all public skills grouped by category' })
     @ApiResponse({ status: 200, description: 'List of public skills' })
-    async skills() {
+    async skills(): Promise<SkillDTO[]> {
         return this.getSkills.execute()
     }
 
     @Get('education')
     @ApiOperation({ summary: 'Get all education records ordered by most recent' })
     @ApiResponse({ status: 200, description: 'List of education records' })
-    async education() {
+    async education(): Promise<EducationDTO[]> {
         return this.getEducation.execute()
     }
 
     @Get('jobs')
     @ApiOperation({ summary: 'Get all work experience ordered by most recent' })
     @ApiResponse({ status: 200, description: 'List of work experience records' })
-    async jobs() {
+    async jobs(): Promise<JobDTO[]> {
         return this.getJobs.execute()
     }
 
     @Get('certifications')
     @ApiOperation({ summary: 'Get all published certifications' })
     @ApiResponse({ status: 200, description: 'List of published certifications' })
-    async certifications() {
+    async certifications(): Promise<CertificationDTO[]> {
         return this.getCertifications.execute()
     }
 
     @Get('social')
     @ApiOperation({ summary: 'Get all public social accounts — GitHub, LinkedIn etc.' })
     @ApiResponse({ status: 200, description: 'List of public social accounts' })
-    async social() {
+    async social(): Promise<SocialAccountDTO[]> {
         return this.getSocialAccounts.execute()
     }
 }
