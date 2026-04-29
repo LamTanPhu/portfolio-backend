@@ -22,6 +22,7 @@ export class GetPublicSocialAccountsQuery {
             name:     a.name,
             url:      a.url,
             imageUrl: a.imageUrl,
+            isPublic: a.isPublic,
         }))
     }
 }

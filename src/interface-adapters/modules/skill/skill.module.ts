@@ -37,13 +37,13 @@ import { SkillController } from './skill.controller'
         {
         provide:    UpdateSkillCommand,
         useFactory: (repo: PrismaSkillRepository) =>
-            new UpdateSkillCommand(repo, repo),
+            new UpdateSkillCommand(repo),
             inject: [PrismaSkillRepository],
         },
         {
         provide:    DeleteSkillCommand,
         useFactory: (repo: PrismaSkillRepository) =>
-            new DeleteSkillCommand(repo, repo),
+            new DeleteSkillCommand(repo),
             inject: [PrismaSkillRepository],
         },
     ],

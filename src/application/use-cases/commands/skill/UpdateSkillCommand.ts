@@ -1,32 +1,29 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { ISkillWriteRepository, UpdateSkillInput } from '../../../../domain/repositories/skill/ISkillWriteRepository'
-import type { ISkillReadRepository } from '../../../../domain/repositories/skill/ISkillReadRepository'
+import { Inject, Injectable } from '@nestjs/common'
+import type {
+    ISkillWriteRepository,
+    UpdateSkillInput,
+} from '../../../../domain/repositories/skill/ISkillWriteRepository'
 import type { SkillDTO } from '../../../dtos/SkillDTO'
-import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 
 interface Input extends UpdateSkillInput {
-  id: number
+    id: number
 }
 
 // =============================================================================
 // UpdateSkillCommand
-// Updates an existing skill — verifies existence before update.
+// NotFoundError thrown by repository if id does not exist — no pre-check needed.
+// O(1) — single DB query, no read-before-write.
 // =============================================================================
 @Injectable()
 export class UpdateSkillCommand {
     constructor(
-        @Inject('ISkillReadRepository')
-        private readonly readRepo: ISkillReadRepository,
         @Inject('ISkillWriteRepository')
-        private readonly writeRepo: ISkillWriteRepository,
+        private readonly repo: ISkillWriteRepository,
     ) {}
 
     async execute(input: Input): Promise<SkillDTO> {
         const { id, ...data } = input
-        const existing = await this.readRepo.findById(id)
-        if (!existing) throw new NotFoundError(`Skill not found: ${id}`)
-
-        const skill = await this.writeRepo.update(id, data)
+        const skill = await this.repo.update(id, data)
         return {
         id:       skill.id,
         name:     skill.name,

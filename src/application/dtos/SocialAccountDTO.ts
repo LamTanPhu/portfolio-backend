@@ -8,4 +8,5 @@ export interface SocialAccountDTO {
     name:     string
     url:      string
     imageUrl: string | null
+    isPublic: boolean
 }

@@ -1,16 +1,16 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { ISkillWriteRepository } from '../../../../domain/repositories/skill/ISkillWriteRepository'
+import { Inject, Injectable } from '@nestjs/common'
+import type { IJobWriteRepository } from '../../../../domain/repositories/job/IJobWriteRepository'
 
 // =============================================================================
-// DeleteSkillCommand
+// DeleteJobCommand
 // NotFoundError thrown by repository if id does not exist — no pre-check needed.
 // O(1) — single DB query, no read-before-write.
 // =============================================================================
 @Injectable()
-export class DeleteSkillCommand {
+export class DeleteJobCommand {
     constructor(
-        @Inject('ISkillWriteRepository')
-        private readonly repo: ISkillWriteRepository,
+        @Inject('IJobWriteRepository')
+        private readonly repo: IJobWriteRepository,
     ) {}
 
     async execute(id: number): Promise<void> {

@@ -1,39 +1,40 @@
 import { Injectable } from '@nestjs/common'
-import type { Prisma } from '@prisma/client'
-import { PrismaService } from '../prisma/prisma.service'
+import { Prisma } from '@prisma/client'
+import type { SkillCategory } from '../../../domain/entities/Skill'
+import { Skill } from '../../../domain/entities/Skill'
+import { NotFoundError } from '../../../domain/errors/NotFoundError'
 import type { ISkillReadRepository } from '../../../domain/repositories/skill/ISkillReadRepository'
 import type {
-    ISkillWriteRepository,
     CreateSkillInput,
+    ISkillWriteRepository,
     UpdateSkillInput,
 } from '../../../domain/repositories/skill/ISkillWriteRepository'
-import { Skill } from '../../../domain/entities/Skill'
-import type { SkillCategory } from '../../../domain/entities/Skill'
+import { PrismaService } from '../prisma/prisma.service'
 
 type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
 
 // =============================================================================
 // PrismaSkillRepository
 // Implements both read and write interfaces for Skill aggregate.
-// findPublished filtered by isPublic — only visible skills returned publicly.
-// category ordered alphabetically — groups frontend/backend/devops cleanly.
+// Write operations catch P2025 — eliminates read-before-write round trip.
+// O(1) update/delete — single query instead of findById + mutate.
 // =============================================================================
 @Injectable()
-    export class PrismaSkillRepository
-        implements ISkillReadRepository, ISkillWriteRepository
+export class PrismaSkillRepository
+    implements ISkillReadRepository, ISkillWriteRepository
     {
     constructor(private readonly prisma: PrismaService) {}
 
     private static toDomain(raw: PrismaSkill): Skill {
         return new Skill(
-            raw.id,
-            raw.name,
-            raw.imageUrl,
-            raw.category as SkillCategory,
-            raw.isPublic,
-            raw.userId,
-            raw.createdAt,
-            raw.updatedAt,
+        raw.id,
+        raw.name,
+        raw.imageUrl,
+        raw.category as SkillCategory,
+        raw.isPublic,
+        raw.userId,
+        raw.createdAt,
+        raw.updatedAt,
         )
     }
 
@@ -43,15 +44,15 @@ type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
 
     async findPublished(): Promise<Skill[]> {
         const rows = await this.prisma.client.skill.findMany({
-            where:   { isPublic: true },
-            orderBy: { category: 'asc' },
+        where:   { isPublic: true },
+        orderBy: { category: 'asc' },
         })
         return rows.map(PrismaSkillRepository.toDomain)
     }
 
     async findAll(): Promise<Skill[]> {
         const rows = await this.prisma.client.skill.findMany({
-            orderBy: { category: 'asc' },
+        orderBy: { category: 'asc' },
         })
         return rows.map(PrismaSkillRepository.toDomain)
     }
@@ -63,6 +64,7 @@ type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
 
     // ===========================================================================
     // Write Operations
+    // P2025 caught at repository level — use cases stay clean of Prisma knowledge
     // ===========================================================================
 
     async create(data: CreateSkillInput): Promise<Skill> {
@@ -71,14 +73,34 @@ type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
     }
 
     async update(id: number, data: UpdateSkillInput): Promise<Skill> {
+        try {
         const row = await this.prisma.client.skill.update({
             where: { id },
             data,
         })
         return PrismaSkillRepository.toDomain(row)
+        } catch (error) {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2025'
+        ) {
+            throw new NotFoundError(`Skill not found: ${id}`)
+        }
+        throw error
+        }
     }
 
     async delete(id: number): Promise<void> {
+        try {
         await this.prisma.client.skill.delete({ where: { id } })
+        } catch (error) {
+        if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2025'
+        ) {
+            throw new NotFoundError(`Skill not found: ${id}`)
+        }
+        throw error
+        }
     }
 }
