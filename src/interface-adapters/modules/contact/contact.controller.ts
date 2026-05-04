@@ -1,31 +1,53 @@
-import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common'
+import {
+  Controller,
+  Post,
+  Get,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  Req,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common'
 import type { Request } from 'express'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
+import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import { TurnstileGuard } from '../../guards/TurnstileGuard'
 import { SubmitContactCommand } from '../../../application/use-cases/commands/contact/SubmitContactCommand'
 import { OnContactSubmitted } from '../../../application/event-handlers/OnContactSubmitted'
-import { TurnstileGuard } from '../../guards/TurnstileGuard'
+import { GetContactMessagesQuery } from '../../../application/use-cases/queries/contact/GetContactMessagesQuery'
+import { DeleteContactMessageCommand } from '../../../application/use-cases/commands/contact/DeleteContactMessageCommand'
 import { SubmitContactDto } from './contact.dto'
+import { ContactMessageDTO } from '../../../application/dtos/ContactMessageDTO'
 
 // =============================================================================
 // ContactController
-// Handles contact form submissions.
-// Rate limited — 3 submissions per minute per IP.
-// TurnstileGuard verifies human before command executes.
-// Controller dispatches domain event to handler after command succeeds.
+// Public POST — contact form submission, Turnstile + rate limit protected.
+// Admin GET — list all messages, JWT required.
+// Admin DELETE — remove spam messages, JWT required.
 // =============================================================================
 @ApiTags('Contact')
 @Controller('contact')
 export class ContactController {
   constructor(
-    private readonly submitContact: SubmitContactCommand,
-    private readonly onContactSubmitted: OnContactSubmitted,
+    private readonly submitContact:   SubmitContactCommand,
+    private readonly onSubmitted:     OnContactSubmitted,
+    private readonly getMessages:     GetContactMessagesQuery,
+    private readonly deleteMessage:   DeleteContactMessageCommand,
   ) {}
 
   // ===========================================================================
   // POST /api/contact
-  // Validates, persists, raises event, dispatches to handler.
-  // TurnstileGuard runs before this method — bot requests never reach here.
+  // Public — Turnstile verified, rate limited.
   // ===========================================================================
   @Post()
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
@@ -39,7 +61,6 @@ export class ContactController {
     @Body() dto: SubmitContactDto,
     @Req() req: Request,
   ): Promise<{ success: boolean }> {
-    // Execute command — returns domain event on success
     const event = await this.submitContact.execute({
       name:           dto.name,
       email:          dto.email,
@@ -49,10 +70,38 @@ export class ContactController {
       browserInfo:    req.headers['user-agent'] ?? null,
     })
 
-    // Dispatch event to handler — fire and forget
-    // Email notification failure must not affect user response
-    void this.onContactSubmitted.handle(event)
+    // Fire and forget — email failure must not affect user response
+    void this.onSubmitted.handle(event)
 
     return { success: true }
+  }
+
+  // ===========================================================================
+  // GET /api/contact — admin only
+  // ===========================================================================
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get all contact messages — admin only' })
+  @ApiResponse({ status: 200, description: 'List of contact messages' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async findAll(): Promise<ContactMessageDTO[]> {
+    return this.getMessages.execute()
+  }
+
+  // ===========================================================================
+  // DELETE /api/contact/:id — admin only
+  // ===========================================================================
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete a contact message — admin only' })
+  @ApiParam({ name: 'id', example: 1 })
+  @ApiResponse({ status: 204, description: 'Message deleted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Message not found' })
+  async delete(@Param('id', ParseIntPipe) id: number): Promise<void> {
+    await this.deleteMessage.execute(id)
   }
 }

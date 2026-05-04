@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { IProjectReadRepository } from '../../../domain/repositories/project/IProjectReadRepository'
 import type {
@@ -9,11 +9,10 @@ import type {
 } from '../../../domain/repositories/project/IProjectWriteRepository'
 import { Project } from '../../../domain/entities/Project'
 import { ProjectMapper } from '../mappers/ProjectMapper'
+import { NotFoundError } from '../../../domain/errors/NotFoundError'
 
 type PrismaProject = Prisma.ProjectGetPayload<Record<string, never>>
 
-// Summary select — excludes description for list queries
-// description can be long — no need to fetch for grid/card views
 const LIST_SELECT = {
   id:           true,
   name:         true,
@@ -36,6 +35,10 @@ type PrismaProjectSummary = Prisma.ProjectGetPayload<{
 
 // =============================================================================
 // PrismaProjectRepository
+// Implements both read and write interfaces for Project aggregate.
+// List queries exclude description — card views never render full description.
+// Write operations catch P2025 — eliminates read-before-write round trip.
+// O(1) update/delete — single query instead of findById + mutate.
 // =============================================================================
 @Injectable()
 export class PrismaProjectRepository
@@ -43,17 +46,15 @@ export class PrismaProjectRepository
 {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Full mapper — used for single-item and write operations
   private static toDomain(raw: PrismaProject): Project {
     return ProjectMapper.toDomain(raw)
   }
 
-  // Summary mapper — description substituted with empty string for list views
   private static toDomainSummary(raw: PrismaProjectSummary): Project {
     return new Project(
       raw.id,
       raw.name,
-      '',           // description not fetched — card views never render full description
+      '',
       raw.slug,
       raw.techStack as string[],
       raw.repoUrl,
@@ -73,7 +74,7 @@ export class PrismaProjectRepository
 
   async findAll(): Promise<Project[]> {
     const rows = await this.prisma.client.project.findMany({
-      select: LIST_SELECT,
+      select:  LIST_SELECT,
       orderBy: { createdAt: 'desc' },
     })
     return rows.map(PrismaProjectRepository.toDomainSummary)
@@ -81,20 +82,18 @@ export class PrismaProjectRepository
 
   async findPublished(): Promise<Project[]> {
     const rows = await this.prisma.client.project.findMany({
-      where: { isPublished: true },
-      select: LIST_SELECT,
+      where:   { isPublished: true },
+      select:  LIST_SELECT,
       orderBy: { createdAt: 'desc' },
     })
     return rows.map(PrismaProjectRepository.toDomainSummary)
   }
 
-  // Full fetch — detail page needs description
   async findById(id: number): Promise<Project | null> {
     const row = await this.prisma.client.project.findUnique({ where: { id } })
     return row ? PrismaProjectRepository.toDomain(row) : null
   }
 
-  // Full fetch — detail page needs description
   async findBySlug(slug: string): Promise<Project | null> {
     const row = await this.prisma.client.project.findUnique({ where: { slug } })
     return row ? PrismaProjectRepository.toDomain(row) : null
@@ -102,6 +101,7 @@ export class PrismaProjectRepository
 
   // ===========================================================================
   // Write Operations
+  // P2025 caught at repository level — use cases stay clean of Prisma knowledge
   // ===========================================================================
 
   async create(data: CreateProjectInput): Promise<Project> {
@@ -112,17 +112,34 @@ export class PrismaProjectRepository
   }
 
   async update(id: number, data: UpdateProjectInput): Promise<Project> {
-    const row = await this.prisma.client.project.update({
-      where: { id },
-      data: {
-        ...data,
-        techStack: data.techStack ?? undefined,
-      },
-    })
-    return PrismaProjectRepository.toDomain(row)
+    try {
+      const row = await this.prisma.client.project.update({
+        where: { id },
+        data:  { ...data, techStack: data.techStack ?? undefined },
+      })
+      return PrismaProjectRepository.toDomain(row)
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundError(`Project not found: ${id}`)
+      }
+      throw error
+    }
   }
 
   async delete(id: number): Promise<void> {
-    await this.prisma.client.project.delete({ where: { id } })
+    try {
+      await this.prisma.client.project.delete({ where: { id } })
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundError(`Project not found: ${id}`)
+      }
+      throw error
+    }
   }
 }

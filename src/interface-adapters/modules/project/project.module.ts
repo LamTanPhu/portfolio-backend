@@ -4,6 +4,8 @@ import { ProjectController } from './project.controller'
 import { GetPublishedProjectsQuery } from '../../../application/use-cases/queries/project/GetPublishedProjectsQuery'
 import { GetProjectBySlugQuery } from '../../../application/use-cases/queries/project/GetProjectBySlugQuery'
 import { CreateProjectCommand } from '../../../application/use-cases/commands/project/CreateProjectCommand'
+import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
+import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
 import { PrismaProjectRepository } from '../../../infrastructure/database/repositories/PrismaProjectRepository'
 
 // =============================================================================
@@ -37,6 +39,18 @@ import { PrismaProjectRepository } from '../../../infrastructure/database/reposi
       provide:    CreateProjectCommand,
       useFactory: (repo: PrismaProjectRepository) =>
         new CreateProjectCommand(repo),
+      inject: [PrismaProjectRepository],
+    },
+    {
+      provide:    UpdateProjectCommand,
+      useFactory: (repo: PrismaProjectRepository) =>
+        new UpdateProjectCommand(repo),
+      inject: [PrismaProjectRepository],
+    },
+    {
+      provide:    DeleteProjectCommand,
+      useFactory: (repo: PrismaProjectRepository) =>
+        new DeleteProjectCommand(repo),
       inject: [PrismaProjectRepository],
     },
   ],

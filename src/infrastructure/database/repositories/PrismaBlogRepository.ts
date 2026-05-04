@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import type { Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { IBlogReadRepository } from '../../../domain/repositories/blog/IBlogReadRepository'
 import type {
@@ -9,6 +9,7 @@ import type {
 } from '../../../domain/repositories/blog/IBlogWriteRepository'
 import { Blog } from '../../../domain/entities/Blog'
 import { BlogTag } from '../../../domain/entities/BlogTag'
+import { NotFoundError } from '../../../domain/errors/NotFoundError'
 
 // =============================================================================
 // Prisma Payload Types
@@ -166,29 +167,45 @@ export class PrismaBlogRepository
     // Atomic update — tags replaced in full via deleteMany + create
     // Avoids partial state if update fails midway
     async update(id: number, data: UpdateBlogInput): Promise<Blog> {
-        // Destructure tags out — never spread string[] into Prisma's update input
-        // Prisma expects BlogTagUpdateManyWithoutBlogNestedInput, not string[]
         const { tags, ...scalarFields } = data
-
-        const row = await this.prisma.client.blog.update({
-        where: { id },
-        data: {
-            ...scalarFields,
-            // Only replace tags when explicitly provided — undefined means no change
-            ...(tags !== undefined && {
-            tags: {
-                deleteMany: {},
-                create: tags.map((name) => ({ name })),
+        try {
+            const row = await this.prisma.client.blog.update({
+            where: { id },
+            data: {
+                    ...scalarFields,
+                    ...(tags !== undefined && {
+                    tags: {
+                        deleteMany: {},
+                        create: tags.map((name) => ({ name })),
+                    },
+                }),
             },
-            }),
-        },
-        include: { tags: true },
-        })
-        return PrismaBlogRepository.toDomain(row)
+                include: { tags: true },
+            })
+            return PrismaBlogRepository.toDomain(row)
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2025'
+            ) {
+                throw new NotFoundError(`Blog not found: ${id}`)
+            }
+            throw error
+        }
     }
 
     // Tags cascade deleted automatically via onDelete: Cascade in schema
     async delete(id: number): Promise<void> {
-        await this.prisma.client.blog.delete({ where: { id } })
+        try {
+            await this.prisma.client.blog.delete({ where: { id } })
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2025'
+            ) {
+                throw new NotFoundError(`Blog not found: ${id}`)
+            }
+            throw error
+        }
     }
 }

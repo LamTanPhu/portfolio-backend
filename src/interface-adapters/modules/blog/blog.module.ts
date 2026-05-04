@@ -1,17 +1,18 @@
 import { Module } from '@nestjs/common'
-import { AuthModule } from '../auth/auth.module'
-import { BlogController } from './blog.controller'
-import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
-import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
+import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
+import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
+import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
+import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
 import { PrismaBlogRepository } from '../../../infrastructure/database/repositories/PrismaBlogRepository'
+import { AuthModule } from '../auth/auth.module'
+import { BlogController } from './blog.controller'
 
 // =============================================================================
 // BlogModule
 // AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
 // PrismaBlogRepository implements both read and write interfaces.
-// DeleteBlogCommand receives same repo instance for both read and write.
 // =============================================================================
 @Module({
     imports: [AuthModule],
@@ -30,6 +31,12 @@ import { PrismaBlogRepository } from '../../../infrastructure/database/repositor
         inject: [PrismaBlogRepository],
         },
         {
+        provide:    GetAllBlogsQuery,
+        useFactory: (repo: PrismaBlogRepository) =>
+            new GetAllBlogsQuery(repo),
+        inject: [PrismaBlogRepository],
+        },
+        {
         provide:    GetBlogBySlugQuery,
         useFactory: (repo: PrismaBlogRepository) =>
             new GetBlogBySlugQuery(repo),
@@ -42,8 +49,13 @@ import { PrismaBlogRepository } from '../../../infrastructure/database/repositor
         inject: [PrismaBlogRepository],
         },
         {
+        provide:    UpdateBlogCommand,
+        useFactory: (repo: PrismaBlogRepository) =>
+            new UpdateBlogCommand(repo),
+        inject: [PrismaBlogRepository],
+        },
+        {
         provide:    DeleteBlogCommand,
-        // Same repo instance serves both read and write interfaces
         useFactory: (repo: PrismaBlogRepository) =>
             new DeleteBlogCommand(repo, repo),
         inject: [PrismaBlogRepository],

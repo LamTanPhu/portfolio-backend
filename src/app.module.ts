@@ -24,11 +24,12 @@ import { AuthModule } from './interface-adapters/modules/auth/auth.module'
 import { BlogModule } from './interface-adapters/modules/blog/blog.module'
 import { ContactModule } from './interface-adapters/modules/contact/contact.module'
 import { EducationModule } from './interface-adapters/modules/education/education.module'
+import { JobModule } from './interface-adapters/modules/job/job.module'
 import { ProjectModule } from './interface-adapters/modules/project/project.module'
 import { SkillModule } from './interface-adapters/modules/skill/skill.module'
 import { SpotifyModule } from './interface-adapters/modules/spotify/spotify.module'
 import { UserModule } from './interface-adapters/modules/user/user.module'
-import { JobModule } from './interface-adapters/modules/job/job.module'
+import { CertificationModule } from './interface-adapters/modules/certification/certification.module'
 
 // =============================================================================
 // Global Providers
@@ -106,6 +107,7 @@ import { SocialModule } from './interface-adapters/modules/social/social.module'
     SocialModule,
     EducationModule,
     JobModule,
+    CertificationModule,
   ],
   providers: [
     // ─── Global Guards ────────────────────────────────────────────────────
