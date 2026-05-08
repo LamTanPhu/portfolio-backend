@@ -9,6 +9,7 @@ import type {
     UpdateSocialAccountInput,
 } from '../../../domain/repositories/social/ISocialAccountWriteRepository'
 import { PrismaService } from '../prisma/prisma.service'
+import { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
 
 type PrismaSocialAccount = Prisma.SocialAccountGetPayload<Record<string, never>>
 
@@ -41,12 +42,26 @@ export class PrismaSocialAccountRepository
     // Read Operations
     // ===========================================================================
 
-    async findPublic(): Promise<SocialAccount[]> {
+    async findPublic(): Promise<SocialAccountDTO[]> {
         const rows = await this.prisma.client.socialAccount.findMany({
-        where:   { isPublic: true },
-        orderBy: { name: 'asc' },
+            where:   { isPublic: true },
+            orderBy: { name: 'asc' },
+            select: {
+                id:       true,
+                name:     true,
+                url:      true,
+                imageUrl: true,
+                isPublic: true,
+            },
         })
-        return rows.map(PrismaSocialAccountRepository.toDomain)
+
+        return rows.map(row => ({
+            id:       row.id,
+            name:     row.name,
+            url:      row.url,
+            imageUrl: row.imageUrl,
+            isPublic: row.isPublic,
+        }))
     }
 
     async findAll(): Promise<SocialAccount[]> {

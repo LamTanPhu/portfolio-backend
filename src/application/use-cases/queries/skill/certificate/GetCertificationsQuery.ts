@@ -25,8 +25,8 @@ export class GetCertificationsQuery {
             id:        c.id,
             name:      c.name,
             url:       c.url,
-            startDate: c.startDate.toISOString(),
-            endDate:   c.endDate?.toISOString() ?? null,
+            startDate: c.startDate.toString(),
+            endDate:   c.endDate?.toString() ?? null,
         }))
     }
 }

@@ -9,6 +9,7 @@ import type {
 } from '../../../domain/repositories/certification/ICertificationWriteRepository'
 import { Certification } from '../../../domain/entities/Certification'
 import { NotFoundError } from '../../../domain/errors/NotFoundError'
+import { CertificationDTO } from '../../../application/dtos/CertificationDTO'
 
 type PrismaCertification = Prisma.CertificationGetPayload<Record<string, never>>
 
@@ -45,12 +46,26 @@ export class PrismaCertificationRepository
     // Read Operations
     // ===========================================================================
     // O(n) — filtered by isPublished index, ordered by startDate desc
-    async findPublished(): Promise<Certification[]> {
+    async findPublished(): Promise<CertificationDTO[]> {
         const rows = await this.prisma.client.certification.findMany({
-        where:   { isPublished: true },
-        orderBy: { startDate: 'desc' },
+            where:   { isPublished: true },
+            orderBy: { startDate: 'desc' },
+            select: {
+                id:        true,
+                name:      true,
+                url:       true,
+                startDate: true,
+                endDate:   true,
+            },
         })
-        return rows.map(PrismaCertificationRepository.toDomain)
+
+        return rows.map(row => ({
+            id:        row.id,
+            name:      row.name,
+            url:       row.url,
+            startDate: row.startDate.toISOString(),
+            endDate:   row.endDate?.toISOString() ?? null,
+        }))
     }
 
     // ===========================================================================

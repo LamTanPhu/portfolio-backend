@@ -27,8 +27,8 @@ export class GetEducationQuery {
             degreeName:    e.degreeName,
             instituteName: e.instituteName,
             instituteUrl:  e.instituteUrl,
-            startedAt:     e.startedAt.toISOString(),
-            endedAt:       e.endedAt?.toISOString() ?? null,
+            startedAt:     e.startedAt.toString(),
+            endedAt:       e.endedAt?.toString() ?? null,
             isCompleted:   e.isCompleted,
         }))
     }

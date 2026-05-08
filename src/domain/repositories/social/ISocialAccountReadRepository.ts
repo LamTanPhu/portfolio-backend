@@ -1,3 +1,4 @@
+import { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
 import type { SocialAccount } from '../../entities/SocialAccount'
 
 // =============================================================================
@@ -8,7 +9,7 @@ import type { SocialAccount } from '../../entities/SocialAccount'
 // findById used by write commands to verify existence.
 // =============================================================================
 export interface ISocialAccountReadRepository {
-    findPublic(): Promise<SocialAccount[]>
+    findPublic(): Promise<SocialAccountDTO[]>
     findAll(): Promise<SocialAccount[]>
     findById(id: number): Promise<SocialAccount | null>
 }

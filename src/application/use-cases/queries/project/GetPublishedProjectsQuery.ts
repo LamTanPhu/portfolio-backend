@@ -32,8 +32,8 @@ export class GetPublishedProjectsQuery {
       thumbnailUrl: p.thumbnailUrl,
       isPublished:  p.isPublished,
       isOpenSource: p.isOpenSource,
-      createdAt:    p.createdAt.toISOString(),
-      updatedAt:    p.updatedAt.toISOString(),
+      createdAt:    p.createdAt.toString(),
+      updatedAt:    p.updatedAt.toString(),
     }))
   }
 }

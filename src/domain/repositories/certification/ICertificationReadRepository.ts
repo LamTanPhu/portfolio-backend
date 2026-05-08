@@ -1,4 +1,4 @@
-import type { Certification } from '../../entities/Certification'
+import { CertificationDTO } from '../../../application/dtos/CertificationDTO'
 
 // =============================================================================
 // ICertificationReadRepository
@@ -7,5 +7,5 @@ import type { Certification } from '../../entities/Certification'
 // Ordered by startDate descending at repository level.
 // =============================================================================
 export interface ICertificationReadRepository {
-    findPublished(): Promise<Certification[]>
+    findPublished(): Promise<CertificationDTO[]>
 }

@@ -1,3 +1,4 @@
+import { EducationDTO } from '../../../application/dtos/EducationDTO'
 import type { Education } from '../../entities/Education'
 
 // =============================================================================
@@ -7,5 +8,5 @@ import type { Education } from '../../entities/Education'
 // Ordered by startedAt descending at repository level.
 // =============================================================================
 export interface IEducationReadRepository {
-    findAll(): Promise<Education[]>
+    findAll(): Promise<EducationDTO[]>
 }

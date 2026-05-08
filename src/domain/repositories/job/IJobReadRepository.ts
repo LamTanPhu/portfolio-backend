@@ -1,3 +1,4 @@
+import { JobDTO } from '../../../application/dtos/JobDTO'
 import type { Job } from '../../entities/Job'
 
 // =============================================================================
@@ -7,5 +8,5 @@ import type { Job } from '../../entities/Job'
 // Ordered by startedAt descending at repository level.
 // =============================================================================
 export interface IJobReadRepository {
-    findAll(): Promise<Job[]>
+    findAll(): Promise<JobDTO[]>
 }

@@ -9,6 +9,7 @@ import type {
     UpdateJobInput,
 } from '../../../domain/repositories/job/IJobWriteRepository'
 import { PrismaService } from '../prisma/prisma.service'
+import { JobDTO } from '../../../application/dtos/JobDTO'
 
 type PrismaJob = Prisma.JobGetPayload<Record<string, never>>
 
@@ -46,11 +47,27 @@ export class PrismaJobRepository
     // ===========================================================================
 
     // O(n) — ordered by startedAt desc, no filter
-    async findAll(): Promise<Job[]> {
+    async findAll(): Promise<JobDTO[]> {
         const rows = await this.prisma.client.job.findMany({
-        orderBy: { startedAt: 'desc' },
+            orderBy: { startedAt: 'desc' },
+            select: {
+                id:          true,
+                companyName: true,
+                role:        true,
+                startedAt:   true,
+                endedAt:     true,
+                isEnded:     true,
+            },
         })
-        return rows.map(PrismaJobRepository.toDomain)
+
+        return rows.map(row => ({
+            id:          row.id,
+            companyName: row.companyName,
+            role:        row.role,
+            startedAt:   row.startedAt.toISOString(),
+            endedAt:     row.endedAt?.toISOString() ?? null,
+            isEnded:     row.isEnded,
+        }))
     }
 
     // ===========================================================================

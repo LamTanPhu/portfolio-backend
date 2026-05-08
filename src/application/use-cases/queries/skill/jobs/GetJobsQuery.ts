@@ -1,8 +1,8 @@
-import { Injectable, Inject } from '@nestjs/common'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { Inject, Injectable } from '@nestjs/common'
 import type { IJobReadRepository } from '../../../../../domain/repositories/job/IJobReadRepository'
 import type { JobDTO } from '../../../../dtos/JobDTO'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
 
 // =============================================================================
 // GetJobsQuery
@@ -26,8 +26,8 @@ export class GetJobsQuery {
             id:          j.id,
             companyName: j.companyName,
             role:        j.role,
-            startedAt:   j.startedAt.toISOString(),
-            endedAt:     j.endedAt?.toISOString() ?? null,
+            startedAt:   j.startedAt.toString(),
+            endedAt:     j.endedAt?.toString() ?? null,
             isEnded:     j.isEnded,
         }))
     }

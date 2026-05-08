@@ -10,6 +10,7 @@ import type {
 import { Project } from '../../../domain/entities/Project'
 import { ProjectMapper } from '../mappers/ProjectMapper'
 import { NotFoundError } from '../../../domain/errors/NotFoundError'
+import { ProjectDTO } from '../../../application/dtos/ProjectDTO'
 
 type PrismaProject = Prisma.ProjectGetPayload<Record<string, never>>
 
@@ -71,22 +72,75 @@ export class PrismaProjectRepository
   // ===========================================================================
   // Read Operations
   // ===========================================================================
-
-  async findAll(): Promise<Project[]> {
+  async findAll(): Promise<ProjectDTO[]> {
     const rows = await this.prisma.client.project.findMany({
-      select:  LIST_SELECT,
+      select: {
+        id:           true,
+        name:         true,
+        slug:         true,
+        techStack:    true,
+        repoUrl:      true,
+        liveUrl:      true,
+        thumbnailUrl: true,
+        isPublished:  true,
+        isOpenSource: true,
+        createdAt:    true,
+        updatedAt:    true,
+        description:  true,        // keep for full list if needed
+      },
       orderBy: { createdAt: 'desc' },
     })
-    return rows.map(PrismaProjectRepository.toDomainSummary)
+
+    return rows.map(row => ({
+      id:           row.id,
+      name:         row.name,
+      description:  row.description || '',
+      slug:         row.slug,
+      techStack:    row.techStack as string[],
+      repoUrl:      row.repoUrl,
+      liveUrl:      row.liveUrl,
+      thumbnailUrl: row.thumbnailUrl,
+      isPublished:  row.isPublished,
+      isOpenSource: row.isOpenSource,
+      createdAt:    row.createdAt.toISOString(),
+      updatedAt:    row.updatedAt.toISOString(),
+    }))
   }
 
-  async findPublished(): Promise<Project[]> {
+  async findPublished(): Promise<ProjectDTO[]> {
     const rows = await this.prisma.client.project.findMany({
-      where:   { isPublished: true },
-      select:  LIST_SELECT,
+      where: { isPublished: true },
+      select: {
+        id:           true,
+        name:         true,
+        slug:         true,
+        techStack:    true,
+        repoUrl:      true,
+        liveUrl:      true,
+        thumbnailUrl: true,
+        isPublished:  true,
+        isOpenSource: true,
+        createdAt:    true,
+        updatedAt:    true,
+        description:  true,
+      },
       orderBy: { createdAt: 'desc' },
     })
-    return rows.map(PrismaProjectRepository.toDomainSummary)
+
+    return rows.map(row => ({
+      id:           row.id,
+      name:         row.name,
+      description:  row.description || '',
+      slug:         row.slug,
+      techStack:    row.techStack as string[],
+      repoUrl:      row.repoUrl,
+      liveUrl:      row.liveUrl,
+      thumbnailUrl: row.thumbnailUrl,
+      isPublished:  row.isPublished,
+      isOpenSource: row.isOpenSource,
+      createdAt:    row.createdAt.toISOString(),
+      updatedAt:    row.updatedAt.toISOString(),
+    }))
   }
 
   async findById(id: number): Promise<Project | null> {
