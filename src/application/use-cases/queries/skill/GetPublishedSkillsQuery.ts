@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import type { ISkillReadRepository } from '../../../../domain/repositories/skill/ISkillReadRepository'
 import type { SkillDTO } from '../../../dtos/SkillDTO'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
 
 // =============================================================================
 // GetPublishedSkillsQuery
@@ -14,7 +16,9 @@ export class GetPublishedSkillsQuery {
         @Inject('ISkillReadRepository')
         private readonly repo: ISkillReadRepository,
     ) {}
-
+    
+    @CacheKey('public_skills')
+    @CacheTTL(300_000)
     async execute(): Promise<SkillDTO[]> {
         const skills = await this.repo.findPublished()
         return skills.map((s) => ({

@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
 
 // =============================================================================
 // GetPublishedProjectsQuery
@@ -15,6 +17,8 @@ export class GetPublishedProjectsQuery {
     private readonly repo: IProjectReadRepository,
   ) {}
 
+  @CacheKey('public_projects')
+  @CacheTTL(600_000)
   async execute(): Promise<ProjectDTO[]> {
     const projects = await this.repo.findPublished()
     return projects.map((p) => ({

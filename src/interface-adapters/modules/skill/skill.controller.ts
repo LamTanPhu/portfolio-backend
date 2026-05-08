@@ -28,6 +28,7 @@ import type { SkillCategory } from '../../../domain/entities/Skill'
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { CreateSkillDto, UpdateSkillDto } from './skill.dto'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // SkillController
@@ -46,6 +47,7 @@ export class SkillController {
     ) {}
 
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all public skills' })
     @ApiResponse({ status: 200, description: 'List of public skills' })
     async findAll(): Promise<SkillDTO[]> {

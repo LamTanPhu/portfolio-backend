@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import type { IJobReadRepository } from '../../../../../domain/repositories/job/IJobReadRepository'
 import type { JobDTO } from '../../../../dtos/JobDTO'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
 
 // =============================================================================
 // GetJobsQuery
@@ -16,6 +18,8 @@ export class GetJobsQuery {
         private readonly repo: IJobReadRepository,
     ) {}
 
+    @CacheKey('project_')
+    @CacheTTL(300_000)
     async execute(): Promise<JobDTO[]> {
         const jobs = await this.repo.findAll()
         return jobs.map((j) => ({

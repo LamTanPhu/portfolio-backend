@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
 import type { BlogDTO } from '../../../dtos/BlogDTO'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
 
 // =============================================================================
 // GetPublishedBlogsQuery
@@ -15,6 +17,8 @@ export class GetPublishedBlogsQuery {
     private readonly repo: IBlogReadRepository,
   ) {}
 
+  @CacheKey('public_blogs')
+  @CacheTTL(300_000)
   async execute(): Promise<BlogDTO[]> {
     const blogs = await this.repo.findPublished()
     return blogs.map((b) => ({

@@ -27,6 +27,7 @@ import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/que
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { CreateSocialAccountDto, UpdateSocialAccountDto } from './social.dto'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // SocialController
@@ -45,6 +46,7 @@ export class SocialController {
     ) {}
 
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all public social accounts' })
     @ApiResponse({ status: 200, description: 'List of public social accounts' })
     async findAll(): Promise<SocialAccountDTO[]> {

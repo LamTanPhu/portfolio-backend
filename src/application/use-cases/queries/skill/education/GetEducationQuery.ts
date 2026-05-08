@@ -1,4 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { Inject, Injectable } from '@nestjs/common'
 import type { IEducationReadRepository } from '../../../../../domain/repositories/education/IEducationReadRepository'
 import type { EducationDTO } from '../../../../dtos/EducationDTO'
 
@@ -16,6 +18,8 @@ export class GetEducationQuery {
         private readonly repo: IEducationReadRepository,
     ) {}
 
+    @CacheKey('public_education')
+    @CacheTTL(450_000)
     async execute(): Promise<EducationDTO[]> {
         const records = await this.repo.findAll()
         return records.map((e) => ({

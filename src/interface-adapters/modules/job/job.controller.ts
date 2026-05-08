@@ -27,6 +27,7 @@ import { UpdateJobCommand } from '../../../application/use-cases/commands/job/Up
 import { DeleteJobCommand } from '../../../application/use-cases/commands/job/DeleteJobCommand'
 import type { JobDTO } from '../../../application/dtos/JobDTO'
 import { CreateJobDto, UpdateJobDto } from './job.dto'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // JobController
@@ -49,6 +50,7 @@ export class JobController {
     // GET /api/jobs
     // ===========================================================================
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all work experience records' })
     @ApiResponse({ status: 200, description: 'List of work experience records' })
     async findAll(): Promise<JobDTO[]> {

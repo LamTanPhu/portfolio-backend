@@ -2,6 +2,8 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
 
 // =============================================================================
 // GetProjectBySlugQuery
@@ -16,6 +18,8 @@ export class GetProjectBySlugQuery {
     private readonly repo: IProjectReadRepository,
   ) {}
 
+  @CacheKey('project_')
+  @CacheTTL(300_000)
   async execute(slug: string): Promise<ProjectDTO> {
     const project = await this.repo.findBySlug(slug)
     if (!project) throw new NotFoundError(`Project not found: ${slug}`)

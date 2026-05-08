@@ -1,4 +1,6 @@
-import { Injectable, Inject } from '@nestjs/common'
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+import { Inject, Injectable } from '@nestjs/common'
 import type { ICertificationReadRepository } from '../../../../../domain/repositories/certification/ICertificationReadRepository'
 import type { CertificationDTO } from '../../../../dtos/CertificationDTO'
 
@@ -15,6 +17,8 @@ export class GetCertificationsQuery {
         private readonly repo: ICertificationReadRepository,
     ) {}
 
+    @CacheKey('public_certifications')
+    @CacheTTL(600_000)
     async execute(): Promise<CertificationDTO[]> {
         const certs = await this.repo.findPublished()
         return certs.map((c) => ({

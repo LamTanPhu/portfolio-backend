@@ -1,3 +1,5 @@
+import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
 import { Inject, Injectable } from '@nestjs/common'
 import type { ISocialAccountReadRepository } from '../../../../domain/repositories/social/ISocialAccountReadRepository'
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
@@ -15,6 +17,8 @@ export class GetPublicSocialAccountsQuery {
         private readonly repo: ISocialAccountReadRepository,
     ) {}
 
+    @CacheKey('public_social_accounts')
+    @CacheTTL(600_000)
     async execute(): Promise<SocialAccountDTO[]> {
         const accounts = await this.repo.findPublic()
         return accounts.map((a) => ({

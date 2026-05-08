@@ -30,6 +30,7 @@ import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/
 import type { BlogDTO } from '../../../application/dtos/BlogDTO'
 import { BlogPresenter } from './blog.presenter'
 import { CreateBlogDto, UpdateBlogDto } from './blog.dto'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // BlogController
@@ -54,6 +55,7 @@ export class BlogController {
     // GET /api/blogs — public
     // ===========================================================================
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all published blog posts' })
     @ApiResponse({ status: 200, description: 'List of published blog posts' })
     async findAll(): Promise<BlogDTO[]> {
@@ -79,6 +81,7 @@ export class BlogController {
     // GET /api/blogs/:slug — public
     // ===========================================================================
     @Get(':slug')
+    @Throttle({ default: { limit: 100, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get blog post by slug' })
     @ApiParam({ name: 'slug', example: 'building-clean-architecture-nestjs' })
     @ApiResponse({ status: 200, description: 'Blog post found' })

@@ -1,31 +1,32 @@
 import {
-    Controller,
-    Get,
-    Post,
-    Patch,
-    Delete,
     Body,
-    Param,
-    ParseIntPipe,
-    Req,
-    UseGuards,
+    Controller,
+    Delete,
+    Get,
     HttpCode,
     HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common'
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
     ApiBearerAuth,
+    ApiOperation,
     ApiParam,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger'
-import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
-import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
-import { GetCertificationsQuery } from '../../../application/use-cases/queries/skill/certificate/GetCertificationsQuery'
-import { CreateCertificationCommand } from '../../../application/use-cases/commands/certification/CreateCertificationCommand'
-import { UpdateCertificationCommand } from '../../../application/use-cases/commands/certification/UpdateCertificationCommand'
-import { DeleteCertificationCommand } from '../../../application/use-cases/commands/certification/DeleteCertificationCommand'
+import { Throttle } from '@nestjs/throttler'
 import type { CertificationDTO } from '../../../application/dtos/CertificationDTO'
+import { CreateCertificationCommand } from '../../../application/use-cases/commands/certification/CreateCertificationCommand'
+import { DeleteCertificationCommand } from '../../../application/use-cases/commands/certification/DeleteCertificationCommand'
+import { UpdateCertificationCommand } from '../../../application/use-cases/commands/certification/UpdateCertificationCommand'
+import { GetCertificationsQuery } from '../../../application/use-cases/queries/skill/certificate/GetCertificationsQuery'
+import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
+import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { CreateCertificationDto, UpdateCertificationDto } from './certification.dto'
 
 // =============================================================================
@@ -49,6 +50,7 @@ export class CertificationController {
     // GET /api/certifications
     // ===========================================================================
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all published certifications' })
     @ApiResponse({ status: 200, description: 'List of published certifications' })
     async findAll(): Promise<CertificationDTO[]> {

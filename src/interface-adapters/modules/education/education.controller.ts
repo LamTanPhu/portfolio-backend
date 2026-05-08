@@ -27,6 +27,7 @@ import { GetEducationQuery } from '../../../application/use-cases/queries/skill/
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { CreateEducationDto, UpdateEducationDto } from './education.dto'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // EducationController
@@ -49,6 +50,7 @@ export class EducationController {
     // GET /api/education
     // ===========================================================================
     @Get()
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all education records' })
     @ApiResponse({ status: 200, description: 'List of education records' })
     async findAll(): Promise<EducationDTO[]> {

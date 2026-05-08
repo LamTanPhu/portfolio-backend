@@ -1,27 +1,28 @@
 import {
+    Body,
     Controller,
     Get,
-    Post,
-    Body,
-    Req,
     Param,
     ParseIntPipe,
+    Post,
+    Req,
     UseGuards,
 } from '@nestjs/common'
-import type { Request } from 'express'
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
     ApiBearerAuth,
+    ApiOperation,
     ApiParam,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger'
-import { GetPageViewsQuery } from '../../../application/use-cases/queries/analytics/GetPageViewsQuery'
-import { TrackPageViewCommand } from '../../../application/use-cases/commands/analytics/TrackPageViewCommand'
-import { TrackResumeDownloadCommand } from '../../../application/use-cases/commands/analytics/TrackResumeDownloadCommand'
-import { TrackProjectViewCommand } from '../../../application/use-cases/commands/analytics/TrackProjectViewCommand'
-import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import { Throttle } from '@nestjs/throttler'
+import type { Request } from 'express'
 import type { PageViewDTO } from '../../../application/dtos/PageViewDTO'
+import { TrackPageViewCommand } from '../../../application/use-cases/commands/analytics/TrackPageViewCommand'
+import { TrackProjectViewCommand } from '../../../application/use-cases/commands/analytics/TrackProjectViewCommand'
+import { TrackResumeDownloadCommand } from '../../../application/use-cases/commands/analytics/TrackResumeDownloadCommand'
+import { GetPageViewsQuery } from '../../../application/use-cases/queries/analytics/GetPageViewsQuery'
+import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 
 // =============================================================================
 // AnalyticsController
@@ -44,6 +45,7 @@ export class AnalyticsController {
     // Called by frontend on every page navigation — public, no auth.
     // ===========================================================================
     @Post('page-view')
+    @Throttle({ default: { limit: 50, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a page view — called by frontend on navigation' })
     @ApiResponse({ status: 201, description: 'Page view recorded' })
     async trackPage(
@@ -59,6 +61,7 @@ export class AnalyticsController {
     // Daily bucketed — O(1) upsert, never unbounded row growth.
     // ===========================================================================
     @Post('project-view/:id')
+    @Throttle({ default: { limit: 50, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a project detail page view' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 201, description: 'Project view recorded' })
@@ -74,6 +77,7 @@ export class AnalyticsController {
     // Called by frontend when visitor downloads resume PDF — public, no auth.
     // ===========================================================================
     @Post('resume-download')
+    @Throttle({ default: { limit: 50, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a resume PDF download' })
     @ApiResponse({ status: 201, description: 'Resume download recorded' })
     async trackResume(

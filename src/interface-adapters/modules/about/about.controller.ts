@@ -10,6 +10,7 @@ import type { EducationDTO } from '../../../application/dtos/EducationDTO'
 import type { JobDTO } from '../../../application/dtos/JobDTO'
 import type { CertificationDTO } from '../../../application/dtos/CertificationDTO'
 import type { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
+import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // AboutController
@@ -30,6 +31,7 @@ export class AboutController {
     ) {}
 
     @Get('skills')
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all public skills grouped by category' })
     @ApiResponse({ status: 200, description: 'List of public skills' })
     async skills(): Promise<SkillDTO[]> {

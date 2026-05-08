@@ -6,27 +6,46 @@ import { PrismaRevokedTokenRepository } from '../../../infrastructure/database/r
 
 // =============================================================================
 // AuthModule
-// Handles login, logout, token refresh.
-// Exports AuthService — JwtAuthGuard in feature modules depends on it.
-// JwtModule imported explicitly — useFactory needs JwtService injected.
+// Central authentication module responsible for token issuance, validation,
+// refresh, and revocation.
+//
+// Design Decisions:
+// - JwtModule.registerAsync() is used to safely read JWT_SECRET from .env at runtime.
+// - Factory pattern for AuthService maintains clean dependency injection.
+// - Repository abstraction ('ITokenRepository') allows future swapping of storage.
 // =============================================================================
 @Module({
-    imports: [JwtModule],
+    imports: [
+        // JwtModule must be configured with secret + sign options
+        JwtModule.registerAsync({
+            useFactory: () => ({
+                secret: process.env.JWT_SECRET,
+                signOptions: {
+                    expiresIn: '15m',           // Matches AuthService.ACCESS_TOKEN_EXPIRY
+                },
+            }),
+        }),
+    ],
     controllers: [AuthController],
     providers: [
         PrismaRevokedTokenRepository,
+
+        // Token Repository Abstraction
         {
-        provide:    'ITokenRepository',
-        useExisting: PrismaRevokedTokenRepository,
+            provide: 'ITokenRepository',
+            useExisting: PrismaRevokedTokenRepository,
         },
+
+        // AuthService Factory
         {
-        provide:    AuthService,
-        useFactory: (jwt: JwtService, tokenRepo: PrismaRevokedTokenRepository) =>
-            new AuthService(jwt, tokenRepo),
-        inject: [JwtService, PrismaRevokedTokenRepository],
+            provide: AuthService,
+            useFactory: (
+                jwtService: JwtService,
+                tokenRepository: PrismaRevokedTokenRepository,
+            ) => new AuthService(jwtService, tokenRepository),
+            inject: [JwtService, PrismaRevokedTokenRepository],
         },
     ],
-    // AuthService exported — available in any module that imports AuthModule
     exports: [AuthService],
 })
 export class AuthModule {}

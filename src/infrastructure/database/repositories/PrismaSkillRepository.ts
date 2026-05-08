@@ -10,6 +10,7 @@ import type {
     UpdateSkillInput,
 } from '../../../domain/repositories/skill/ISkillWriteRepository'
 import { PrismaService } from '../prisma/prisma.service'
+import { SkillDTO } from '../../../application/dtos/SkillDTO'
 
 type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
 
@@ -42,19 +43,43 @@ export class PrismaSkillRepository
     // Read Operations
     // ===========================================================================
 
-    async findPublished(): Promise<Skill[]> {
+    async findPublished(): Promise<SkillDTO[]> {
         const rows = await this.prisma.client.skill.findMany({
-        where:   { isPublic: true },
-        orderBy: { category: 'asc' },
+            where: { isPublic: true },
+            orderBy: { category: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                category: true,
+            },
         })
-        return rows.map(PrismaSkillRepository.toDomain)
+
+        return rows.map(row => ({
+            id:       row.id,
+            name:     row.name,
+            imageUrl: row.imageUrl,
+            category: row.category,
+        }))
     }
 
-    async findAll(): Promise<Skill[]> {
+    async findAll(): Promise<SkillDTO[]> {        // Used by admin
         const rows = await this.prisma.client.skill.findMany({
-        orderBy: { category: 'asc' },
+            orderBy: { category: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                category: true,
+            },
         })
-        return rows.map(PrismaSkillRepository.toDomain)
+
+        return rows.map(row => ({
+            id:       row.id,
+            name:     row.name,
+            imageUrl: row.imageUrl,
+            category: row.category,
+        }))
     }
 
     async findById(id: number): Promise<Skill | null> {
