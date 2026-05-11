@@ -1,3 +1,4 @@
+import { BlogDTO } from '../../../application/dtos/BlogDTO'
 import type { Blog } from '../../entities/Blog'
 
 // =============================================================================
@@ -9,8 +10,8 @@ import type { Blog } from '../../entities/Blog'
 // findById and findBySlug return full blog including content.
 // =============================================================================
 export interface IBlogReadRepository {
-  findAll(): Promise<Blog[]>
-  findPublished(): Promise<Blog[]>
+  findAll(): Promise<BlogDTO[]>
+  findPublished(): Promise<BlogDTO[]>
   findById(id: number): Promise<Blog | null>
   findBySlug(slug: string): Promise<Blog | null>
 }

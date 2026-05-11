@@ -1,11 +1,33 @@
 import { Module } from '@nestjs/common'
+
+// =============================================================================
+// Commands
+// =============================================================================
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
 import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
+
+// =============================================================================
+// Queries
+// =============================================================================
 import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
 import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
 import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
+
+// =============================================================================
+// Domain Repository Ports
+// =============================================================================
+import { IBlogReadRepository } from '../../../domain/repositories/blog/IBlogReadRepository'
+import { IBlogWriteRepository } from '../../../domain/repositories/blog/IBlogWriteRepository'
+
+// =============================================================================
+// Infrastructure
+// =============================================================================
 import { PrismaBlogRepository } from '../../../infrastructure/database/repositories/PrismaBlogRepository'
+
+// =============================================================================
+// Interface Adapters
+// =============================================================================
 import { AuthModule } from '../auth/auth.module'
 import { BlogController } from './blog.controller'
 
@@ -13,53 +35,36 @@ import { BlogController } from './blog.controller'
 // BlogModule
 // AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
 // PrismaBlogRepository implements both read and write interfaces.
+// Cache infrastructure is globally provided via AppModule.
 // =============================================================================
 @Module({
     imports: [AuthModule],
-    controllers: [BlogController],
-    providers: [
-        // ─── Repositories ───────────────────────────────────────────────────────
-        PrismaBlogRepository,
-        { provide: 'IBlogReadRepository',  useExisting: PrismaBlogRepository },
-        { provide: 'IBlogWriteRepository', useExisting: PrismaBlogRepository },
 
-        // ─── Use cases ──────────────────────────────────────────────────────────
+    controllers: [BlogController],
+
+    providers: [
+        // ─── Repository Implementation ───────────────────────────────────────
+        PrismaBlogRepository,
+
+        // ─── Repository Ports ────────────────────────────────────────────────
         {
-        provide:    GetPublishedBlogsQuery,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new GetPublishedBlogsQuery(repo),
-        inject: [PrismaBlogRepository],
+            provide: 'IBlogReadRepository',
+            useExisting: PrismaBlogRepository,
         },
         {
-        provide:    GetAllBlogsQuery,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new GetAllBlogsQuery(repo),
-        inject: [PrismaBlogRepository],
+            provide: 'IBlogWriteRepository',
+            useExisting: PrismaBlogRepository,
         },
-        {
-        provide:    GetBlogBySlugQuery,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new GetBlogBySlugQuery(repo),
-        inject: [PrismaBlogRepository],
-        },
-        {
-        provide:    CreateBlogCommand,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new CreateBlogCommand(repo),
-        inject: [PrismaBlogRepository],
-        },
-        {
-        provide:    UpdateBlogCommand,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new UpdateBlogCommand(repo),
-        inject: [PrismaBlogRepository],
-        },
-        {
-        provide:    DeleteBlogCommand,
-        useFactory: (repo: PrismaBlogRepository) =>
-            new DeleteBlogCommand(repo, repo),
-        inject: [PrismaBlogRepository],
-        },
+
+        // ─── Queries ─────────────────────────────────────────────────────────
+        GetPublishedBlogsQuery,
+        GetAllBlogsQuery,
+        GetBlogBySlugQuery,
+
+        // ─── Commands ────────────────────────────────────────────────────────
+        CreateBlogCommand,
+        UpdateBlogCommand,
+        DeleteBlogCommand,
     ],
 })
 export class BlogModule {}

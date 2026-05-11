@@ -72,7 +72,7 @@ export class PrismaProjectRepository
   // ===========================================================================
   // Read Operations
   // ===========================================================================
-  async findAll(): Promise<ProjectDTO[]> {
+async findAll(): Promise<ProjectDTO[]> {
     const rows = await this.prisma.client.project.findMany({
       select: {
         id:           true,
@@ -86,7 +86,7 @@ export class PrismaProjectRepository
         isOpenSource: true,
         createdAt:    true,
         updatedAt:    true,
-        description:  true,        // keep for full list if needed
+        description:  true,
       },
       orderBy: { createdAt: 'desc' },
     })
@@ -142,7 +142,7 @@ export class PrismaProjectRepository
       updatedAt:    row.updatedAt.toISOString(),
     }))
   }
-
+  
   async findById(id: number): Promise<Project | null> {
     const row = await this.prisma.client.project.findUnique({ where: { id } })
     return row ? PrismaProjectRepository.toDomain(row) : null

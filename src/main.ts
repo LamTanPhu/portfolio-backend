@@ -4,6 +4,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import helmet from 'helmet'
 import { json } from 'express'
 import cookieParser from 'cookie-parser'
+import compression from 'compression'          // ← Added for response compression
 import { AppModule } from './app.module'
 
 // =============================================================================
@@ -20,6 +21,14 @@ async function bootstrap(): Promise<void> {
             ? ['log', 'debug', 'error', 'warn', 'verbose']
             : ['error', 'warn'],
     })
+
+    // ─── Compression ───────────────────────────────────────────────────────
+    // gzip compression significantly reduces JSON response size (often 60-80%).
+    // Especially beneficial for endpoints returning projects, blogs, and skills.
+    app.use(compression({
+        threshold: 1024,        // Only compress responses larger than 1KB
+        level: 6,               // Balanced compression level
+    }))
 
     // ─── Security Headers ──────────────────────────────────────────────────────
     // Helmet sets 11 HTTP security headers in one call.
@@ -102,6 +111,7 @@ async function bootstrap(): Promise<void> {
 
     // ─── Process Safety ───────────────────────────────────────────────────────
     // Catch unhandled async errors — prevents silent crashes.
+    // e.g. Spotify API down, external service timeout.
     process.on('unhandledRejection', (reason: unknown) => {
         logger.error(`[UnhandledRejection] ${String(reason)}`)
     })

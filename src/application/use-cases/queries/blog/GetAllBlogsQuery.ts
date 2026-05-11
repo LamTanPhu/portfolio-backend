@@ -1,11 +1,11 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Injectable, Inject } from '@nestjs/common'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
 import type { BlogDTO } from '../../../dtos/BlogDTO'
 
 // =============================================================================
 // GetAllBlogsQuery
-// Returns all blogs including drafts — admin only.
-// content excluded — list views never need full post body.
+// Admin only — returns all blogs (including drafts).
+// No mapping needed after repository optimization.
 // =============================================================================
 @Injectable()
 export class GetAllBlogsQuery {
@@ -15,17 +15,6 @@ export class GetAllBlogsQuery {
     ) {}
 
     async execute(): Promise<BlogDTO[]> {
-        const blogs = await this.repo.findAll()
-        return blogs.map((b) => ({
-        id:          b.id,
-        title:       b.title,
-        slug:        b.slug,
-        content:     b.content,
-        excerpt:     b.excerpt,
-        tags:        b.tags.map((t) => t.name),
-        isPublished: b.isPublished,
-        publishedAt: b.publishedAt?.toISOString() ?? null,
-        createdAt:   b.createdAt.toISOString(),
-        }))
+        return this.repo.findAll()
     }
 }

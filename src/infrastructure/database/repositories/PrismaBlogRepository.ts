@@ -10,6 +10,7 @@ import type {
 import { Blog } from '../../../domain/entities/Blog'
 import { BlogTag } from '../../../domain/entities/BlogTag'
 import { NotFoundError } from '../../../domain/errors/NotFoundError'
+import { BlogDTO } from '../../../application/dtos/BlogDTO'
 
 // =============================================================================
 // Prisma Payload Types
@@ -103,22 +104,67 @@ export class PrismaBlogRepository
   // ===========================================================================
 
     // Returns summaries — content column never fetched, tags always included
-    async findAll(): Promise<Blog[]> {
+    async findPublished(): Promise<BlogDTO[]> {
         const rows = await this.prisma.client.blog.findMany({
-            select:  LIST_SELECT,
-            orderBy: { createdAt: 'desc' },
-        })
-        return rows.map(PrismaBlogRepository.toDomainSummary)
-    }
-
-    // Returns published summaries only — ordered by publish date descending
-    async findPublished(): Promise<Blog[]> {
-        const rows = await this.prisma.client.blog.findMany({
-            where:   { isPublished: true },
-            select:  LIST_SELECT,
+            where: { isPublished: true },
+            select: {
+                id:          true,
+                title:       true,
+                slug:        true,
+                excerpt:     true,
+                isPublished: true,
+                publishedAt: true,
+                createdAt:   true,
+                updatedAt:   true,
+                tags: {
+                    select: { name: true },
+                },
+            },
             orderBy: { publishedAt: 'desc' },
         })
-        return rows.map(PrismaBlogRepository.toDomainSummary)
+
+        return rows.map(row => ({
+            id:          row.id,
+            title:       row.title,
+            slug:        row.slug,
+            content:     '',
+            excerpt:     row.excerpt,
+            tags:        row.tags.map(t => t.name),
+            isPublished: row.isPublished,
+            publishedAt: row.publishedAt?.toISOString() ?? null,
+            createdAt:   row.createdAt.toISOString(),
+        }))
+    }
+
+    async findAll(): Promise<BlogDTO[]> {
+        const rows = await this.prisma.client.blog.findMany({
+            select: {
+                id:          true,
+                title:       true,
+                slug:        true,
+                excerpt:     true,
+                isPublished: true,
+                publishedAt: true,
+                createdAt:   true,
+                updatedAt:   true,
+                tags: {
+                    select: { name: true },
+                },
+            },
+            orderBy: { createdAt: 'desc' },
+        })
+
+        return rows.map(row => ({
+            id:          row.id,
+            title:       row.title,
+            slug:        row.slug,
+            content:     '',
+            excerpt:     row.excerpt,
+            tags:        row.tags.map(t => t.name),
+            isPublished: row.isPublished,
+            publishedAt: row.publishedAt?.toISOString() ?? null,
+            createdAt:   row.createdAt.toISOString(),
+        }))
     }
 
     // Returns full blog — content required for single post rendering
