@@ -1,58 +1,54 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { IBlogWriteRepository } from '../../../../domain/repositories/blog/IBlogWriteRepository'
-import { Slug } from '../../../../domain/value-objects/Slug'
-import type { BlogDTO } from '../../../dtos/BlogDTO'
-import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+/**
+ * @fileoverview CreateBlogCommand
+ * 
+ * Creates a new blog post and handles cache invalidation.
+ */
 
-// =============================================================================
-// CreateBlogCommand
-// Creates a new blog post, returns DTO, and invalidates public blog cache.
-// =============================================================================
+import { Injectable, Inject } from '@nestjs/common'
+import { Slug } from '../../../../domain/value-objects/Slug'
+import type { IBlogWriteRepository } from '../../../../domain/repositories/blog/IBlogWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { BlogMapper } from '../../../mappers/BlogMapper'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
+
 @Injectable()
 export class CreateBlogCommand {
     constructor(
         @Inject('IBlogWriteRepository')
         private readonly repo: IBlogWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)   // ← Use constant
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 
     async execute(input: {
-        title:       string
-        content:     string
-        excerpt:     string | null
-        tags:        string[]
+        title: string
+        content: string
+        excerpt?: string | null
+        tags?: string[]
         isPublished: boolean
-        userId:      number
-    }): Promise<BlogDTO> {
+        userId: number
+    }): Promise<BlogDetailDTO> {
         const slug = Slug.from(input.title)
-        const publishedAt = input.isPublished ? new Date() : null
 
         const blog = await this.repo.create({
-            title:       input.title,
-            slug:        slug.toString(),
-            content:     input.content,
-            excerpt:     input.excerpt,
-            tags:        input.tags,
-            isPublished: input.isPublished,
-            publishedAt,
-            userId:      input.userId,
+        title: input.title,
+        slug: slug.toString(),
+        content: input.content,
+        excerpt: input.excerpt ?? null,
+        tags: input.tags ?? [],
+        isPublished: input.isPublished,
+        publishedAt: input.isPublished ? new Date() : null,
+        userId: input.userId,
         })
 
-        // Invalidate cache so frontend immediately sees the new blog
+        // Cache invalidation
         await this.cacheService.invalidatePublicBlogs()
-
-        return {
-            id:          blog.id,
-            title:       blog.title,
-            slug:        blog.slug,
-            content:     blog.content,
-            excerpt:     blog.excerpt,
-            tags:        blog.tags.map((t) => t.name),
-            isPublished: blog.isPublished,
-            publishedAt: blog.publishedAt?.toISOString() ?? null,
-            createdAt:   blog.createdAt.toISOString(),
+        if (input.isPublished) {
+        await this.cacheService.invalidateBlogBySlug(slug.toString())
         }
+
+        return BlogMapper.toDetailDTO(blog)
     }
 }

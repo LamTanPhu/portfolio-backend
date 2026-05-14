@@ -1,67 +1,58 @@
+/**
+ * @fileoverview BlogModule
+ * 
+ * Organizes all Blog-related concerns following Clean Architecture.
+ * - Controllers
+ * - Application Use Cases (Commands & Queries)
+ * - Infrastructure Implementations
+ */
+
 import { Module } from '@nestjs/common'
-
-// =============================================================================
-// Commands
-// =============================================================================
-import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
-import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
-import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
-
-// =============================================================================
-// Queries
-// =============================================================================
-import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
-import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
-import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
-
-// =============================================================================
-// Domain Repository Ports
-// =============================================================================
-import { IBlogReadRepository } from '../../../domain/repositories/blog/IBlogReadRepository'
-import { IBlogWriteRepository } from '../../../domain/repositories/blog/IBlogWriteRepository'
-
-// =============================================================================
-// Infrastructure
-// =============================================================================
-import { PrismaBlogRepository } from '../../../infrastructure/database/repositories/PrismaBlogRepository'
-
-// =============================================================================
-// Interface Adapters
-// =============================================================================
 import { AuthModule } from '../auth/auth.module'
+
 import { BlogController } from './blog.controller'
 
-// =============================================================================
-// BlogModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaBlogRepository implements both read and write interfaces.
-// Cache infrastructure is globally provided via AppModule.
-// =============================================================================
+// Use Cases
+import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
+import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
+import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
+import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
+import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
+import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
+
+// Repositories
+import { PrismaBlogReadRepository } from '../../../infrastructure/database/repositories/blog/PrismaBlogReadRepository'
+import { PrismaBlogWriteRepository } from '../../../infrastructure/database/repositories/blog/PrismaBlogWriteRepository'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+
+// Cache
+
 @Module({
-    imports: [AuthModule],
+    imports: [
+        AuthModule,
+        CacheInfrastructureModule,   // ← Important: brings cache services
+    ],
 
     controllers: [BlogController],
 
     providers: [
-        // ─── Repository Implementation ───────────────────────────────────────
-        PrismaBlogRepository,
+        PrismaBlogReadRepository,
+        PrismaBlogWriteRepository,
 
-        // ─── Repository Ports ────────────────────────────────────────────────
+        // Read / Write Ports
         {
             provide: 'IBlogReadRepository',
-            useExisting: PrismaBlogRepository,
+            useExisting: PrismaBlogReadRepository,
         },
         {
             provide: 'IBlogWriteRepository',
-            useExisting: PrismaBlogRepository,
+            useExisting: PrismaBlogWriteRepository,
         },
 
-        // ─── Queries ─────────────────────────────────────────────────────────
+        // Use Cases
         GetPublishedBlogsQuery,
         GetAllBlogsQuery,
         GetBlogBySlugQuery,
-
-        // ─── Commands ────────────────────────────────────────────────────────
         CreateBlogCommand,
         UpdateBlogCommand,
         DeleteBlogCommand,

@@ -1,12 +1,16 @@
+/**
+ * @fileoverview GetAllBlogsQuery
+ * 
+ * Admin-only query that returns all blog posts (including drafts).
+ * No caching is applied because admin views require absolute freshness.
+ */
+
 import { Injectable, Inject } from '@nestjs/common'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
-import type { BlogDTO } from '../../../dtos/BlogDTO'
 
-// =============================================================================
-// GetAllBlogsQuery
-// Admin only — returns all blogs (including drafts).
-// No mapping needed after repository optimization.
-// =============================================================================
+import { BlogMapper } from '../../../mappers/BlogMapper'
+import { BlogSummaryDTO } from '../../../dtos/blog/BlogSummaryDTO'
+
 @Injectable()
 export class GetAllBlogsQuery {
     constructor(
@@ -14,7 +18,8 @@ export class GetAllBlogsQuery {
         private readonly repo: IBlogReadRepository,
     ) {}
 
-    async execute(): Promise<BlogDTO[]> {
-        return this.repo.findAll()
+    async execute(): Promise<BlogSummaryDTO[]> {
+        const summaries = await this.repo.findAll()
+        return BlogMapper.summaryListToDTO(summaries)
     }
 }

@@ -1,29 +1,26 @@
+/**
+ * @fileoverview UpdateBlogCommand
+ * 
+ * Updates an existing blog post and performs comprehensive cache invalidation.
+ * Handles slug changes gracefully.
+ */
+
 import { Injectable, Inject } from '@nestjs/common'
-
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
-
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
-
 import type {
     IBlogWriteRepository,
     UpdateBlogInput,
 } from '../../../../domain/repositories/blog/IBlogWriteRepository'
 
-import type { BlogDTO } from '../../../dtos/BlogDTO'
-
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { BlogMapper } from '../../../mappers/BlogMapper'
+import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
 
-interface Input extends UpdateBlogInput {
+interface UpdateInput extends UpdateBlogInput {
     id: number
 }
 
-// =============================================================================
-// UpdateBlogCommand
-// Updates blog and invalidates:
-// - public list cache
-// - old slug cache
-// - new slug cache (if slug changed)
-// =============================================================================
 @Injectable()
 export class UpdateBlogCommand {
     constructor(
@@ -37,61 +34,30 @@ export class UpdateBlogCommand {
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<BlogDTO> {
+    async execute(input: UpdateInput): Promise<BlogDetailDTO> {
         const { id, ...data } = input
 
-        // =========================================================================
-        // Fetch existing entity first.
-        // Required for:
-        // - existence validation
-        // - old slug cache invalidation
-        // =========================================================================
         const existing = await this.readRepo.findById(id)
-
         if (!existing) {
-            throw new NotFoundError(`Blog not found: ${id}`)
+        throw new NotFoundError(`Blog not found: ${id}`)
         }
 
-        // =========================================================================
-        // Auto-set publishedAt when publishing for the first time.
-        // =========================================================================
+        // Auto-set publishedAt when publishing for the first time
         if (data.isPublished === true && !data.publishedAt) {
-            data.publishedAt = new Date()
+        data.publishedAt = new Date()
         }
 
-        // =========================================================================
-        // Persist update
-        // =========================================================================
-        const blog = await this.writeRepo.update(id, data)
+        const updatedBlog = await this.writeRepo.update(id, data)
 
-        // =========================================================================
         // Cache invalidation
-        // =========================================================================
-
-        // Public listing cache
         await this.cacheService.invalidatePublicBlogs()
-
-        // Old slug cache
         await this.cacheService.invalidateBlogBySlug(existing.slug)
 
-        // New slug cache (only if slug changed)
-        if (existing.slug !== blog.slug) {
-            await this.cacheService.invalidateBlogBySlug(blog.slug)
+        // Invalidate new slug if it changed
+        if (existing.slug !== updatedBlog.slug) {
+        await this.cacheService.invalidateBlogBySlug(updatedBlog.slug)
         }
 
-        // =========================================================================
-        // DTO mapping
-        // =========================================================================
-        return {
-            id:          blog.id,
-            title:       blog.title,
-            slug:        blog.slug,
-            content:     blog.content,
-            excerpt:     blog.excerpt,
-            tags:        blog.tags.map((t) => t.name),
-            isPublished: blog.isPublished,
-            publishedAt: blog.publishedAt?.toISOString() ?? null,
-            createdAt:   blog.createdAt.toISOString(),
-        }
+        return BlogMapper.toDetailDTO(updatedBlog)
     }
 }

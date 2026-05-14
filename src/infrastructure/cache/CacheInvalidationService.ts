@@ -1,91 +1,143 @@
-import { Injectable, Inject } from '@nestjs/common'
-import { CACHE_MANAGER } from '@nestjs/cache-manager'
+/**
+ * @fileoverview CacheInvalidationService
+ * 
+ * Centralized cache invalidation service for the portfolio backend.
+ * 
+ * Responsibilities:
+ * - Single source of truth for cache key management
+ * - Consistent namespacing to prevent collisions
+ * - Safe pattern-based invalidation with graceful degradation
+ * - Comprehensive logging for observability
+ * 
+ * This service is part of the Infrastructure layer and implements
+ * the ICacheInvalidationService port from the Application layer.
+ */
 
+import { Injectable, Inject, Logger } from '@nestjs/common'
+import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import type { Cache } from 'cache-manager'
 
 import type { ICacheInvalidationService } from '../../application/ports/ICacheInvalidationService'
 
-// =============================================================================
-// CacheInvalidationService
-// Centralized Redis cache invalidation service.
-// Uses namespaced Redis-style cache keys.
-// =============================================================================
 @Injectable()
 export class CacheInvalidationService implements ICacheInvalidationService {
+    private readonly logger = new Logger(CacheInvalidationService.name)
+
+    /** Global cache key prefix to isolate this application's cache entries */
+    private readonly CACHE_PREFIX = 'portfolio:v1:'
+
     constructor(
         @Inject(CACHE_MANAGER)
         private readonly cacheManager: Cache,
     ) {}
 
-    // =========================================================================
-    // Internal Helpers
-    // =========================================================================
+    // ===================================================================
+    // PRIVATE HELPERS
+    // ===================================================================
 
-    private async invalidate(key: string): Promise<void> {
-        await this.cacheManager.del(key)
+    /**
+     * Applies namespace prefix to cache keys for isolation and clarity.
+     */
+    private getNamespacedKey(key: string): string {
+        return this.CACHE_PREFIX + key
     }
 
-    // =========================================================================
-    // Blog
-    // =========================================================================
+    /**
+     * Safely deletes a single key with error handling.
+     */
+    private async delete(key: string): Promise<void> {
+        try {
+        const namespacedKey = this.getNamespacedKey(key)
+        await this.cacheManager.del(namespacedKey)
+        } catch (error) {
+        this.logger.error(`Failed to delete cache key: ${key}`, error)
+        }
+    }
 
+    /**
+     * Deletes multiple keys matching a pattern.
+     * Uses Redis-specific API when available, falls back gracefully.
+     */
+    private async deletePattern(pattern: string): Promise<void> {
+        const namespacedPattern = this.getNamespacedKey(pattern)
+
+        try {
+        await this.delete(pattern) // Try direct key first
+
+        const store = (this.cacheManager as any).store
+        if (store?.keys) {
+            const keys = await store.keys(namespacedPattern)
+            if (keys?.length > 0) {
+            await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
+            this.logger.log(`Invalidated ${keys.length} keys with pattern: ${pattern}`)
+            }
+        }
+        } catch (error) {
+        this.logger.warn(`Pattern invalidation partially failed for: ${pattern}`, error)
+        }
+    }
+
+    // ===================================================================
+    // PUBLIC INVALIDATION METHODS
+    // ===================================================================
+
+    // --------------------- Blog ---------------------
     async invalidatePublicBlogs(): Promise<void> {
-        await this.invalidate('blog:list:public')
+        await this.delete('blog:list:public')
     }
 
     async invalidateBlogBySlug(slug: string): Promise<void> {
-        await this.invalidate(`blog:${slug}`)
+        await this.delete(`blog:${slug}`)
     }
 
-    // =========================================================================
-    // Project
-    // =========================================================================
+    async invalidateAllBlogs(): Promise<void> {
+        await this.deletePattern('blog:*')
+    }
 
+    // --------------------- Project ---------------------
     async invalidatePublicProjects(): Promise<void> {
-        await this.invalidate('project:list:public')
+        await this.delete('project:list:public')
     }
 
     async invalidateProjectBySlug(slug: string): Promise<void> {
-        await this.invalidate(`project:${slug}`)
+        await this.delete(`project:${slug}`)
     }
 
-    // =========================================================================
-    // Skill
-    // =========================================================================
+    async invalidateAllProjects(): Promise<void> {
+        await this.deletePattern('project:*')
+    }
 
+    // --------------------- Skill ---------------------
     async invalidatePublicSkills(): Promise<void> {
-        await this.invalidate('skill:list:public')
+        await this.delete('skill:list:public')
     }
 
-    // =========================================================================
-    // Certification
-    // =========================================================================
-
+    // --------------------- Certification ---------------------
     async invalidatePublicCertifications(): Promise<void> {
-        await this.invalidate('certification:list:public')
+        await this.delete('certification:list:public')
     }
 
-    // =========================================================================
-    // Education
-    // =========================================================================
-
+    // --------------------- Education ---------------------
     async invalidatePublicEducation(): Promise<void> {
-        await this.invalidate('education:list:public')
+        await this.delete('education:list:public')
     }
 
-    // =========================================================================
-    // Job
-    // =========================================================================
-
+    // --------------------- Job ---------------------
     async invalidatePublicJobs(): Promise<void> {
-        await this.invalidate('job:list:public')
+        await this.delete('job:list:public')
     }
 
-    // =========================================================================
-    // Social
-    // =========================================================================
-
+    // --------------------- Social ---------------------
     async invalidatePublicSocialAccounts(): Promise<void> {
-        await this.invalidate('social:list:public')
+        await this.delete('social:list:public')
+    }
+
+    // --------------------- Advanced ---------------------
+    /**
+     * Invalidates cache entries by pattern.
+     * Useful for bulk invalidation (e.g., after bulk updates).
+     */
+    async invalidatePattern(pattern: string): Promise<void> {
+        await this.deletePattern(pattern)
     }
 }

@@ -234,29 +234,30 @@ model ProjectView {
 // =============================================================================
 
 model Blog {
-  id          Int       @id @default(autoincrement())
-  title       String    @db.VarChar(255)
-  slug        String    @unique @db.VarChar(255)
-  content     String    @db.Text
-  excerpt     String?   @db.VarChar(300)
-  isPublished Boolean   @default(false) @map("is_published")
-  publishedAt DateTime? @map("published_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id            Int      @id @default(autoincrement())
+  title         String   @db.VarChar(255)
+  slug          String   @unique @db.VarChar(255)
+  content       String   @db.Text
+  excerpt       String?  @db.VarChar(300)
+  isPublished   Boolean  @default(false) @map("is_published")
+  publishedAt   DateTime? @map("published_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  searchVector  Unsupported("tsvector")? @map("search_vector")
 
-  // Unsupported() — Prisma never writes this column, DB trigger handles it
-  searchVector Unsupported("tsvector")? @map("search_vector")
+  userId        Int      @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  userId Int  @map("user_id")
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tags          BlogTag[]
 
-  // Owned child — no standalone repo
-  tags BlogTag[]
+  // ========================== PERFORMANCE INDEXES ==========================
+  
+  @@index([isPublished, publishedAt], map: "blog_published_idx")                    // Default order
+  @@index([isPublished, publishedAt(desc)], map: "blog_published_desc_idx")        // Explicit descending
+  @@index([createdAt(desc)], map: "blog_created_desc_idx")                         // Admin list
+  @@index([userId], map: "blog_user_idx")
+  @@index([slug], map: "blog_slug_idx")
 
-  @@index([userId])
-  @@index([isPublished])
-  @@index([publishedAt])
-  @@index([slug])
   @@map("blogs")
 }
 

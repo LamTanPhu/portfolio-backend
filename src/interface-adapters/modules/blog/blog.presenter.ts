@@ -1,18 +1,42 @@
-import type { BlogDTO } from '../../../application/dtos/BlogDTO'
+/**
+ * @fileoverview BlogPresenter
+ * 
+ * Responsible for transforming Application-layer DTOs into HTTP response shapes.
+ * 
+ * Benefits of having a Presenter:
+ * - Single place to control response format
+ * - Easy to add computed fields, hide sensitive data, format dates, etc.
+ * - Keeps Controllers clean
+ * - Follows the Interface Adapter layer responsibility
+ */
 
-// =============================================================================
-// BlogPresenter
-// Formats BlogDTO for HTTP response.
-// Static methods — no state, no dependencies.
-// Separates response shaping from controller logic — SRP enforced.
-// Currently passes through DTO directly — extend here to reshape if needed.
-// =============================================================================
+import type { BlogDetailDTO } from '../../../application/dtos/blog/BlogDetailDTO'
+import type { BlogSummaryDTO } from '../../../application/dtos/blog/BlogSummaryDTO'
+
 export class BlogPresenter {
-    static toResponse(dto: BlogDTO): BlogDTO {
+    /**
+     * Transforms a single blog detail for HTTP response.
+     * Currently a pass-through, but ready for future transformations.
+     */
+    static toDetailResponse(dto: BlogDetailDTO): BlogDetailDTO {
+        return {
+            ...dto,
+        // Example of future transformation:
+        // publishedAt: dto.publishedAt ? dto.publishedAt.toISOString() : null,
+        }
+    }
+
+    /**
+     * Transforms a single blog summary.
+     */
+    static toSummaryResponse(dto: BlogSummaryDTO): BlogSummaryDTO {
         return { ...dto }
     }
 
-    static toListResponse(dtos: BlogDTO[]): BlogDTO[] {
-        return dtos.map(BlogPresenter.toResponse)
+    /**
+     * Transforms a list of blog summaries.
+     */
+    static toSummaryListResponse(dtos: BlogSummaryDTO[]): BlogSummaryDTO[] {
+        return dtos.map(BlogPresenter.toSummaryResponse)
     }
 }

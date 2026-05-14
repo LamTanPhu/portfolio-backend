@@ -1,3 +1,13 @@
+/**
+ * @fileoverview Blog DTOs (Request Models)
+ * 
+ * These DTOs belong to the Interface Adapter layer.
+ * They define the shape of incoming HTTP requests with validation
+ * and Swagger documentation.
+ * 
+ * They are intentionally separate from Application DTOs.
+ */
+
 import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
@@ -10,42 +20,42 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 // =============================================================================
 export class CreateBlogDto {
     @ApiProperty({
-        description: 'Blog post title — slug auto-generated from this value',
-        example:     'Building a Clean Architecture NestJS API',
+        description: 'Blog post title — slug will be auto-generated from this',
+        example: 'Building a Clean Architecture NestJS API',
     })
     @IsString()
     @IsNotEmpty()
     title!: string
 
     @ApiProperty({
-        description: 'Full blog post content — supports Markdown',
-        example:     '## Introduction\nClean Architecture separates concerns into layers...',
+        description: 'Full blog content (Markdown supported)',
+        example: '## Introduction\nClean Architecture separates concerns...',
     })
     @IsString()
     @IsNotEmpty()
     content!: string
 
     @ApiPropertyOptional({
-        description: 'Short excerpt shown in blog list view — auto-truncated if omitted',
-        example:     'A deep dive into Clean Architecture patterns with NestJS.',
+        description: 'Short excerpt for list views',
+        example: 'A deep dive into Clean Architecture with NestJS.',
     })
     @IsString()
     @IsOptional()
     excerpt?: string | null
 
     @ApiPropertyOptional({
-        description: 'Tags for categorization and filtering',
-        example:     ['NestJS', 'Clean Architecture', 'TypeScript'],
-        type:        [String],
+        description: 'Tags for categorization',
+        example: ['NestJS', 'Clean Architecture', 'TypeScript'],
+        type: [String],
     })
     @IsArray()
     @IsOptional()
     tags?: string[]
 
     @ApiPropertyOptional({
-        description: 'Publish immediately — saves as draft if omitted',
-        example:     false,
-        default:     false,
+        description: 'Publish immediately? If false, saved as draft.',
+        example: false,
+        default: false,
     })
     @IsBoolean()
     @IsOptional()
@@ -58,25 +68,25 @@ export class CreateBlogDto {
 // Tags replaced in full when provided — partial tag updates not supported.
 // =============================================================================
 export class UpdateBlogDto {
-    @ApiPropertyOptional({ description: 'Blog post title',   example: 'Updated Title' })
+    @ApiPropertyOptional({ description: 'New title', example: 'Updated Title' })
     @IsString()
     @IsOptional()
     title?: string
 
-    @ApiPropertyOptional({ description: 'Blog post content', example: 'Updated content...' })
+    @ApiPropertyOptional({ description: 'New content', example: 'Updated content...' })
     @IsString()
     @IsOptional()
     content?: string
 
-    @ApiPropertyOptional({ description: 'Short excerpt',     example: 'Updated excerpt.' })
+    @ApiPropertyOptional({ description: 'New excerpt', example: 'Updated excerpt.' })
     @IsString()
     @IsOptional()
     excerpt?: string | null
 
     @ApiPropertyOptional({
-        description: 'Tags — replaces all existing tags when provided',
-        example:     ['NestJS', 'TypeScript'],
-        type:        [String],
+        description: 'New tags (replaces all existing tags)',
+        example: ['NestJS', 'TypeScript'],
+        type: [String],
     })
     @IsArray()
     @IsOptional()

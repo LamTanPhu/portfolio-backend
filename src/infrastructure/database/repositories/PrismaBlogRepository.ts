@@ -1,16 +1,19 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
-import { PrismaService } from '../prisma/prisma.service'
-import type { IBlogReadRepository } from '../../../domain/repositories/blog/IBlogReadRepository'
-import type {
-    IBlogWriteRepository,
-    CreateBlogInput,
-    UpdateBlogInput,
-} from '../../../domain/repositories/blog/IBlogWriteRepository'
 import { Blog } from '../../../domain/entities/Blog'
 import { BlogTag } from '../../../domain/entities/BlogTag'
 import { NotFoundError } from '../../../domain/errors/NotFoundError'
-import { BlogDTO } from '../../../application/dtos/BlogDTO'
+import { BlogSummary } from '../../../domain/projections/BlogSummary'
+import type { IBlogReadRepository } from '../../../domain/repositories/blog/IBlogReadRepository'
+import type {
+    CreateBlogInput,
+    IBlogWriteRepository,
+    UpdateBlogInput,
+} from '../../../domain/repositories/blog/IBlogWriteRepository'
+import { PrismaService } from '../prisma/prisma.service'
+import { PrismaBlogMapper } from '../mappers/PrismaBlogMapper'
+// import { BlogDTO } from '../../../application/dtos/BlogDTO'
+
 
 // =============================================================================
 // Prisma Payload Types
@@ -104,7 +107,7 @@ export class PrismaBlogRepository
   // ===========================================================================
 
     // Returns summaries — content column never fetched, tags always included
-    async findPublished(): Promise<BlogDTO[]> {
+    async findPublished(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
             where: { isPublished: true },
             select: {
@@ -115,7 +118,6 @@ export class PrismaBlogRepository
                 isPublished: true,
                 publishedAt: true,
                 createdAt:   true,
-                updatedAt:   true,
                 tags: {
                     select: { name: true },
                 },
@@ -127,16 +129,15 @@ export class PrismaBlogRepository
             id:          row.id,
             title:       row.title,
             slug:        row.slug,
-            content:     '',
             excerpt:     row.excerpt,
             tags:        row.tags.map(t => t.name),
             isPublished: row.isPublished,
-            publishedAt: row.publishedAt?.toISOString() ?? null,
-            createdAt:   row.createdAt.toISOString(),
+            publishedAt: row.publishedAt,
+            createdAt:   row.createdAt,
         }))
     }
 
-    async findAll(): Promise<BlogDTO[]> {
+    async findAll(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
             select: {
                 id:          true,
@@ -146,7 +147,6 @@ export class PrismaBlogRepository
                 isPublished: true,
                 publishedAt: true,
                 createdAt:   true,
-                updatedAt:   true,
                 tags: {
                     select: { name: true },
                 },
@@ -158,12 +158,11 @@ export class PrismaBlogRepository
             id:          row.id,
             title:       row.title,
             slug:        row.slug,
-            content:     '',
             excerpt:     row.excerpt,
             tags:        row.tags.map(t => t.name),
             isPublished: row.isPublished,
-            publishedAt: row.publishedAt?.toISOString() ?? null,
-            createdAt:   row.createdAt.toISOString(),
+            publishedAt: row.publishedAt,
+            createdAt:   row.createdAt,
         }))
     }
 
@@ -173,7 +172,7 @@ export class PrismaBlogRepository
             where:   { id },
             include: { tags: true },
         })
-        return row ? PrismaBlogRepository.toDomain(row) : null
+        return row ? PrismaBlogMapper.toDomain(row) : null
     }
 
     // Returns full blog — slug is unique indexed, O(1) lookup
@@ -182,7 +181,7 @@ export class PrismaBlogRepository
             where:   { slug },
             include: { tags: true },
         })
-        return row ? PrismaBlogRepository.toDomain(row) : null
+        return row ? PrismaBlogMapper.toDomain(row) : null
     }
 
     // ===========================================================================
@@ -207,7 +206,7 @@ export class PrismaBlogRepository
         },
         include: { tags: true },
         })
-        return PrismaBlogRepository.toDomain(row)
+        return PrismaBlogMapper.toDomain(row)
     }
 
     // Atomic update — tags replaced in full via deleteMany + create
@@ -228,7 +227,7 @@ export class PrismaBlogRepository
             },
                 include: { tags: true },
             })
-            return PrismaBlogRepository.toDomain(row)
+            return PrismaBlogMapper.toDomain(row)
         } catch (error) {
             if (
                 error instanceof Prisma.PrismaClientKnownRequestError &&

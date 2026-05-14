@@ -5,34 +5,35 @@ import { BlogTag } from '../../../domain/entities/BlogTag'
 // =============================================================================
 // BlogWithTags
 // Prisma result type including tags relation.
-// Defined here — used exclusively by BlogMapper, not exposed elsewhere.
+// Defined here — used exclusively by PrismaBlogMapper, not exposed elsewhere.
 // =============================================================================
 type BlogWithTags = PrismaBlog & { tags: PrismaBlogTag[] }
 
 // =============================================================================
-// BlogMapper
+// PrismaBlogMapper
 // Converts Prisma Blog model → domain Blog entity.
+//
 // Static methods — no state, no dependencies, fully testable.
-// Tags mapped inline — BlogTag owned by Blog aggregate, never fetched standalone.
+// Tags mapped inline — BlogTag is owned by Blog aggregate.
 // =============================================================================
-export class BlogMapper {
-  static toDomain(raw: BlogWithTags): Blog {
-    const tags = raw.tags.map(
-      (t) => new BlogTag(t.id, t.name, t.blogId),
-    )
+export class PrismaBlogMapper {
+    static toDomain(raw: BlogWithTags): Blog {
+        const tags = raw.tags.map(
+            (t) => new BlogTag(t.id, t.name, t.blogId),
+        )
 
-    return new Blog(
-      raw.id,
-      raw.title,
-      raw.slug,
-      raw.content,
-      raw.excerpt,
-      tags,
-      raw.isPublished,
-      raw.publishedAt,
-      raw.userId,
-      raw.createdAt,
-      raw.updatedAt,
-    )
-  }
+        return new Blog(
+            raw.id,
+            raw.title,
+            raw.slug,
+            raw.content,
+            raw.excerpt,
+            tags,
+            raw.isPublished,
+            raw.publishedAt,
+            raw.userId,
+            raw.createdAt,
+            raw.updatedAt,
+        )
+    }
 }

@@ -1,13 +1,16 @@
+/**
+ * @fileoverview DeleteBlogCommand
+ * 
+ * Deletes a blog post and ensures all related caches are properly invalidated.
+ */
+
 import { Injectable, Inject } from '@nestjs/common'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
 import type { IBlogWriteRepository } from '../../../../domain/repositories/blog/IBlogWriteRepository'
+
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 
-// =============================================================================
-// DeleteBlogCommand
-// Deletes blog and invalidates public cache + single blog cache.
-// =============================================================================
 @Injectable()
 export class DeleteBlogCommand {
     constructor(
@@ -23,7 +26,9 @@ export class DeleteBlogCommand {
 
     async execute(id: number): Promise<void> {
         const blog = await this.readRepo.findById(id)
-        if (!blog) throw new NotFoundError(`Blog not found: ${id}`)
+        if (!blog) {
+            throw new NotFoundError(`Blog not found: ${id}`)
+        }
 
         await this.writeRepo.delete(id)
 

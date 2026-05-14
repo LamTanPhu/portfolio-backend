@@ -1,17 +1,22 @@
-import { BlogDTO } from '../../../application/dtos/BlogDTO'
+// src/domain/repositories/blog/IBlogReadRepository.ts
 import type { Blog } from '../../entities/Blog'
+import type { BlogSummary } from '../../projections/BlogSummary'
 
 // =============================================================================
 // IBlogReadRepository
 // Read interface for Blog aggregate.
-// Separated from write — ISP enforced, public API only ever reads.
-// findAll returns all blogs — admin use only.
-// findPublished returns summaries — content excluded at repository level.
-// findById and findBySlug return full blog including content.
+// Separated from write — ISP enforced.
+//
+// findPublished and findAll return lightweight projections:
+// - optimized for list rendering
+// - excludes large content field
+//
+// findById and findBySlug return full Blog aggregate.
 // =============================================================================
 export interface IBlogReadRepository {
-  findAll(): Promise<BlogDTO[]>
-  findPublished(): Promise<BlogDTO[]>
-  findById(id: number): Promise<Blog | null>
-  findBySlug(slug: string): Promise<Blog | null>
+    findPublished(): Promise<BlogSummary[]>
+    findAll(): Promise<BlogSummary[]>
+
+    findById(id: number): Promise<Blog | null>
+    findBySlug(slug: string): Promise<Blog | null>
 }

@@ -1,48 +1,40 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
-import type { BlogDTO } from '../../../dtos/BlogDTO'
+/**
+ * @fileoverview GetBlogBySlugQuery
+ * 
+ * Public query to fetch a single blog post by slug with caching.
+ * Uses LONG cache profile (good balance between freshness and performance).
+ */
+
+import { Inject, Injectable } from '@nestjs/common'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
 
-import { CACHE_TTL } from '../../../../infrastructure/cache/cache.constants'
-import { CacheQueryService } from '../../../../infrastructure/cache/CacheQueryService'
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+import { BlogMapper } from '../../../mappers/BlogMapper'
+import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
+import { CACHE_QUERY_SERVICE } from '../../../../infrastructure/cache/cache.module'
 
-// =============================================================================
-// GetBlogBySlugQuery
-// Returns full blog post by slug — includes complete content.
-// Cached via CacheQueryService.
-// =============================================================================
 @Injectable()
 export class GetBlogBySlugQuery {
     constructor(
         @Inject('IBlogReadRepository')
         private readonly repo: IBlogReadRepository,
 
-        private readonly cacheQuery: CacheQueryService,
+        @Inject(CACHE_QUERY_SERVICE)
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    async execute(slug: string): Promise<BlogDTO> {
-        return this.cacheQuery.getOrSet(
-            `blog:${slug}`,
-            CACHE_TTL.LONG,
-            async () => {
-                const blog = await this.repo.findBySlug(slug)
-
-                if (!blog) {
-                    throw new NotFoundError(`Blog not found: ${slug}`)
-                }
-
-                return {
-                    id:          blog.id,
-                    title:       blog.title,
-                    slug:        blog.slug,
-                    content:     blog.content,
-                    excerpt:     blog.excerpt,
-                    tags:        blog.tags.map((t) => t.name),
-                    isPublished: blog.isPublished,
-                    publishedAt: blog.publishedAt?.toISOString() ?? null,
-                    createdAt:   blog.createdAt.toISOString(),
-                }
-            },
+    async execute(slug: string): Promise<BlogDetailDTO> {
+        return this.cacheQuery.getOrSetWithProfile(
+        `blog:${slug}`,
+        'LONG',
+        async () => {
+            const blog = await this.repo.findBySlug(slug)
+            if (!blog) {
+            throw new NotFoundError(`Blog not found: ${slug}`)
+            }
+            return BlogMapper.toDetailDTO(blog)
+        },
         )
     }
 }

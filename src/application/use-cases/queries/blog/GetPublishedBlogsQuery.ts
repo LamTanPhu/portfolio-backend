@@ -1,29 +1,36 @@
-import { Injectable, Inject } from '@nestjs/common'
+/**
+ * @fileoverview GetPublishedBlogsQuery
+ * 
+ * Public query returning published blog summaries for listing pages.
+ * Uses MEDIUM cache profile.
+ */
+
+import { Inject, Injectable } from '@nestjs/common'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
-import type { BlogDTO } from '../../../dtos/BlogDTO'
 
-import { CACHE_TTL } from '../../../../infrastructure/cache/cache.constants'
-import { CacheQueryService } from '../../../../infrastructure/cache/CacheQueryService'
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+import { BlogMapper } from '../../../mappers/BlogMapper'
+import { CACHE_QUERY_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { BlogSummaryDTO } from '../../../dtos/blog/BlogSummaryDTO'
 
-// =============================================================================
-// GetPublishedBlogsQuery
-// Returns published blogs for public listing.
-// Cached via CacheQueryService.
-// =============================================================================
 @Injectable()
 export class GetPublishedBlogsQuery {
     constructor(
         @Inject('IBlogReadRepository')
         private readonly repo: IBlogReadRepository,
 
-        private readonly cacheQuery: CacheQueryService,
+        @Inject(CACHE_QUERY_SERVICE)
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    async execute(): Promise<BlogDTO[]> {
-        return this.cacheQuery.getOrSet(
-            'blog:list:public',
-            CACHE_TTL.MEDIUM,
-            () => this.repo.findPublished(),
+    async execute(): Promise<BlogSummaryDTO[]> {
+        return this.cacheQuery.getOrSetWithProfile(
+        'blog:list:public',
+        'MEDIUM',
+        async () => {
+            const summaries = await this.repo.findPublished()
+            return BlogMapper.summaryListToDTO(summaries)
+        },
         )
     }
 }
