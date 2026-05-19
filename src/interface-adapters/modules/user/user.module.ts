@@ -1,37 +1,40 @@
+/**
+ * @fileoverview UserModule
+ * 
+ * Manages admin user profile (view + update).
+ * Uses split Read/Write repositories for better separation of concerns.
+ */
+
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
+
 import { UserController } from './user.controller'
+
+// Use Cases
 import { GetUserProfileQuery } from '../../../application/use-cases/queries/user/GetUserProfileQuery'
 import { UpdateUserProfileCommand } from '../../../application/use-cases/commands/user/UpdateUserProfileCommand'
-import { PrismaUserRepository } from '../../../infrastructure/database/repositories/PrismaUserRepository'
 
-// =============================================================================
-// UserModule
-// Admin only — all endpoints protected by JwtAuthGuard at controller level.
-// PrismaUserRepository implements both read and write interfaces.
-// =============================================================================
+// Repositories
+import { PrismaUserReadRepository } from '../../../infrastructure/database/repositories/user/PrismaUserReadRepository'
+import { PrismaUserWriteRepository } from '../../../infrastructure/database/repositories/user/PrismaUserWriteRepository'
+
 @Module({
   imports: [AuthModule],
-  controllers: [UserController],
-  providers: [
-    // ─── Repositories ───────────────────────────────────────────────────────
-    PrismaUserRepository,
-    { provide: 'IUserReadRepository',  useExisting: PrismaUserRepository },
-    { provide: 'IUserWriteRepository', useExisting: PrismaUserRepository },
 
-    // ─── Use cases ──────────────────────────────────────────────────────────
-    {
-      provide:    GetUserProfileQuery,
-      useFactory: (repo: PrismaUserRepository) =>
-        new GetUserProfileQuery(repo),
-      inject: [PrismaUserRepository],
-    },
-    {
-      provide:    UpdateUserProfileCommand,
-      useFactory: (repo: PrismaUserRepository) =>
-        new UpdateUserProfileCommand(repo),
-      inject: [PrismaUserRepository],
-    },
+  controllers: [UserController],
+
+  providers: [
+    // Repositories
+    PrismaUserReadRepository,
+    PrismaUserWriteRepository,
+
+    // Ports
+    { provide: 'IUserReadRepository', useExisting: PrismaUserReadRepository },
+    { provide: 'IUserWriteRepository', useExisting: PrismaUserWriteRepository },
+
+    // Use Cases
+    GetUserProfileQuery,
+    UpdateUserProfileCommand,
   ],
 })
 export class UserModule {}

@@ -1,51 +1,56 @@
+/**
+ * @fileoverview CertificationModule
+ * 
+ * Organizes all Certification-related concerns following Clean Architecture.
+ * - Separated Read and Write repositories (as requested)
+ * - Proper cache integration
+ * - Clear dependency flow
+ */
+
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+
 import { CertificationController } from './certification.controller'
-import { GetCertificationsQuery } from '../../../application/use-cases/queries/skill/certificate/GetCertificationsQuery'
+
+// Use Cases
 import { CreateCertificationCommand } from '../../../application/use-cases/commands/certification/CreateCertificationCommand'
 import { UpdateCertificationCommand } from '../../../application/use-cases/commands/certification/UpdateCertificationCommand'
 import { DeleteCertificationCommand } from '../../../application/use-cases/commands/certification/DeleteCertificationCommand'
-import { PrismaCertificationRepository } from '../../../infrastructure/database/repositories/PrismaCertificationRepository'
+import { GetCertificationsQuery } from '../../../application/use-cases/queries/skill/certificate/GetCertificationsQuery'
 
-// =============================================================================
-// CertificationModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaCertificationRepository implements both read and write interfaces.
-// =============================================================================
+// Repositories
+import { PrismaCertificationReadRepository } from '../../../infrastructure/database/repositories/certification/PrismaCertificationReadRepository'
+import { PrismaCertificationWriteRepository } from '../../../infrastructure/database/repositories/certification/PrismaCertificationWriteRepository'
+
 @Module({
-    imports: [AuthModule],
-    controllers: [CertificationController],
-    providers: [
-        // ─── Repositories ───────────────────────────────────────────────────────
-        PrismaCertificationRepository,
-        { provide: 'ICertificationReadRepository',  useExisting: PrismaCertificationRepository },
-        { provide: 'ICertificationWriteRepository', useExisting: PrismaCertificationRepository },
+    imports: [
+        AuthModule,
+        CacheInfrastructureModule,        // Provides ICacheQueryService & ICacheInvalidationService
+    ],
 
-        // ─── Use cases ──────────────────────────────────────────────────────────
+    controllers: [CertificationController],
+
+    providers: [
+        // Infrastructure Implementations
+        PrismaCertificationReadRepository,
+        PrismaCertificationWriteRepository,
+
+        // Ports (Abstractions)
         {
-        provide:    GetCertificationsQuery,
-        useFactory: (repo: PrismaCertificationRepository) =>
-            new GetCertificationsQuery(repo),
-        inject: [PrismaCertificationRepository],
+        provide: 'ICertificationReadRepository',
+        useExisting: PrismaCertificationReadRepository,
         },
         {
-        provide:    CreateCertificationCommand,
-        useFactory: (repo: PrismaCertificationRepository) =>
-            new CreateCertificationCommand(repo),
-        inject: [PrismaCertificationRepository],
+        provide: 'ICertificationWriteRepository',
+        useExisting: PrismaCertificationWriteRepository,
         },
-        {
-        provide:    UpdateCertificationCommand,
-        useFactory: (repo: PrismaCertificationRepository) =>
-            new UpdateCertificationCommand(repo),
-        inject: [PrismaCertificationRepository],
-        },
-        {
-        provide:    DeleteCertificationCommand,
-        useFactory: (repo: PrismaCertificationRepository) =>
-            new DeleteCertificationCommand(repo),
-        inject: [PrismaCertificationRepository],
-        },
+
+        // Application Use Cases
+        GetCertificationsQuery,
+        CreateCertificationCommand,
+        UpdateCertificationCommand,
+        DeleteCertificationCommand,
     ],
 })
 export class CertificationModule {}

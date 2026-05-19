@@ -1,18 +1,22 @@
+/**
+ * @fileoverview AuthService
+ * 
+ * Handles all JWT token lifecycle operations with security-first design.
+ * Uses short-lived cache for revocation checks to reduce database pressure.
+ */
+
 import { Injectable, Inject } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as crypto from 'crypto'
 import type { ITokenRepository } from '../ports/ITokenRepository'
+import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 
-// =============================================================================
-// Token Payload Shapes
-// Strict interfaces for JWT payloads.
-// =============================================================================
 export interface AccessTokenPayload {
-    sub:         number           // User ID
+    sub:         number
     role:        'admin'
-    jti:         string           // Token ID for revocation
-    fingerprint: string           // Device fingerprint binding
+    jti:         string
+    fingerprint: string
     iss:         string
     aud:         string | string[]
 }
@@ -23,23 +27,20 @@ export interface RefreshTokenPayload {
     type: 'refresh'
 }
 
-// =============================================================================
-// AuthService
-// Responsible for all JWT token lifecycle operations.
-// Security-first design with configurable fingerprint enforcement.
-// =============================================================================
 @Injectable()
 export class AuthService {
     private static readonly ACCESS_TOKEN_EXPIRY    = '15m'
-    private static readonly ACCESS_TOKEN_EXPIRY_MS = 15 * 60 * 1_000
-
     private static readonly REFRESH_TOKEN_EXPIRY    = '7d'
-    private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1_000
+    private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
 
     constructor(
         private readonly jwt: JwtService,
+
         @Inject('ITokenRepository')
         private readonly tokenRepo: ITokenRepository,
+
+        @Inject('ICacheQueryService')
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
     // ===========================================================================
@@ -52,23 +53,19 @@ export class AuthService {
     ): Promise<{ accessToken: string; refreshToken: string }> {
         const adminPassword = process.env.ADMIN_PASSWORD
         if (!adminPassword) {
-            throw new Error('[AuthService] ADMIN_PASSWORD environment variable is not set')
+        throw new Error('[AuthService] ADMIN_PASSWORD environment variable is not set')
         }
 
-        const inputBuffer  = Buffer.from(password)
-        const targetBuffer = Buffer.from(adminPassword)
+        const isValid = crypto.timingSafeEqual(
+        Buffer.from(password),
+        Buffer.from(adminPassword)
+        )
 
-        const isValid =
-            inputBuffer.length === targetBuffer.length &&
-            crypto.timingSafeEqual(inputBuffer, targetBuffer)
-
-        if (!isValid) {
-            throw new UnauthorizedError('Invalid credentials')
-        }
+        if (!isValid) throw new UnauthorizedError('Invalid credentials')
 
         const [accessToken, refreshToken] = await Promise.all([
-            this.issueAccessToken(userId, fingerprint),
-            this.issueRefreshToken(userId),
+        this.issueAccessToken(userId, fingerprint),
+        this.issueRefreshToken(userId),
         ])
 
         return { accessToken, refreshToken }
@@ -77,23 +74,18 @@ export class AuthService {
     // ===========================================================================
     // Refresh Token
     // ===========================================================================
-    async refresh(
-        refreshToken: string,
-        fingerprint:  string,
-    ): Promise<{ accessToken: string }> {
+    async refresh(refreshToken: string, fingerprint: string): Promise<{ accessToken: string }> {
         let payload: RefreshTokenPayload
 
         try {
-            payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken)
+        payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken)
         } catch {
-            throw new UnauthorizedError('Invalid refresh token')
+        throw new UnauthorizedError('Invalid refresh token')
         }
 
-        if (payload.type !== 'refresh') {
-            throw new UnauthorizedError('Invalid token type')
-        }
+        if (payload.type !== 'refresh') throw new UnauthorizedError('Invalid token type')
 
-        const revoked = await this.tokenRepo.isRevoked(payload.jti)
+        const revoked = await this.isTokenRevoked(payload.jti)
         if (revoked) throw new UnauthorizedError('Token has been revoked')
 
         return { accessToken: await this.issueAccessToken(payload.sub, fingerprint) }
@@ -103,61 +95,55 @@ export class AuthService {
     // Logout
     // ===========================================================================
     async logout(jti: string): Promise<void> {
-        const expiresAt = new Date(Date.now() + AuthService.ACCESS_TOKEN_EXPIRY_MS)
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
         await this.tokenRepo.revoke(jti, expiresAt)
     }
 
     // ===========================================================================
-    // Verify Access Token — Core Security Check
+    // Verify Access Token
     // ===========================================================================
-    async verifyAccessToken(
-        token:       string,
-        fingerprint: string,
-    ): Promise<AccessTokenPayload> {
+    async verifyAccessToken(token: string, fingerprint: string): Promise<AccessTokenPayload> {
         let payload: AccessTokenPayload
 
         try {
-            payload = await this.jwt.verifyAsync<AccessTokenPayload>(token)
+        payload = await this.jwt.verifyAsync<AccessTokenPayload>(token)
         } catch {
-            throw new UnauthorizedError('Invalid or expired token')
+        throw new UnauthorizedError('Invalid or expired token')
         }
 
-        // Revocation check
-        const revoked = await this.tokenRepo.isRevoked(payload.jti)
-        if (revoked) {
-            throw new UnauthorizedError('Token has been revoked')
-        }
+        const revoked = await this.isTokenRevoked(payload.jti)
+        if (revoked) throw new UnauthorizedError('Token has been revoked')
 
-        // Fingerprint enforcement (STRICT by default)
-        if (this.shouldEnforceFingerprint()) {
-            if (payload.fingerprint !== fingerprint) {
-                throw new UnauthorizedError('Token fingerprint mismatch')
-            }
+        if (this.shouldEnforceFingerprint() && payload.fingerprint !== fingerprint) {
+        throw new UnauthorizedError('Token fingerprint mismatch')
         }
 
         return payload
     }
 
     // ===========================================================================
-    // Fingerprint Enforcement Logic
-    // STRICT by default in all environments.
-    // You can disable it by setting FINGERPRINT_STRICT=false in .env
+    // Cached Revocation Check
     // ===========================================================================
+    private async isTokenRevoked(jti: string): Promise<boolean> {
+        return this.cacheQuery.getOrSetWithProfile(
+        `revoked-token:${jti}`,
+        'REALTIME',
+        async () => await this.tokenRepo.isRevoked(jti),
+        )
+    }
+
     private shouldEnforceFingerprint(): boolean {
-        if (process.env.FINGERPRINT_STRICT === 'false') {
-            return false
-        }
-        return true // Strict by default (production + development)
+        return process.env.FINGERPRINT_STRICT !== 'false'
     }
 
     // ===========================================================================
-    // Fingerprint Builder
+    // Static Helpers (Used by Controller)
     // ===========================================================================
     static buildFingerprint(userAgent: string, ip: string): string {
         return crypto
-            .createHash('sha256')
-            .update(`${userAgent}:${ip}`)
-            .digest('hex')
+        .createHash('sha256')
+        .update(`${userAgent}:${ip}`)
+        .digest('hex')
     }
 
     static getRefreshTokenExpiryMs(): number {
@@ -167,20 +153,12 @@ export class AuthService {
     // ===========================================================================
     // Token Issuers
     // ===========================================================================
-    private async issueAccessToken(
-        userId:      number,
-        fingerprint: string,
-    ): Promise<string> {
+    private async issueAccessToken(userId: number, fingerprint: string): Promise<string> {
         const jti = crypto.randomUUID()
 
         return this.jwt.signAsync(
-            {
-                sub:         userId,
-                role:        'admin' as const,
-                jti,
-                fingerprint,
-            },
-            { expiresIn: AuthService.ACCESS_TOKEN_EXPIRY },
+        { sub: userId, role: 'admin' as const, jti, fingerprint },
+        { expiresIn: AuthService.ACCESS_TOKEN_EXPIRY }
         )
     }
 
@@ -188,12 +166,8 @@ export class AuthService {
         const jti = crypto.randomUUID()
 
         return this.jwt.signAsync(
-            {
-                sub:  userId,
-                jti,
-                type: 'refresh' as const,
-            },
-            { expiresIn: AuthService.REFRESH_TOKEN_EXPIRY },
+        { sub: userId, jti, type: 'refresh' as const },
+        { expiresIn: AuthService.REFRESH_TOKEN_EXPIRY }
         )
     }
 }

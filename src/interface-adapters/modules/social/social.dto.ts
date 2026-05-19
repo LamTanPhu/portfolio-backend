@@ -1,9 +1,10 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
-import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator'
+/**
+ * @fileoverview Social Account DTOs (Request Models)
+ */
 
-// =============================================================================
-// CreateSocialAccountDto
-// =============================================================================
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator'
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
+
 export class CreateSocialAccountDto {
     @ApiProperty({ description: 'Platform name', example: 'GitHub' })
     @IsString()
@@ -20,15 +21,16 @@ export class CreateSocialAccountDto {
     @IsOptional()
     imageUrl?: string | null
 
-    @ApiPropertyOptional({ description: 'Show publicly on portfolio', example: true, default: true })
+    @ApiPropertyOptional({ 
+        description: 'Show publicly on portfolio', 
+        example: true, 
+        default: true 
+    })
     @IsBoolean()
     @IsOptional()
     isPublic?: boolean
 }
 
-// =============================================================================
-// UpdateSocialAccountDto
-// =============================================================================
 export class UpdateSocialAccountDto {
     @ApiPropertyOptional({ description: 'Platform name', example: 'LinkedIn' })
     @IsString()

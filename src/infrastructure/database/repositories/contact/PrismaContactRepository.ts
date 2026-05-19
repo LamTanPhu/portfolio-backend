@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
-import { PrismaService } from '../prisma/prisma.service'
-import type { IContactWriteRepository } from '../../../domain/repositories/contact/IContactWriteRepository'
-import { ContactMe } from '../../../domain/entities/ContactMe'
+import { ContactMe } from '../../../../domain/entities/ContactMe'
+import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
+import { PrismaService } from '../../prisma/prisma.service'
 
 // =============================================================================
 // PrismaContactRepository

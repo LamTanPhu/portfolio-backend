@@ -1,54 +1,57 @@
+/**
+ * @fileoverview SkillController
+ * 
+ * Handles skill-related endpoints for public portfolio and admin management.
+ */
+
 import {
-    Body,
-    Controller,
-    Delete,
-    Get,
-    HttpCode,
-    HttpStatus,
-    Param,
-    ParseIntPipe,
-    Patch,
-    Post,
-    Req,
-    UseGuards,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
 } from '@nestjs/common'
 import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
 } from '@nestjs/swagger'
-import type { SkillDTO } from '../../../application/dtos/SkillDTO'
-import { CreateSkillCommand } from '../../../application/use-cases/commands/skill/CreateSkillCommand'
-import { DeleteSkillCommand } from '../../../application/use-cases/commands/skill/DeleteSkillCommand'
-import { UpdateSkillCommand } from '../../../application/use-cases/commands/skill/UpdateSkillCommand'
-import { GetPublishedSkillsQuery } from '../../../application/use-cases/queries/skill/GetPublishedSkillsQuery'
-import type { SkillCategory } from '../../../domain/entities/Skill'
-import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
-import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
-import { CreateSkillDto, UpdateSkillDto } from './skill.dto'
 import { Throttle } from '@nestjs/throttler'
 
-// =============================================================================
-// SkillController
-// Public GET — returns visible skills, no auth required.
-// Admin POST/PATCH/DELETE — JWT required.
-// userId extracted from verified JWT payload — never from client input.
-// =============================================================================
+import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
+
+import { GetPublishedSkillsQuery } from '../../../application/use-cases/queries/skill/GetPublishedSkillsQuery'
+import { CreateSkillCommand } from '../../../application/use-cases/commands/skill/CreateSkillCommand'
+import { UpdateSkillCommand } from '../../../application/use-cases/commands/skill/UpdateSkillCommand'
+import { DeleteSkillCommand } from '../../../application/use-cases/commands/skill/DeleteSkillCommand'
+
+import type { SkillDTO } from '../../../application/dtos/SkillDTO'
+import type { SkillCategory } from '../../../domain/entities/Skill'
+import { CreateSkillDto, UpdateSkillDto } from './skill.dto'
+
 @ApiTags('Skills')
 @Controller('skills')
 export class SkillController {
     constructor(
         private readonly getPublishedQuery: GetPublishedSkillsQuery,
-        private readonly createCommand:     CreateSkillCommand,
-        private readonly updateCommand:     UpdateSkillCommand,
-        private readonly deleteCommand:     DeleteSkillCommand,
+        private readonly createCommand: CreateSkillCommand,
+        private readonly updateCommand: UpdateSkillCommand,
+        private readonly deleteCommand: DeleteSkillCommand,
     ) {}
 
     @Get()
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all public skills' })
+    @ApiOperation({ summary: 'Get all public skills (Public)' })
     @ApiResponse({ status: 200, description: 'List of public skills' })
     async findAll(): Promise<SkillDTO[]> {
         return this.getPublishedQuery.execute()
@@ -57,7 +60,7 @@ export class SkillController {
     @Post()
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Create a skill — admin only' })
+    @ApiOperation({ summary: 'Create skill — admin only' })
     @ApiResponse({ status: 201, description: 'Skill created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async create(
@@ -76,7 +79,7 @@ export class SkillController {
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Update a skill — admin only' })
+    @ApiOperation({ summary: 'Update skill — admin only' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 200, description: 'Skill updated' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -98,7 +101,7 @@ export class SkillController {
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
     @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Delete a skill — admin only' })
+    @ApiOperation({ summary: 'Delete skill — admin only' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 204, description: 'Skill deleted' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })

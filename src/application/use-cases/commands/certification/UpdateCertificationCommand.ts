@@ -1,35 +1,47 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type {
-    ICertificationWriteRepository,
-    UpdateCertificationInput,
-} from '../../../../domain/repositories/certification/ICertificationWriteRepository'
-import type { CertificationDTO } from '../../../dtos/CertificationDTO'
+/**
+ * @fileoverview UpdateCertificationCommand
+ * 
+ * Updates a certification and invalidates relevant caches.
+ * If the certification is published, the public list cache is cleared.
+ */
 
-interface Input extends UpdateCertificationInput {
+import { Injectable, Inject } from '@nestjs/common'
+import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import type {
+  ICertificationWriteRepository,
+  UpdateCertificationInput,
+} from '../../../../domain/repositories/certification/ICertificationWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import type { CertificationDTO } from '../../../dtos/certification/CertificationDTO'
+
+interface UpdateInput extends UpdateCertificationInput {
     id: number
 }
 
-// =============================================================================
-// UpdateCertificationCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateCertificationCommand {
     constructor(
         @Inject('ICertificationWriteRepository')
         private readonly repo: ICertificationWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<CertificationDTO> {
+    async execute(input: UpdateInput): Promise<CertificationDTO> {
         const { id, ...data } = input
-        const c = await this.repo.update(id, data)
+
+        const updated = await this.repo.update(id, data)
+
+        // Always invalidate public list
+        await this.cacheService.invalidatePublicCertifications()
+
         return {
-        id:        c.id,
-        name:      c.name,
-        url:       c.url,
-        startDate: c.startDate.toISOString(),
-        endDate:   c.endDate?.toISOString() ?? null,
+        id: updated.id,
+        name: updated.name,
+        url: updated.url,
+        startDate: updated.startDate.toISOString(),
+        endDate: updated.endDate?.toISOString() ?? null,
         }
     }
 }

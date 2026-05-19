@@ -1,42 +1,56 @@
-import { Inject, Injectable } from '@nestjs/common'
+/**
+ * @fileoverview UpdateProjectCommand
+ * 
+ * Updates a project and performs comprehensive cache invalidation.
+ */
+
+import { Injectable, Inject } from '@nestjs/common'
 import type {
     IProjectWriteRepository,
     UpdateProjectInput,
 } from '../../../../domain/repositories/project/IProjectWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
 
-interface Input extends UpdateProjectInput {
+interface UpdateInput extends UpdateProjectInput {
     id: number
 }
 
-// =============================================================================
-// UpdateProjectCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateProjectCommand {
     constructor(
         @Inject('IProjectWriteRepository')
         private readonly repo: IProjectWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<ProjectDTO> {
+    async execute(input: UpdateInput): Promise<ProjectDTO> {
         const { id, ...data } = input
-        const p = await this.repo.update(id, data)
+
+        const updated = await this.repo.update(id, data)
+
+        // Invalidate caches
+        await this.cacheService.invalidatePublicProjects()
+
+        if (data.slug) {
+        await this.cacheService.invalidateProjectBySlug(data.slug)
+        }
+
         return {
-        id:           p.id,
-        name:         p.name,
-        description:  p.description,
-        slug:         p.slug,
-        techStack:    p.techStack,
-        repoUrl:      p.repoUrl,
-        liveUrl:      p.liveUrl,
-        thumbnailUrl: p.thumbnailUrl,
-        isPublished:  p.isPublished,
-        isOpenSource: p.isOpenSource,
-        createdAt:    p.createdAt.toISOString(),
-        updatedAt:    p.updatedAt.toISOString(),
+        id:           updated.id,
+        name:         updated.name,
+        description:  updated.description,
+        slug:         updated.slug,
+        techStack:    updated.techStack,
+        repoUrl:      updated.repoUrl,
+        liveUrl:      updated.liveUrl,
+        thumbnailUrl: updated.thumbnailUrl,
+        isPublished:  updated.isPublished,
+        isOpenSource: updated.isOpenSource,
+        createdAt:    updated.createdAt.toISOString(),
+        updatedAt:    updated.updatedAt.toISOString(),
         }
     }
 }

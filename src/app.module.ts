@@ -15,7 +15,7 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
 // Infrastructure
-import { PrismaModule } from './infrastructure/database/prisma/prisma.service'
+import { PrismaModule } from './infrastructure/database/prisma/prisma.module'
 import { CacheInfrastructureModule } from './infrastructure/cache/cache.module'
 
 // Feature Modules
@@ -126,15 +126,15 @@ import { CACHE_TTL } from './infrastructure/cache/cache.constants'
     CertificationModule,
   ],
 
-  providers: [
-    // Global Guards
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    providers: [
+        // Global Guards
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
 
-    // Global Exception Filter
-    { provide: APP_FILTER, useClass: DomainExceptionFilter },
+        // Global Exception Filter
+        { provide: APP_FILTER, useClass: DomainExceptionFilter },
 
-    // Scheduled Tasks (uncomment when ready)
-    // TokenCleanupTask,
-  ],
+        // Scheduled Tasks (uncomment when ready)
+        // TokenCleanupTask,
+    ],
 })
 export class AppModule {}

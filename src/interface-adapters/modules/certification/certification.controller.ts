@@ -20,7 +20,7 @@ import {
     ApiTags,
 } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
-import type { CertificationDTO } from '../../../application/dtos/CertificationDTO'
+import type { CertificationDTO } from '../../../application/dtos/certification/CertificationDTO'
 import { CreateCertificationCommand } from '../../../application/use-cases/commands/certification/CreateCertificationCommand'
 import { DeleteCertificationCommand } from '../../../application/use-cases/commands/certification/DeleteCertificationCommand'
 import { UpdateCertificationCommand } from '../../../application/use-cases/commands/certification/UpdateCertificationCommand'

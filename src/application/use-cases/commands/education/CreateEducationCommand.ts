@@ -1,33 +1,35 @@
-import { Inject, Injectable } from '@nestjs/common'
-import type {
-    CreateEducationInput,
-    IEducationWriteRepository,
-} from '../../../../domain/repositories/education/IEducationWriteRepository'
-import type { EducationDTO } from '../../../dtos/EducationDTO'
+/**
+ * @fileoverview CreateEducationCommand
+ */
 
-// =============================================================================
-// CreateEducationCommand
-// Creates a new education record for the portfolio owner.
-// userId from verified JWT payload — never from client input.
-// Dates stored as Date objects — ISO string conversion happens at DTO level.
-// =============================================================================
+import { Injectable, Inject } from '@nestjs/common'
+import type { IEducationWriteRepository } from '../../../../domain/repositories/education/IEducationWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import type { EducationDTO } from '../../../dtos/education/EducationDTO'
+
 @Injectable()
 export class CreateEducationCommand {
     constructor(
         @Inject('IEducationWriteRepository')
         private readonly repo: IEducationWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: CreateEducationInput): Promise<EducationDTO> {
-        const e = await this.repo.create(input)
+    async execute(input: any): Promise<EducationDTO> {
+        const education = await this.repo.create(input)
+
+        await this.cacheService.invalidatePublicEducation()
+
         return {
-        id:            e.id,
-        degreeName:    e.degreeName,
-        instituteName: e.instituteName,
-        instituteUrl:  e.instituteUrl,
-        startedAt:     e.startedAt.toISOString(),
-        endedAt:       e.endedAt?.toISOString() ?? null,
-        isCompleted:   e.isCompleted,
+            id: education.id,
+            degreeName: education.degreeName,
+            instituteName: education.instituteName,
+            instituteUrl: education.instituteUrl,
+            startedAt: education.startedAt.toISOString(),
+            endedAt: education.endedAt?.toISOString() ?? null,
+            isCompleted: education.isCompleted,
         }
     }
 }

@@ -1,58 +1,50 @@
+/**
+ * @fileoverview ProjectModule
+ * 
+ * Manages projects (public display + admin CRUD).
+ * Uses split Read/Write repositories and full caching support.
+ */
+
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+
 import { ProjectController } from './project.controller'
+
+// Use Cases
 import { GetPublishedProjectsQuery } from '../../../application/use-cases/queries/project/GetPublishedProjectsQuery'
 import { GetProjectBySlugQuery } from '../../../application/use-cases/queries/project/GetProjectBySlugQuery'
 import { CreateProjectCommand } from '../../../application/use-cases/commands/project/CreateProjectCommand'
 import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
 import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
-import { PrismaProjectRepository } from '../../../infrastructure/database/repositories/PrismaProjectRepository'
 
-// =============================================================================
-// ProjectModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaProjectRepository implements both read and write interfaces.
-// =============================================================================
+// Repositories
+import { PrismaProjectReadRepository } from '../../../infrastructure/database/repositories/project/PrismaProjectReadRepository'
+import { PrismaProjectWriteRepository } from '../../../infrastructure/database/repositories/project/PrismaProjectWriteRepository'
+
 @Module({
-  imports: [AuthModule],
-  controllers: [ProjectController],
-  providers: [
-    // ─── Repositories ───────────────────────────────────────────────────────
-    PrismaProjectRepository,
-    { provide: 'IProjectReadRepository',  useExisting: PrismaProjectRepository },
-    { provide: 'IProjectWriteRepository', useExisting: PrismaProjectRepository },
+  imports: [
+    AuthModule,
+    CacheInfrastructureModule,
+  ],
 
-    // ─── Use cases ──────────────────────────────────────────────────────────
-    {
-      provide:    GetPublishedProjectsQuery,
-      useFactory: (repo: PrismaProjectRepository) =>
-        new GetPublishedProjectsQuery(repo),
-      inject: [PrismaProjectRepository],
-    },
-    {
-      provide:    GetProjectBySlugQuery,
-      useFactory: (repo: PrismaProjectRepository) =>
-        new GetProjectBySlugQuery(repo),
-      inject: [PrismaProjectRepository],
-    },
-    {
-      provide:    CreateProjectCommand,
-      useFactory: (repo: PrismaProjectRepository) =>
-        new CreateProjectCommand(repo),
-      inject: [PrismaProjectRepository],
-    },
-    {
-      provide:    UpdateProjectCommand,
-      useFactory: (repo: PrismaProjectRepository) =>
-        new UpdateProjectCommand(repo),
-      inject: [PrismaProjectRepository],
-    },
-    {
-      provide:    DeleteProjectCommand,
-      useFactory: (repo: PrismaProjectRepository) =>
-        new DeleteProjectCommand(repo),
-      inject: [PrismaProjectRepository],
-    },
+  controllers: [ProjectController],
+
+  providers: [
+    // Repositories
+    PrismaProjectReadRepository,
+    PrismaProjectWriteRepository,
+
+    // Ports
+    { provide: 'IProjectReadRepository', useExisting: PrismaProjectReadRepository },
+    { provide: 'IProjectWriteRepository', useExisting: PrismaProjectWriteRepository },
+
+    // Use Cases
+    GetPublishedProjectsQuery,
+    GetProjectBySlugQuery,
+    CreateProjectCommand,
+    UpdateProjectCommand,
+    DeleteProjectCommand,
   ],
 })
 export class ProjectModule {}

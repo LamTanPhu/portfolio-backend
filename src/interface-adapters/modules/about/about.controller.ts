@@ -1,16 +1,16 @@
 import { Controller, Get } from '@nestjs/common'
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger'
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
+import type { JobDTO } from '../../../application/dtos/JobDTO'
+import type { SkillDTO } from '../../../application/dtos/SkillDTO'
+import type { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
+import type { CertificationDTO } from '../../../application/dtos/certification/CertificationDTO'
+import type { EducationDTO } from '../../../application/dtos/education/EducationDTO'
 import { GetPublishedSkillsQuery } from '../../../application/use-cases/queries/skill/GetPublishedSkillsQuery'
 import { GetCertificationsQuery } from '../../../application/use-cases/queries/skill/certificate/GetCertificationsQuery'
 import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
 import { GetJobsQuery } from '../../../application/use-cases/queries/skill/jobs/GetJobsQuery'
 import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/queries/social/GetPublicSocialAccountsQuery'
-import type { SkillDTO } from '../../../application/dtos/SkillDTO'
-import type { EducationDTO } from '../../../application/dtos/EducationDTO'
-import type { JobDTO } from '../../../application/dtos/JobDTO'
-import type { CertificationDTO } from '../../../application/dtos/CertificationDTO'
-import type { SocialAccountDTO } from '../../../application/dtos/SocialAccountDTO'
-import { Throttle } from '@nestjs/throttler'
 
 // =============================================================================
 // AboutController

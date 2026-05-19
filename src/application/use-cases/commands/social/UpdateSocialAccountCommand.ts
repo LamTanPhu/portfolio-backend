@@ -1,29 +1,39 @@
-import { Inject, Injectable } from '@nestjs/common'
+/**
+ * @fileoverview UpdateSocialAccountCommand
+ * 
+ * Updates a social account and invalidates the public cache.
+ */
+
+import { Injectable, Inject } from '@nestjs/common'
 import type {
     ISocialAccountWriteRepository,
     UpdateSocialAccountInput,
 } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
 
-interface Input extends UpdateSocialAccountInput {
+interface UpdateInput extends UpdateSocialAccountInput {
     id: number
 }
 
-// =============================================================================
-// UpdateSocialAccountCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateSocialAccountCommand {
     constructor(
         @Inject('ISocialAccountWriteRepository')
         private readonly repo: ISocialAccountWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<SocialAccountDTO> {
+    async execute(input: UpdateInput): Promise<SocialAccountDTO> {
         const { id, ...data } = input
+
         const account = await this.repo.update(id, data)
+
+        // Invalidate public social accounts cache
+        await this.cacheService.invalidatePublicSocialAccounts()
+
         return {
         id:       account.id,
         name:     account.name,

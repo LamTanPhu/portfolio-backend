@@ -1,32 +1,33 @@
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+/**
+ * @fileoverview GetCertificationsQuery
+ * 
+ * Public query returning all published certifications with caching.
+ * Uses LONG cache profile for optimal performance + freshness.
+ */
+
 import { Inject, Injectable } from '@nestjs/common'
 import type { ICertificationReadRepository } from '../../../../../domain/repositories/certification/ICertificationReadRepository'
-import type { CertificationDTO } from '../../../../dtos/CertificationDTO'
+import { CertificationDTO } from '../../../../dtos/certification/CertificationDTO'
+import type { ICacheQueryService } from '../../../../ports/ICacheQueryService'
 
-// =============================================================================
-// GetCertificationsQuery
-// Returns only published certifications ordered by most recent first.
-// isPublished filter applied at repository level — drafts never exposed.
-// Dates serialized as ISO 8601 strings — domain Date objects never cross layers.
-// =============================================================================
 @Injectable()
 export class GetCertificationsQuery {
     constructor(
         @Inject('ICertificationReadRepository')
         private readonly repo: ICertificationReadRepository,
+
+        @Inject('ICacheQueryService')
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    @CacheKey('public_certifications')
-    @CacheTTL(600_000)
     async execute(): Promise<CertificationDTO[]> {
-        const certs = await this.repo.findPublished()
-        return certs.map((c) => ({
-            id:        c.id,
-            name:      c.name,
-            url:       c.url,
-            startDate: c.startDate.toString(),
-            endDate:   c.endDate?.toString() ?? null,
-        }))
+        return this.cacheQuery.getOrSetWithProfile(
+        'certification:list:public',
+        'LONG',
+        async () => {
+            const certifications = await this.repo.findPublished()
+            return certifications
+        },
+        )
     }
 }

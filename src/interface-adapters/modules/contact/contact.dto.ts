@@ -1,18 +1,20 @@
+/**
+ * @fileoverview SubmitContactDto
+ * 
+ * Data Transfer Object for public contact form submissions.
+ * Used in the Interface Adapter layer (Controller).
+ * Contains validation rules and Swagger documentation.
+ */
+
 import { IsString, IsEmail, IsNotEmpty, Length } from 'class-validator'
 import { ApiProperty } from '@nestjs/swagger'
 
-// =============================================================================
-// SubmitContactDto
-// Validates public contact form submission.
-// turnstileToken verified server-side before any data is persisted.
-// whitelist: true in ValidationPipe strips any extra fields automatically.
-// =============================================================================
 export class SubmitContactDto {
   @ApiProperty({
     description: 'Sender full name',
-    example:     'John Doe',
-    minLength:   1,
-    maxLength:   60,
+    example: 'John Doe',
+    minLength: 1,
+    maxLength: 60,
   })
   @IsString()
   @IsNotEmpty()
@@ -20,26 +22,27 @@ export class SubmitContactDto {
   name!: string
 
   @ApiProperty({
-    description: 'Sender email address — RFC 5321 compliant',
-    example:     'john@example.com',
+    description: 'Valid email address (RFC 5321 compliant)',
+    example: 'john@example.com',
   })
   @IsEmail()
+  @IsNotEmpty()
   email!: string
 
   @ApiProperty({
-    description: 'Message content',
-    example:     'Hello, I would like to discuss a project opportunity.',
-    minLength:   1,
-    maxLength:   300,
+    description: 'Message content from the user',
+    example: 'Hello, I would like to discuss a potential collaboration.',
+    minLength: 10,
+    maxLength: 300,
   })
   @IsString()
   @IsNotEmpty()
-  @Length(1, 300)
+  @Length(10, 300)
   message!: string
 
   @ApiProperty({
-    description: 'Cloudflare Turnstile verification token — obtained from frontend widget',
-    example:     'turnstile-token-from-widget',
+    description: 'Cloudflare Turnstile verification token from frontend',
+    example: '0x4AAAAAAA...',
   })
   @IsString()
   @IsNotEmpty()

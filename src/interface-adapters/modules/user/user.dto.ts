@@ -1,11 +1,13 @@
+/**
+ * @fileoverview User DTOs (Request Models)
+ * 
+ * DTOs for admin user profile management.
+ * Email and password are intentionally excluded from updates.
+ */
+
 import { IsString, IsOptional } from 'class-validator'
 import { ApiPropertyOptional } from '@nestjs/swagger'
 
-// =============================================================================
-// UpdateUserDto
-// Only allows updating firstname, lastname, aboutme.
-// email and password intentionally excluded — never updated via API.
-// =============================================================================
 export class UpdateUserDto {
   @ApiPropertyOptional({ description: 'First name', example: 'Tấn Phú' })
   @IsString()
@@ -17,7 +19,10 @@ export class UpdateUserDto {
   @IsOptional()
   lastname?: string
 
-  @ApiPropertyOptional({ description: 'About me bio', example: 'Full-Stack Developer based in HCMC.' })
+  @ApiPropertyOptional({ 
+    description: 'About me / bio', 
+    example: 'Full-Stack Developer based in Ho Chi Minh City.' 
+  })
   @IsString()
   @IsOptional()
   aboutme?: string | null

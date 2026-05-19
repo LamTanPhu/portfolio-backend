@@ -1,19 +1,27 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { ISkillWriteRepository } from '../../../../domain/repositories/skill/ISkillWriteRepository'
+/**
+ * @fileoverview DeleteSkillCommand
+ * 
+ * Deletes a skill record and invalidates the public skills cache.
+ */
 
-// =============================================================================
-// DeleteSkillCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
+import { Inject, Injectable } from '@nestjs/common'
+import type { ISkillWriteRepository } from '../../../../domain/repositories/skill/ISkillWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+
 @Injectable()
 export class DeleteSkillCommand {
     constructor(
         @Inject('ISkillWriteRepository')
         private readonly repo: ISkillWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
     async execute(id: number): Promise<void> {
         await this.repo.delete(id)
+
+        // Invalidate public skills cache
+        await this.cacheService.invalidatePublicSkills()
     }
 }

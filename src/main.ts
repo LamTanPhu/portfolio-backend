@@ -4,131 +4,99 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import helmet from 'helmet'
 import { json } from 'express'
 import cookieParser from 'cookie-parser'
-import compression from 'compression'          // ← Added for response compression
+import compression from 'compression'
+import { readFileSync } from 'fs'
 import { AppModule } from './app.module'
 
-// =============================================================================
-// Bootstrap
-// Application entry point. Configures security, validation, docs, then starts.
-// Order matters — security middleware must be registered before routes.
-// =============================================================================
 async function bootstrap(): Promise<void> {
     const logger = new Logger('Bootstrap')
     const isDev = process.env.NODE_ENV !== 'production'
 
+    // ─── HTTPS Configuration ─────────────────────────────────────────────────
+    const certPaths = isDev
+        ? {
+            key: './certificates/key.pem',
+            cert: './certificates/cert.pem',
+        }
+        : {
+            key: process.env.CERT_KEY_PATH!,
+            cert: process.env.CERT_CERT_PATH!,
+        }
+
+    const httpsOptions = {
+        key: readFileSync(certPaths.key),
+        cert: readFileSync(certPaths.cert),
+    }
+
     const app = await NestFactory.create(AppModule, {
+        httpsOptions,
         logger: isDev
             ? ['log', 'debug', 'error', 'warn', 'verbose']
             : ['error', 'warn'],
     })
 
-    // ─── Compression ───────────────────────────────────────────────────────
-    // gzip compression significantly reduces JSON response size (often 60-80%).
-    // Especially beneficial for endpoints returning projects, blogs, and skills.
-    app.use(compression({
-        threshold: 1024,        // Only compress responses larger than 1KB
-        level: 6,               // Balanced compression level
-    }))
+    // ─── Middleware ─────────────────────────────────────────────────────────
+    app.use(compression({ threshold: 1024, level: 6 }))
 
-    // ─── Security Headers ──────────────────────────────────────────────────────
-    // Helmet sets 11 HTTP security headers in one call.
-    // crossOriginResourcePolicy: cross-origin needed for font/image assets.
     app.use(helmet({
         crossOriginResourcePolicy: { policy: 'cross-origin' },
     }))
 
-    // Limit request body to 10kb — prevents payload flooding / DoS attacks.
     app.use(json({ limit: '10kb' }))
-
-    // Cookie parser — required for reading httpOnly refresh token cookies.
-    // Signed cookies use COOKIE_SECRET to prevent tampering.
     app.use(cookieParser(process.env.COOKIE_SECRET))
 
-    // ─── CORS ─────────────────────────────────────────────────────────────────
-    // Support multiple allowed origins via comma-separated FRONTEND_URL.
-    // Never use wildcard '*' — always whitelist explicitly.
-    const allowedOrigins = (process.env.FRONTEND_URL ?? 'http://localhost:3000,http://localhost:3001')
+    // ─── CORS ───────────────────────────────────────────────────────────────
+    const allowedOrigins = (process.env.FRONTEND_URL ?? 'https://localhost:3000,https://localhost:3001')
         .split(',')
-        .map((origin) => origin.trim())
+        .map(origin => origin.trim())
 
     app.enableCors({
         origin: (origin, callback) => {
-            // Allow requests with no origin — mobile apps, curl, Postman in dev.
             if (!origin || allowedOrigins.includes(origin)) {
                 callback(null, true)
             } else {
-                callback(new Error(`[CORS] Blocked origin: ${origin}`))
+                callback(new Error(`CORS blocked origin: ${origin}`))
             }
         },
+        credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'DELETE'],
         allowedHeaders: ['Content-Type', 'Authorization'],
-        // Required for httpOnly cookies to be sent cross-origin.
-        credentials: true,
-        // Cache preflight for 24 hours — reduces OPTIONS request overhead.
-        maxAge: 86_400,
+        maxAge: 86400,
     })
 
-    // ─── Global Prefix ────────────────────────────────────────────────────────
+    // ─── Global Settings ────────────────────────────────────────────────────
     app.setGlobalPrefix('api')
 
-    // ─── Validation ───────────────────────────────────────────────────────────
     app.useGlobalPipes(
         new ValidationPipe({
-            // Strip any properties not in the DTO — prevents mass assignment attacks.
             whitelist: true,
-            // Throw 400 if unknown properties are sent.
             forbidNonWhitelisted: true,
-            // Auto-transform payloads to DTO class instances.
             transform: true,
-            transformOptions: {
-                // Converts query param strings to number/boolean automatically.
-                enableImplicitConversion: true,
-            },
+            transformOptions: { enableImplicitConversion: true },
         }),
     )
 
-    // ─── Swagger — Development Only ───────────────────────────────────────────
-    // Never expose API docs in production — information disclosure risk.
+    // ─── Swagger (Dev Only) ─────────────────────────────────────────────────
     if (isDev) {
         const config = new DocumentBuilder()
             .setTitle('Portfolio API')
             .setDescription('Lâm Tấn Phú — Portfolio Backend API')
             .setVersion('1.0')
-            .addBearerAuth(
-                {
-                    type: 'http',
-                    scheme: 'bearer',
-                    bearerFormat: 'JWT',
-                    description: 'Enter your access token',
-                },
-                'JWT',
-            )
+            .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
             .build()
 
         const document = SwaggerModule.createDocument(app, config)
         SwaggerModule.setup('api/docs', app, document)
     }
 
-    // ─── Process Safety ───────────────────────────────────────────────────────
-    // Catch unhandled async errors — prevents silent crashes.
-    // e.g. Spotify API down, external service timeout.
-    process.on('unhandledRejection', (reason: unknown) => {
-        logger.error(`[UnhandledRejection] ${String(reason)}`)
-    })
-
-    // Catch synchronous exceptions — always exit cleanly.
-    process.on('uncaughtException', (error: Error) => {
-        logger.error(`[UncaughtException] ${error.message}`, error.stack)
-        process.exit(1)
-    })
-
-    // ─── Start ────────────────────────────────────────────────────────────────
+    // ─── Start Server ───────────────────────────────────────────────────────
     const port = parseInt(process.env.PORT ?? '3001', 10)
     await app.listen(port)
 
-    logger.log(`Server running on http://localhost:${port}`)
+    logger.log(`Server running on https://localhost:${port}`)
+
     if (isDev) {
-        logger.log(`Swagger docs at http://localhost:${port}/api/docs`)
+        logger.log(`Swagger docs at https://localhost:${port}/api/docs`)
     }
 }
 

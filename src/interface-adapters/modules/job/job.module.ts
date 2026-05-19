@@ -1,47 +1,48 @@
+/**
+ * @fileoverview JobModule
+ * 
+ * Manages work experience records (public view + admin CRUD).
+ * Uses split Read/Write repositories and proper caching.
+ */
+
 import { Module } from '@nestjs/common'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+import { AuthModule } from '../auth/auth.module'
+
+import { JobController } from './job.controller'
+
+// Use Cases
 import { CreateJobCommand } from '../../../application/use-cases/commands/job/CreateJobCommand'
 import { DeleteJobCommand } from '../../../application/use-cases/commands/job/DeleteJobCommand'
 import { UpdateJobCommand } from '../../../application/use-cases/commands/job/UpdateJobCommand'
 import { GetJobsQuery } from '../../../application/use-cases/queries/skill/jobs/GetJobsQuery'
-import { PrismaJobRepository } from '../../../infrastructure/database/repositories/PrismaJobRepository'
-import { AuthModule } from '../auth/auth.module'
-import { JobController } from './job.controller'
 
-// =============================================================================
-// JobModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaJobRepository implements both read and write interfaces.
-// =============================================================================
+// Repositories
+import { PrismaJobReadRepository } from '../../../infrastructure/database/repositories/job/PrismaJobReadRepository'
+import { PrismaJobWriteRepository } from '../../../infrastructure/database/repositories/job/PrismaJobWriteRepository'
+
 @Module({
-    imports: [AuthModule],
-    controllers: [JobController],
-    providers: [
-        // ─── Repositories ───────────────────────────────────────────────────────
-        PrismaJobRepository,
-        { provide: 'IJobReadRepository',  useExisting: PrismaJobRepository },
-        { provide: 'IJobWriteRepository', useExisting: PrismaJobRepository },
+    imports: [
+        AuthModule,
+        CacheInfrastructureModule,
+    ],
 
-        // ─── Use cases ──────────────────────────────────────────────────────────
-        {
-            provide:    GetJobsQuery,
-            useFactory: (repo: PrismaJobRepository) => new GetJobsQuery(repo),
-            inject:     [PrismaJobRepository],
-        },
-        {
-            provide:    CreateJobCommand,
-            useFactory: (repo: PrismaJobRepository) => new CreateJobCommand(repo),
-            inject:     [PrismaJobRepository],
-        },
-        {
-            provide:    UpdateJobCommand,
-            useFactory: (repo: PrismaJobRepository) => new UpdateJobCommand(repo),
-            inject:     [PrismaJobRepository],
-        },
-        {
-            provide:    DeleteJobCommand,
-            useFactory: (repo: PrismaJobRepository) => new DeleteJobCommand(repo),
-            inject:     [PrismaJobRepository],
-        },
+    controllers: [JobController],
+
+    providers: [
+        // Repositories
+        PrismaJobReadRepository,
+        PrismaJobWriteRepository,
+
+        // Ports
+        { provide: 'IJobReadRepository', useExisting: PrismaJobReadRepository },
+        { provide: 'IJobWriteRepository', useExisting: PrismaJobWriteRepository },
+
+        // Use Cases
+        GetJobsQuery,
+        CreateJobCommand,
+        UpdateJobCommand,
+        DeleteJobCommand,
     ],
 })
 export class JobModule {}

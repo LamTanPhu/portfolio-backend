@@ -1,11 +1,17 @@
+/**
+ * @fileoverview CreateProjectCommand
+ * 
+ * Creates a new project record.
+ * Slug is auto-generated from name using Slug value object.
+ * userId comes from verified JWT payload.
+ */
+
 import { Injectable, Inject } from '@nestjs/common'
 import type { IProjectWriteRepository } from '../../../../domain/repositories/project/IProjectWriteRepository'
-import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { Slug } from '../../../../domain/value-objects/Slug'
+import type { ProjectDTO } from '../../../dtos/ProjectDTO'
 
-// =============================================================================
-// CreateProjectCommand Input
-// =============================================================================
 interface Input {
   name:         string
   description:  string
@@ -18,21 +24,17 @@ interface Input {
   userId:       number
 }
 
-// =============================================================================
-// CreateProjectCommand
-// Single responsibility: validate slug, persist project, return DTO.
-// slug auto-generated from name via Slug value object — never trusted from client.
-// userId comes from verified JWT payload — never trusted from client.
-// =============================================================================
 @Injectable()
 export class CreateProjectCommand {
   constructor(
     @Inject('IProjectWriteRepository')
     private readonly repo: IProjectWriteRepository,
+
+    @Inject('ICacheInvalidationService')
+    private readonly cacheService: ICacheInvalidationService,
   ) {}
 
   async execute(input: Input): Promise<ProjectDTO> {
-    // Slug auto-generated from name — ValidationError thrown if name is empty
     const slug = Slug.from(input.name)
 
     const project = await this.repo.create({
@@ -43,10 +45,14 @@ export class CreateProjectCommand {
       repoUrl:      input.repoUrl,
       liveUrl:      input.liveUrl,
       thumbnailUrl: input.thumbnailUrl,
-      isOpenSource: input.isOpenSource,
       isPublished:  input.isPublished,
+      isOpenSource: input.isOpenSource,
       userId:       input.userId,
     })
+
+    // Invalidate caches
+    await this.cacheService.invalidatePublicProjects()
+    await this.cacheService.invalidateProjectBySlug(slug.toString())
 
     return {
       id:           project.id,

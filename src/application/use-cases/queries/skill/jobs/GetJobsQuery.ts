@@ -1,34 +1,34 @@
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+/**
+ * @fileoverview GetJobsQuery
+ * 
+ * Public query returning all work experience records.
+ * Uses LONG cache profile (work experience changes infrequently).
+ */
+
 import { Inject, Injectable } from '@nestjs/common'
 import type { IJobReadRepository } from '../../../../../domain/repositories/job/IJobReadRepository'
-import type { JobDTO } from '../../../../dtos/JobDTO'
+import { JobDTO } from '../../../../dtos/JobDTO'
+import type { ICacheQueryService } from '../../../../ports/ICacheQueryService'
 
-// =============================================================================
-// GetJobsQuery
-// Returns all work experience ordered by most recent first.
-// No publish filter — all job records shown publicly.
-// endedAt null = currently employed at this company.
-// Dates serialized as ISO 8601 strings — domain Date objects never cross layers.
-// =============================================================================
+
 @Injectable()
 export class GetJobsQuery {
     constructor(
         @Inject('IJobReadRepository')
         private readonly repo: IJobReadRepository,
+
+        @Inject('ICacheQueryService')
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    @CacheKey('project_')
-    @CacheTTL(300_000)
     async execute(): Promise<JobDTO[]> {
-        const jobs = await this.repo.findAll()
-        return jobs.map((j) => ({
-            id:          j.id,
-            companyName: j.companyName,
-            role:        j.role,
-            startedAt:   j.startedAt.toString(),
-            endedAt:     j.endedAt?.toString() ?? null,
-            isEnded:     j.isEnded,
-        }))
+        return this.cacheQuery.getOrSetWithProfile(
+        'job:list:public',
+        'LONG',
+        async () => {
+            const jobs = await this.repo.findAll()
+            return jobs
+        },
+        )
     }
 }

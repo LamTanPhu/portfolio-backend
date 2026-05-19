@@ -1,42 +1,52 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
-import type { ProjectDTO } from '../../../dtos/ProjectDTO'
-import { NotFoundError } from '../../../../domain/errors/NotFoundError'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
+/**
+ * @fileoverview GetProjectBySlugQuery
+ * 
+ * Returns full project details by slug.
+ * Uses LONG cache profile (project details change infrequently).
+ */
 
-// =============================================================================
-// GetProjectBySlugQuery
-// Returns full project by slug — includes description and all fields.
-// Slug is unique indexed — O(1) lookup guaranteed.
-// Throws NotFoundError if slug does not exist — mapped to 404 by DomainExceptionFilter.
-// =============================================================================
+import { Inject, Injectable } from '@nestjs/common'
+import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
+
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+
 @Injectable()
 export class GetProjectBySlugQuery {
   constructor(
     @Inject('IProjectReadRepository')
     private readonly repo: IProjectReadRepository,
+
+    @Inject('ICacheQueryService')
+    private readonly cacheQuery: ICacheQueryService,
   ) {}
 
-  @CacheKey('project_')
-  @CacheTTL(300_000)
   async execute(slug: string): Promise<ProjectDTO> {
-    const project = await this.repo.findBySlug(slug)
-    if (!project) throw new NotFoundError(`Project not found: ${slug}`)
+    return this.cacheQuery.getOrSetWithProfile(
+      `project:${slug}`,
+      'LONG',
+      async () => {
+        const project = await this.repo.findBySlug(slug)
+        if (!project) {
+          throw new NotFoundError(`Project not found: ${slug}`)
+        }
 
-    return {
-      id:           project.id,
-      name:         project.name,
-      description:  project.description,
-      slug:         project.slug,
-      techStack:    project.techStack,
-      repoUrl:      project.repoUrl,
-      liveUrl:      project.liveUrl,
-      thumbnailUrl: project.thumbnailUrl,
-      isPublished:  project.isPublished,
-      isOpenSource: project.isOpenSource,
-      createdAt:    project.createdAt.toISOString(),
-      updatedAt:    project.updatedAt.toISOString(),
-    }
+        return {
+          id:           project.id,
+          name:         project.name,
+          description:  project.description,
+          slug:         project.slug,
+          techStack:    project.techStack,
+          repoUrl:      project.repoUrl,
+          liveUrl:      project.liveUrl,
+          thumbnailUrl: project.thumbnailUrl,
+          isPublished:  project.isPublished,
+          isOpenSource: project.isOpenSource,
+          createdAt:    project.createdAt.toISOString(),
+          updatedAt:    project.updatedAt.toISOString(),
+        }
+      },
+    )
   }
 }

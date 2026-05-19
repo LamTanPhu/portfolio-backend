@@ -1,39 +1,46 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { IUserReadRepository } from '../../../../domain/repositories/user/IUserReadRepository'
+/**
+ * @fileoverview GetUserProfileQuery
+ * 
+ * Returns the portfolio owner's profile (the only admin user).
+ * Uses LONG cache profile — profile changes very infrequently.
+ */
+
+import { Inject, Injectable } from '@nestjs/common'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import type { IUserReadRepository } from '../../../../domain/repositories/user/IUserReadRepository'
 
-export interface UserProfileDTO {
-  id:        number
-  firstname: string
-  lastname:  string
-  email:     string
-  aboutme:   string | null
-  lastLogin: string | null
-}
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+import type { UserProfileDTO } from '../../../dtos/UserProfileDTO'
 
-// =============================================================================
-// GetUserProfileQuery
-// Returns the portfolio owner's public profile.
-// hashPassword never returned — excluded at repository level.
-// =============================================================================
 @Injectable()
 export class GetUserProfileQuery {
   constructor(
     @Inject('IUserReadRepository')
     private readonly repo: IUserReadRepository,
+
+    @Inject('ICacheQueryService')
+    private readonly cacheQuery: ICacheQueryService,
   ) {}
 
   async execute(userId: number): Promise<UserProfileDTO> {
-    const user = await this.repo.findById(userId)
-    if (!user) throw new NotFoundError(`User not found: ${userId}`)
+    return this.cacheQuery.getOrSetWithProfile(
+      `user:profile:${userId}`,
+      'LONG',                    // Profile rarely changes
+      async () => {
+        const user = await this.repo.findById(userId)
+        if (!user) {
+          throw new NotFoundError(`User not found: ${userId}`)
+        }
 
-    return {
-      id:        user.id,
-      firstname: user.firstname,
-      lastname:  user.lastname,
-      email:     user.email,
-      aboutme:   user.aboutme,
-      lastLogin: user.lastLogin?.toISOString() ?? null,
-    }
+        return {
+          id:        user.id,
+          firstname: user.firstname,
+          lastname:  user.lastname,
+          email:     user.email,
+          aboutme:   user.aboutme,
+          lastLogin: user.lastLogin?.toISOString() ?? null,
+        }
+      },
+    )
   }
 }

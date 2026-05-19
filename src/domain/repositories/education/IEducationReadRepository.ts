@@ -1,5 +1,4 @@
-import { EducationDTO } from '../../../application/dtos/EducationDTO'
-import type { Education } from '../../entities/Education'
+import { EducationDTO } from '../../../application/dtos/education/EducationDTO'
 
 // =============================================================================
 // IEducationReadRepository

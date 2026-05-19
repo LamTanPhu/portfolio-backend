@@ -1,80 +1,70 @@
-import {
-  Global,
-  Injectable,
-  Logger,
-  Module,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common'
+/**
+ * @fileoverview PrismaService - Optimized & Stable
+ * 
+ * Clean, performant PrismaClient with good connection handling.
+ * Avoids type conflicts while maintaining solid performance.
+ */
+
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 
-// =============================================================================
-// Lazy Singleton Factory
-// Client initialized on first access — after ConfigModule loads .env.
-// Singleton pattern — one connection pool shared across entire application.
-// Throws immediately if DATABASE_URL missing — fail fast, never silent.
-// =============================================================================
-let prisma: PrismaClient | null = null
-
-function getPrismaClient(): PrismaClient {
-  if (prisma) return prisma
-
-  const databaseUrl = process.env.DATABASE_URL
-  if (!databaseUrl) {
-    throw new Error('[PrismaModule] DATABASE_URL environment variable is not set')
-  }
-
-  const adapter = new PrismaPg({ connectionString: databaseUrl })
-
-  prisma = new PrismaClient({
-    adapter,
-    // Query logging in development — off in production for performance
-    log: process.env.NODE_ENV === 'development'
-      ? [
-          { emit: 'stdout', level: 'query' },
-          { emit: 'stdout', level: 'warn'  },
-          { emit: 'stdout', level: 'error' },
-        ]
-      : [{ emit: 'stdout', level: 'error' }],
-  })
-
-  return prisma
-}
-
-// =============================================================================
-// PrismaService
-// Wraps singleton PrismaClient with NestJS lifecycle hooks.
-// client getter — lazy initialization ensures .env is loaded first.
-// =============================================================================
 @Injectable()
 export class PrismaService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PrismaService.name)
+  private prisma: PrismaClient | null = null
 
-  // Lazy getter — PrismaClient created on first access, not at import time
+  constructor(private readonly configService: ConfigService) {}
+
   get client(): PrismaClient {
-    return getPrismaClient()
+    if (!this.prisma) {
+      this.initializeClient()
+    }
+    return this.prisma!
+  }
+
+  private initializeClient(): void {
+    const databaseUrl = this.configService.get<string>('DATABASE_URL')
+    if (!databaseUrl) {
+      throw new Error('[PrismaService] DATABASE_URL environment variable is not set')
+    }
+
+    const adapter = new PrismaPg({ connectionString: databaseUrl })
+
+    this.prisma = new PrismaClient({
+      adapter,
+
+      log: this.configService.get<string>('NODE_ENV') === 'development'
+        ? [
+            { emit: 'stdout', level: 'query' },
+            { emit: 'stdout', level: 'warn' },
+            { emit: 'stdout', level: 'error' },
+          ]
+        : [{ emit: 'stdout', level: 'error' }],
+
+      // Performance options that are safe with PrismaPg
+      transactionOptions: {
+        maxWait: 5000,
+        timeout: 10000,
+      },
+    })
   }
 
   async onModuleInit(): Promise<void> {
-    await getPrismaClient().$connect()
-    this.logger.log('Database connected successfully')
+    try {
+      await this.client.$connect()
+      this.logger.log('Prisma Database connected successfully')
+    } catch (error) {
+      this.logger.error('Failed to connect to database', error)
+      throw error
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
-    await getPrismaClient().$disconnect()
-    this.logger.log('Database disconnected')
+    if (this.prisma) {
+      await this.prisma.$disconnect()
+      this.logger.log('Prisma disconnected')
+    }
   }
 }
-
-// =============================================================================
-// PrismaModule
-// @Global() — PrismaService available everywhere without re-importing.
-// Imported once in AppModule — single connection pool, no duplicates.
-// =============================================================================
-@Global()
-@Module({
-  providers: [PrismaService],
-  exports:   [PrismaService],
-})
-export class PrismaModule {}

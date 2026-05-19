@@ -1,32 +1,34 @@
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+/**
+ * @fileoverview GetPublicSocialAccountsQuery
+ * 
+ * Returns all public social accounts (GitHub, LinkedIn, etc.).
+ * Uses LONG cache profile since social links change infrequently.
+ */
+
 import { Inject, Injectable } from '@nestjs/common'
 import type { ISocialAccountReadRepository } from '../../../../domain/repositories/social/ISocialAccountReadRepository'
-import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
 
-// =============================================================================
-// GetPublicSocialAccountsQuery
-// Returns only public social accounts — GitHub, LinkedIn, X, etc.
-// isPublic filter applied at repository level — private accounts never exposed.
-// Ordered by name alphabetically — consistent display order in frontend.
-// =============================================================================
+import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+
 @Injectable()
 export class GetPublicSocialAccountsQuery {
     constructor(
         @Inject('ISocialAccountReadRepository')
         private readonly repo: ISocialAccountReadRepository,
+
+        @Inject('ICacheQueryService')
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    @CacheKey('public_social_accounts')
-    @CacheTTL(600_000)
     async execute(): Promise<SocialAccountDTO[]> {
-        const accounts = await this.repo.findPublic()
-        return accounts.map((a) => ({
-            id:       a.id,
-            name:     a.name,
-            url:      a.url,
-            imageUrl: a.imageUrl,
-            isPublic: a.isPublic,
-        }))
+        return this.cacheQuery.getOrSetWithProfile(
+        'social:list:public',
+        'LONG',
+        async () => {
+            const accounts = await this.repo.findPublic()
+            return accounts
+        },
+        )
     }
 }

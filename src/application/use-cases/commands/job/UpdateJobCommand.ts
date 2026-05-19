@@ -1,36 +1,46 @@
+/**
+ * @fileoverview UpdateJobCommand
+ * 
+ * Updates a work experience record and invalidates the public cache.
+ */
+
 import { Inject, Injectable } from '@nestjs/common'
 import type {
     IJobWriteRepository,
     UpdateJobInput,
 } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { JobDTO } from '../../../dtos/JobDTO'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 
-interface Input extends UpdateJobInput {
+interface UpdateInput extends UpdateJobInput {
     id: number
 }
 
-// =============================================================================
-// UpdateJobCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateJobCommand {
     constructor(
         @Inject('IJobWriteRepository')
         private readonly repo: IJobWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<JobDTO> {
+    async execute(input: UpdateInput): Promise<JobDTO> {
         const { id, ...data } = input
-        const job = await this.repo.update(id, data)
+
+        const updated = await this.repo.update(id, data)
+
+        // Invalidate public list cache after update
+        await this.cacheService.invalidatePublicJobs()
+
         return {
-        id:          job.id,
-        companyName: job.companyName,
-        role:        job.role,
-        startedAt:   job.startedAt.toISOString(),
-        endedAt:     job.endedAt?.toISOString() ?? null,
-        isEnded:     job.isEnded,
+        id: updated.id,
+        companyName: updated.companyName,
+        role: updated.role,
+        startedAt: updated.startedAt.toISOString(),
+        endedAt: updated.endedAt?.toISOString() ?? null,
+        isEnded: updated.isEnded,
         }
     }
 }

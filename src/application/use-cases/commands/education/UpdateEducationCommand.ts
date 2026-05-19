@@ -1,37 +1,47 @@
-import { Inject, Injectable } from '@nestjs/common'
+/**
+ * @fileoverview UpdateEducationCommand
+ * 
+ * Updates an education record and invalidates the public cache.
+ */
+
+import { Injectable, Inject } from '@nestjs/common'
 import type {
     IEducationWriteRepository,
     UpdateEducationInput,
 } from '../../../../domain/repositories/education/IEducationWriteRepository'
-import type { EducationDTO } from '../../../dtos/EducationDTO'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import type { EducationDTO } from '../../../dtos/education/EducationDTO'
 
-interface Input extends UpdateEducationInput {
+interface UpdateInput extends UpdateEducationInput {
     id: number
 }
 
-// =============================================================================
-// UpdateEducationCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateEducationCommand {
     constructor(
         @Inject('IEducationWriteRepository')
         private readonly repo: IEducationWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<EducationDTO> {
+    async execute(input: UpdateInput): Promise<EducationDTO> {
         const { id, ...data } = input
-        const e = await this.repo.update(id, data)
+
+        const updated = await this.repo.update(id, data)
+
+        // Always invalidate public list cache after update
+        await this.cacheService.invalidatePublicEducation()
+
         return {
-        id:            e.id,
-        degreeName:    e.degreeName,
-        instituteName: e.instituteName,
-        instituteUrl:  e.instituteUrl,
-        startedAt:     e.startedAt.toISOString(),
-        endedAt:       e.endedAt?.toISOString() ?? null,
-        isCompleted:   e.isCompleted,
+            id: updated.id,
+            degreeName: updated.degreeName,
+            instituteName: updated.instituteName,
+            instituteUrl: updated.instituteUrl,
+            startedAt: updated.startedAt.toISOString(),
+            endedAt: updated.endedAt?.toISOString() ?? null,
+            isCompleted: updated.isCompleted,
         }
     }
 }

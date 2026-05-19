@@ -1,51 +1,54 @@
+/**
+ * @fileoverview EducationModule
+ * 
+ * Manages education records (public view + admin CRUD).
+ * Uses split Read/Write repositories and proper caching.
+ */
+
 import { Module } from '@nestjs/common'
-import { CreateEducationCommand } from '../../../application/use-cases/commands/education/CreateEducationCommand'
-import { DeleteEducationCommand } from '../../../application/use-cases/commands/education/DeleteEducationCommand'
-import { UpdateEducationCommand } from '../../../application/use-cases/commands/education/UpdateEducationCommand'
-import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
-import { PrismaEducationRepository } from '../../../infrastructure/database/repositories/PrismaEducationRepository'
 import { AuthModule } from '../auth/auth.module'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+
 import { EducationController } from './education.controller'
 
-// =============================================================================
-// EducationModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaEducationRepository implements both read and write interfaces.
-// =============================================================================
-@Module({
-    imports: [AuthModule],
-    controllers: [EducationController],
-    providers: [
-        // ─── Repositories ───────────────────────────────────────────────────────
-        PrismaEducationRepository,
-        { provide: 'IEducationReadRepository',  useExisting: PrismaEducationRepository },
-        { provide: 'IEducationWriteRepository', useExisting: PrismaEducationRepository },
+// Use Cases
+import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
+import { CreateEducationCommand } from '../../../application/use-cases/commands/education/CreateEducationCommand'
+import { UpdateEducationCommand } from '../../../application/use-cases/commands/education/UpdateEducationCommand'
+import { DeleteEducationCommand } from '../../../application/use-cases/commands/education/DeleteEducationCommand'
 
-        // ─── Use cases ──────────────────────────────────────────────────────────
-        {
-        provide:    GetEducationQuery,
-        useFactory: (repo: PrismaEducationRepository) =>
-            new GetEducationQuery(repo),
-        inject: [PrismaEducationRepository],
+// Repositories
+import { PrismaEducationReadRepository } from '../../../infrastructure/database/repositories/education/PrismaEducationReadRepository'
+import { PrismaEducationWriteRepository } from '../../../infrastructure/database/repositories/education/PrismaEducationWriteRepository'
+
+@Module({
+    imports: [
+        AuthModule,
+        CacheInfrastructureModule,   // Required for caching
+    ],
+
+    controllers: [EducationController],
+
+    providers: [
+        // Repositories
+        PrismaEducationReadRepository,
+        PrismaEducationWriteRepository,
+
+        // Ports
+        { 
+            provide: 'IEducationReadRepository',
+            useExisting: PrismaEducationReadRepository
         },
-        {
-        provide:    CreateEducationCommand,
-        useFactory: (repo: PrismaEducationRepository) =>
-            new CreateEducationCommand(repo),
-        inject: [PrismaEducationRepository],
+        { 
+            provide: 'IEducationWriteRepository',
+            useExisting: PrismaEducationWriteRepository
         },
-        {
-        provide:    UpdateEducationCommand,
-        useFactory: (repo: PrismaEducationRepository) =>
-            new UpdateEducationCommand(repo),
-        inject: [PrismaEducationRepository],
-        },
-        {
-        provide:    DeleteEducationCommand,
-        useFactory: (repo: PrismaEducationRepository) =>
-            new DeleteEducationCommand(repo),
-        inject: [PrismaEducationRepository],
-        },
+
+        // Use Cases
+        GetEducationQuery,
+        CreateEducationCommand,
+        UpdateEducationCommand,
+        DeleteEducationCommand,
     ],
 })
 export class EducationModule {}

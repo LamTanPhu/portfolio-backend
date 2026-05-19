@@ -1,29 +1,39 @@
-import { Inject, Injectable } from '@nestjs/common'
+/**
+ * @fileoverview UpdateSkillCommand
+ * 
+ * Updates a skill record and invalidates the public skills cache.
+ */
+
+import { Injectable, Inject } from '@nestjs/common'
 import type {
-    ISkillWriteRepository,
-    UpdateSkillInput,
+  ISkillWriteRepository,
+  UpdateSkillInput,
 } from '../../../../domain/repositories/skill/ISkillWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SkillDTO } from '../../../dtos/SkillDTO'
 
-interface Input extends UpdateSkillInput {
+interface UpdateInput extends UpdateSkillInput {
     id: number
 }
 
-// =============================================================================
-// UpdateSkillCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class UpdateSkillCommand {
     constructor(
         @Inject('ISkillWriteRepository')
         private readonly repo: ISkillWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: Input): Promise<SkillDTO> {
+    async execute(input: UpdateInput): Promise<SkillDTO> {
         const { id, ...data } = input
+
         const skill = await this.repo.update(id, data)
+
+        // Invalidate public skills cache
+        await this.cacheService.invalidatePublicSkills()
+
         return {
         id:       skill.id,
         name:     skill.name,

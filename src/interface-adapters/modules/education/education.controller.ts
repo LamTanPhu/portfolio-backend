@@ -1,3 +1,13 @@
+/**
+ * @fileoverview EducationController
+ * 
+ * Handles education records for the public portfolio and admin management.
+ * 
+ * - Public GET: Returns all education records (no authentication required)
+ * - Admin POST/PATCH/DELETE: Requires valid JWT
+ * - userId is extracted from JWT payload — never trusted from client input
+ */
+
 import {
     Body,
     Controller,
@@ -19,51 +29,47 @@ import {
     ApiResponse,
     ApiTags,
 } from '@nestjs/swagger'
-import type { EducationDTO } from '../../../application/dtos/EducationDTO'
-import { CreateEducationCommand } from '../../../application/use-cases/commands/education/CreateEducationCommand'
-import { DeleteEducationCommand } from '../../../application/use-cases/commands/education/DeleteEducationCommand'
-import { UpdateEducationCommand } from '../../../application/use-cases/commands/education/UpdateEducationCommand'
-import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
-import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
-import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
-import { CreateEducationDto, UpdateEducationDto } from './education.dto'
 import { Throttle } from '@nestjs/throttler'
 
-// =============================================================================
-// EducationController
-// Public GET — returns all education records, no auth required.
-// Admin POST/PATCH/DELETE — JWT required.
-// userId extracted from verified JWT payload — never from client input.
-// Dates converted from ISO strings to Date objects before reaching commands.
-// =============================================================================
+import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
+
+import { GetEducationQuery } from '../../../application/use-cases/queries/skill/education/GetEducationQuery'
+import { CreateEducationCommand } from '../../../application/use-cases/commands/education/CreateEducationCommand'
+import { UpdateEducationCommand } from '../../../application/use-cases/commands/education/UpdateEducationCommand'
+import { DeleteEducationCommand } from '../../../application/use-cases/commands/education/DeleteEducationCommand'
+
+import type { EducationDTO } from '../../../application/dtos/education/EducationDTO'
+import { CreateEducationDto, UpdateEducationDto } from './education.dto'
+
 @ApiTags('Education')
 @Controller('education')
 export class EducationController {
     constructor(
-        private readonly getQuery:      GetEducationQuery,
+        private readonly getQuery: GetEducationQuery,
         private readonly createCommand: CreateEducationCommand,
         private readonly updateCommand: UpdateEducationCommand,
         private readonly deleteCommand: DeleteEducationCommand,
     ) {}
 
     // ===========================================================================
-    // GET /api/education
+    // Public Endpoints
     // ===========================================================================
     @Get()
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all education records' })
+    @ApiOperation({ summary: 'Get all education records (Public)' })
     @ApiResponse({ status: 200, description: 'List of education records' })
     async findAll(): Promise<EducationDTO[]> {
         return this.getQuery.execute()
     }
 
     // ===========================================================================
-    // POST /api/education
+    // Admin Endpoints
     // ===========================================================================
     @Post()
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Create education record — admin only' })
+    @ApiOperation({ summary: 'Create new education record — admin only' })
     @ApiResponse({ status: 201, description: 'Education record created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async create(
@@ -71,19 +77,16 @@ export class EducationController {
         @Req() req: AuthenticatedRequest,
     ): Promise<EducationDTO> {
         return this.createCommand.execute({
-        degreeName:    dto.degreeName,
+        degreeName: dto.degreeName,
         instituteName: dto.instituteName,
-        instituteUrl:  dto.instituteUrl  ?? null,
-        startedAt:     new Date(dto.startedAt),
-        endedAt:       dto.endedAt ? new Date(dto.endedAt) : null,
-        isCompleted:   dto.isCompleted   ?? false,
-        userId:        req.user.sub,
+        instituteUrl: dto.instituteUrl ?? null,
+        startedAt: new Date(dto.startedAt),
+        endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
+        isCompleted: dto.isCompleted ?? false,
+        userId: req.user.sub,
         })
     }
 
-    // ===========================================================================
-    // PATCH /api/education/:id
-    // ===========================================================================
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
@@ -98,18 +101,15 @@ export class EducationController {
     ): Promise<EducationDTO> {
         return this.updateCommand.execute({
         id,
-        degreeName:    dto.degreeName,
+        degreeName: dto.degreeName,
         instituteName: dto.instituteName,
-        instituteUrl:  dto.instituteUrl,
-        startedAt:     dto.startedAt ? new Date(dto.startedAt) : undefined,
-        endedAt:       dto.endedAt   ? new Date(dto.endedAt)   : undefined,
-        isCompleted:   dto.isCompleted,
+        instituteUrl: dto.instituteUrl,
+        startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
+        endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+        isCompleted: dto.isCompleted,
         })
     }
 
-    // ===========================================================================
-    // DELETE /api/education/:id
-    // ===========================================================================
     @Delete(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')

@@ -1,4 +1,4 @@
-import { CertificationDTO } from '../../../application/dtos/CertificationDTO'
+import { CertificationDTO } from '../../../application/dtos/certification/CertificationDTO'
 
 // =============================================================================
 // ICertificationReadRepository

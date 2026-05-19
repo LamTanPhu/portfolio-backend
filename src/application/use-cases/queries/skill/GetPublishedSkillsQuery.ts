@@ -1,31 +1,34 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type { ISkillReadRepository } from '../../../../domain/repositories/skill/ISkillReadRepository'
-import type { SkillDTO } from '../../../dtos/SkillDTO'
-import { CacheKey } from '@nestjs/cache-manager/dist/decorators/cache-key.decorator'
-import { CacheTTL } from '@nestjs/cache-manager/dist/decorators/cache-ttl.decorator'
+/**
+ * @fileoverview GetPublishedSkillsQuery
+ * 
+ * Returns all public skills ordered by category.
+ * Uses LONG cache profile (skills change infrequently).
+ */
 
-// =============================================================================
-// GetPublishedSkillsQuery
-// Returns only public skills ordered by category alphabetically.
-// isPublic filter applied at repository level — private skills never exposed.
-// category serialized as string — SkillCategory enum never crosses layer boundary.
-// =============================================================================
+import { Inject, Injectable } from '@nestjs/common'
+import type { ISkillReadRepository } from '../../../../domain/repositories/skill/ISkillReadRepository'
+
+import type { SkillDTO } from '../../../dtos/SkillDTO'
+import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+
 @Injectable()
 export class GetPublishedSkillsQuery {
     constructor(
         @Inject('ISkillReadRepository')
         private readonly repo: ISkillReadRepository,
+
+        @Inject('ICacheQueryService')
+        private readonly cacheQuery: ICacheQueryService,
     ) {}
-    
-    @CacheKey('public_skills')
-    @CacheTTL(300_000)
+
     async execute(): Promise<SkillDTO[]> {
-        const skills = await this.repo.findPublished()
-        return skills.map((s) => ({
-            id:       s.id,
-            name:     s.name,
-            imageUrl: s.imageUrl,
-            category: s.category,
-        }))
+        return this.cacheQuery.getOrSetWithProfile(
+        'skill:list:public',
+        'LONG',
+        async () => {
+            const skills = await this.repo.findPublished()
+            return skills
+        },
+        )
     }
 }

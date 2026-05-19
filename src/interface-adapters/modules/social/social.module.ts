@@ -1,51 +1,48 @@
+/**
+ * @fileoverview SocialModule
+ * 
+ * Manages social accounts (public display + admin CRUD).
+ * Uses split Read/Write repositories and caching support.
+ */
+
 import { Module } from '@nestjs/common'
-import { CreateSocialAccountCommand } from '../../../application/use-cases/commands/social/CreateSocialAccountCommand'
-import { DeleteSocialAccountCommand } from '../../../application/use-cases/commands/social/DeleteSocialAccountCommand'
-import { UpdateSocialAccountCommand } from '../../../application/use-cases/commands/social/UpdateSocialAccountCommand'
-import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/queries/social/GetPublicSocialAccountsQuery'
-import { PrismaSocialAccountRepository } from '../../../infrastructure/database/repositories/PrismaSocialAccountRepository'
 import { AuthModule } from '../auth/auth.module'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+
 import { SocialController } from './social.controller'
 
-// =============================================================================
-// SocialModule
-// AuthModule imported — JwtAuthGuard on admin endpoints needs AuthService.
-// PrismaSocialAccountRepository implements both read and write interfaces.
-// =============================================================================
-@Module({
-    imports: [AuthModule],
-    controllers: [SocialController],
-    providers: [
-        // ─── Repositories ───────────────────────────────────────────────────────
-        PrismaSocialAccountRepository,
-        { provide: 'ISocialAccountReadRepository',  useExisting: PrismaSocialAccountRepository },
-        { provide: 'ISocialAccountWriteRepository', useExisting: PrismaSocialAccountRepository },
+// Use Cases
+import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/queries/social/GetPublicSocialAccountsQuery'
+import { CreateSocialAccountCommand } from '../../../application/use-cases/commands/social/CreateSocialAccountCommand'
+import { UpdateSocialAccountCommand } from '../../../application/use-cases/commands/social/UpdateSocialAccountCommand'
+import { DeleteSocialAccountCommand } from '../../../application/use-cases/commands/social/DeleteSocialAccountCommand'
 
-        // ─── Use cases ──────────────────────────────────────────────────────────
-        {
-        provide:    GetPublicSocialAccountsQuery,
-        useFactory: (repo: PrismaSocialAccountRepository) =>
-            new GetPublicSocialAccountsQuery(repo),
-        inject: [PrismaSocialAccountRepository],
-        },
-        {
-        provide:    CreateSocialAccountCommand,
-        useFactory: (repo: PrismaSocialAccountRepository) =>
-            new CreateSocialAccountCommand(repo),
-        inject: [PrismaSocialAccountRepository],
-        },
-        {
-        provide:    UpdateSocialAccountCommand,
-        useFactory: (repo: PrismaSocialAccountRepository) =>
-            new UpdateSocialAccountCommand(repo),
-        inject: [PrismaSocialAccountRepository],
-        },
-        {
-        provide:    DeleteSocialAccountCommand,
-        useFactory: (repo: PrismaSocialAccountRepository) =>
-            new DeleteSocialAccountCommand(repo),
-        inject: [PrismaSocialAccountRepository],
-        },
+import { PrismaSocialAccountReadRepository } from '../../../infrastructure/database/repositories/social-account/PrismaSocialAccountReadRepository'
+import { PrismaSocialAccountWriteRepository } from '../../../infrastructure/database/repositories/social-account/PrismaSocialAccountWriteRepository'
+
+
+@Module({
+    imports: [
+        AuthModule,
+        CacheInfrastructureModule,
+    ],
+
+    controllers: [SocialController],
+
+    providers: [
+        // Repositories
+        PrismaSocialAccountReadRepository,
+        PrismaSocialAccountWriteRepository,
+
+        // Ports
+        { provide: 'ISocialAccountReadRepository', useExisting: PrismaSocialAccountReadRepository },
+        { provide: 'ISocialAccountWriteRepository', useExisting: PrismaSocialAccountWriteRepository },
+
+        // Use Cases
+        GetPublicSocialAccountsQuery,
+        CreateSocialAccountCommand,
+        UpdateSocialAccountCommand,
+        DeleteSocialAccountCommand,
     ],
 })
 export class SocialModule {}

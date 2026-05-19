@@ -1,69 +1,75 @@
+/**
+ * @fileoverview JobController
+ * 
+ * Handles work experience records for the public portfolio and admin management.
+ * 
+ * - Public GET: Returns all job records (no authentication required)
+ * - Admin POST/PATCH/DELETE: Requires valid JWT
+ * - userId is extracted from JWT payload — never trusted from client input
+ */
+
 import {
-    Controller,
-    Get,
-    Post,
-    Patch,
-    Delete,
     Body,
-    Param,
-    ParseIntPipe,
-    Req,
-    UseGuards,
+    Controller,
+    Delete,
+    Get,
     HttpCode,
     HttpStatus,
+    Param,
+    ParseIntPipe,
+    Patch,
+    Post,
+    Req,
+    UseGuards,
 } from '@nestjs/common'
 import {
-    ApiTags,
-    ApiOperation,
-    ApiResponse,
     ApiBearerAuth,
+    ApiOperation,
     ApiParam,
+    ApiResponse,
+    ApiTags,
 } from '@nestjs/swagger'
+import { Throttle } from '@nestjs/throttler'
+
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
+
 import { GetJobsQuery } from '../../../application/use-cases/queries/skill/jobs/GetJobsQuery'
 import { CreateJobCommand } from '../../../application/use-cases/commands/job/CreateJobCommand'
 import { UpdateJobCommand } from '../../../application/use-cases/commands/job/UpdateJobCommand'
 import { DeleteJobCommand } from '../../../application/use-cases/commands/job/DeleteJobCommand'
+
 import type { JobDTO } from '../../../application/dtos/JobDTO'
 import { CreateJobDto, UpdateJobDto } from './job.dto'
-import { Throttle } from '@nestjs/throttler'
 
-// =============================================================================
-// JobController
-// Public GET — returns all work experience records, no auth required.
-// Admin POST/PATCH/DELETE — JWT required.
-// userId extracted from verified JWT payload — never from client input.
-// Dates converted from ISO strings to Date objects before reaching commands.
-// =============================================================================
 @ApiTags('Jobs')
 @Controller('jobs')
 export class JobController {
     constructor(
-        private readonly getQuery:      GetJobsQuery,
+        private readonly getQuery: GetJobsQuery,
         private readonly createCommand: CreateJobCommand,
         private readonly updateCommand: UpdateJobCommand,
         private readonly deleteCommand: DeleteJobCommand,
     ) {}
 
     // ===========================================================================
-    // GET /api/jobs
+    // Public Endpoints
     // ===========================================================================
     @Get()
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all work experience records' })
+    @ApiOperation({ summary: 'Get all work experience records (Public)' })
     @ApiResponse({ status: 200, description: 'List of work experience records' })
     async findAll(): Promise<JobDTO[]> {
         return this.getQuery.execute()
     }
 
     // ===========================================================================
-    // POST /api/jobs
+    // Admin Endpoints
     // ===========================================================================
     @Post()
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
-    @ApiOperation({ summary: 'Create work experience record — admin only' })
+    @ApiOperation({ summary: 'Create new work experience record — admin only' })
     @ApiResponse({ status: 201, description: 'Job record created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async create(
@@ -72,17 +78,14 @@ export class JobController {
     ): Promise<JobDTO> {
         return this.createCommand.execute({
         companyName: dto.companyName,
-        role:        dto.role,
-        startedAt:   new Date(dto.startedAt),
-        endedAt:     dto.endedAt ? new Date(dto.endedAt) : null,
-        isEnded:     dto.isEnded ?? false,
-        userId:      req.user.sub,
+        role: dto.role,
+        startedAt: new Date(dto.startedAt),
+        endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
+        isEnded: dto.isEnded ?? false,
+        userId: req.user.sub,
         })
     }
 
-    // ===========================================================================
-    // PATCH /api/jobs/:id
-    // ===========================================================================
     @Patch(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')
@@ -98,16 +101,13 @@ export class JobController {
         return this.updateCommand.execute({
         id,
         companyName: dto.companyName,
-        role:        dto.role,
-        startedAt:   dto.startedAt ? new Date(dto.startedAt) : undefined,
-        endedAt:     dto.endedAt   ? new Date(dto.endedAt)   : undefined,
-        isEnded:     dto.isEnded,
+        role: dto.role,
+        startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
+        endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+        isEnded: dto.isEnded,
         })
     }
 
-    // ===========================================================================
-    // DELETE /api/jobs/:id
-    // ===========================================================================
     @Delete(':id')
     @UseGuards(JwtAuthGuard)
     @ApiBearerAuth('JWT')

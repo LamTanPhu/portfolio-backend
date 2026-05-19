@@ -1,31 +1,37 @@
-import { Inject, Injectable } from '@nestjs/common'
-import type {
-    CreateJobInput,
-    IJobWriteRepository,
-} from '../../../../domain/repositories/job/IJobWriteRepository'
+/**
+ * @fileoverview CreateJobCommand
+ * 
+ * Creates a new work experience record and invalidates the public cache.
+ */
+
+import { Injectable, Inject } from '@nestjs/common'
+import type { IJobWriteRepository } from '../../../../domain/repositories/job/IJobWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { JobDTO } from '../../../dtos/JobDTO'
 
-// =============================================================================
-// CreateJobCommand
-// Creates a new work experience record for the portfolio owner.
-// userId from verified JWT payload — never from client input.
-// =============================================================================
 @Injectable()
 export class CreateJobCommand {
     constructor(
         @Inject('IJobWriteRepository')
         private readonly repo: IJobWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: CreateJobInput): Promise<JobDTO> {
+    async execute(input: any): Promise<JobDTO> {
         const job = await this.repo.create(input)
+
+        // Invalidate public job list cache
+        await this.cacheService.invalidatePublicJobs()
+
         return {
-        id:          job.id,
+        id: job.id,
         companyName: job.companyName,
-        role:        job.role,
-        startedAt:   job.startedAt.toISOString(),
-        endedAt:     job.endedAt?.toISOString() ?? null,
-        isEnded:     job.isEnded,
+        role: job.role,
+        startedAt: job.startedAt.toISOString(),
+        endedAt: job.endedAt?.toISOString() ?? null,
+        isEnded: job.isEnded,
         }
     }
 }

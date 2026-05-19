@@ -1,19 +1,27 @@
+/**
+ * @fileoverview DeleteSocialAccountCommand
+ * 
+ * Deletes a social account and invalidates the public cache.
+ */
+
 import { Inject, Injectable } from '@nestjs/common'
 import type { ISocialAccountWriteRepository } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 
-// =============================================================================
-// DeleteSocialAccountCommand
-// NotFoundError thrown by repository if id does not exist — no pre-check needed.
-// O(1) — single DB query, no read-before-write.
-// =============================================================================
 @Injectable()
 export class DeleteSocialAccountCommand {
     constructor(
         @Inject('ISocialAccountWriteRepository')
         private readonly repo: ISocialAccountWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
     async execute(id: number): Promise<void> {
         await this.repo.delete(id)
+
+        // Invalidate public social accounts cache
+        await this.cacheService.invalidatePublicSocialAccounts()
     }
 }

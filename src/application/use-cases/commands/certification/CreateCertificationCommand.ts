@@ -1,30 +1,37 @@
-import { Injectable, Inject } from '@nestjs/common'
-import type {
-    ICertificationWriteRepository,
-    CreateCertificationInput,
-} from '../../../../domain/repositories/certification/ICertificationWriteRepository'
-import type { CertificationDTO } from '../../../dtos/CertificationDTO'
+/**
+ * @fileoverview CreateCertificationCommand
+ * 
+ * Creates a new certification and invalidates the public cache
+ * so the new item appears immediately on the frontend.
+ */
 
-// =============================================================================
-// CreateCertificationCommand
-// Creates a new certification record for the portfolio owner.
-// userId from verified JWT payload — never from client input.
-// =============================================================================
+import { Injectable, Inject } from '@nestjs/common'
+import type { ICertificationWriteRepository } from '../../../../domain/repositories/certification/ICertificationWriteRepository'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import type { CertificationDTO } from '../../../dtos/certification/CertificationDTO'
+
 @Injectable()
 export class CreateCertificationCommand {
     constructor(
         @Inject('ICertificationWriteRepository')
         private readonly repo: ICertificationWriteRepository,
+
+        @Inject('ICacheInvalidationService')
+        private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: CreateCertificationInput): Promise<CertificationDTO> {
-        const c = await this.repo.create(input)
+    async execute(input: any): Promise<CertificationDTO> {
+        const certification = await this.repo.create(input)
+
+        // Invalidate public list cache so new certification shows up immediately
+        await this.cacheService.invalidatePublicCertifications()
+
         return {
-        id:        c.id,
-        name:      c.name,
-        url:       c.url,
-        startDate: c.startDate.toISOString(),
-        endDate:   c.endDate?.toISOString() ?? null,
+        id: certification.id,
+        name: certification.name,
+        url: certification.url,
+        startDate: certification.startDate.toISOString(),
+        endDate: certification.endDate?.toISOString() ?? null,
         }
     }
 }
