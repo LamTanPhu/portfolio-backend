@@ -1,9 +1,12 @@
 /**
  * @fileoverview SubmitContactCommand
  * 
- * Handles public contact form submission.
- * Verifies humanity via Turnstile, validates input, persists message,
- * and raises domain event for further processing (email, logging, etc.).
+ * Handles public contact form submission with multiple security layers:
+ * - Turnstile bot protection
+ * - Input validation & sanitization
+ * - Email validation via Value Object
+ * - Basic spam content filtering
+ * - Raises domain event with metadata for notification & spam analysis
  */
 
 import { Injectable, Inject } from '@nestjs/common'
@@ -14,12 +17,12 @@ import { ValidationError } from '../../../../domain/errors/ValidationError'
 import { Email } from '../../../../domain/value-objects/Email'
 
 export interface SubmitContactInput {
-  name: string
-  email: string
-  message: string
+  name:          string
+  email:         string
+  message:       string
   turnstileToken: string
-  ipAddress: string
-  browserInfo: string | null
+  ipAddress:     string
+  browserInfo:   string | null
 }
 
 @Injectable()
@@ -33,30 +36,46 @@ export class SubmitContactCommand {
   ) {}
 
   async execute(input: SubmitContactInput): Promise<ContactSubmittedEvent> {
-    // Step 1: Verify human
+    // 1. Turnstile verification (anti-bot)
     const isHuman = await this.turnstile.verifyToken(input.turnstileToken)
     if (!isHuman) {
       throw new ValidationError('Turnstile verification failed. Please try again.')
     }
 
-    // Step 2: Validate email via value object
+    // 2. Input validation & sanitization
+    if (input.name.length > 100) {
+      throw new ValidationError('Name is too long (max 100 characters)')
+    }
+    if (input.message.length > 2000) {
+      throw new ValidationError('Message is too long (max 2000 characters)')
+    }
+
+    // 3. Email validation via Value Object
     const email = new Email(input.email)
 
-    // Step 3: Persist message
+    // 4. Basic spam / suspicious content filtering
+    const suspiciousPatterns = /(http|www\.|\.com|\.net|bitcoin|crypto|viagra|porn|casino|loan)/i
+    if (suspiciousPatterns.test(input.message)) {
+      throw new ValidationError('Message contains suspicious content. Please remove links or promotional text.')
+    }
+
+    // 5. Persist to database
     await this.repo.save({
-      name: input.name,
-      email: email.toString(),
-      message: input.message,
-      ipAddress: input.ipAddress,
+      name:        input.name.trim(),
+      email:       email.toString(),
+      message:     input.message.trim(),
+      ipAddress:   input.ipAddress,
       browserInfo: input.browserInfo,
-      createdAt: new Date(),
+      createdAt:   new Date(),
     })
 
-    // Step 4: Return domain event (fire-and-forget side effects)
+    // 6. Raise domain event (with metadata for email & spam analysis)
     return new ContactSubmittedEvent(
-      input.name,
+      input.name.trim(),
       email.toString(),
-      input.message,
+      input.message.trim(),
+      input.ipAddress,           // ← Added
+      input.browserInfo,         // ← Added
     )
   }
 }

@@ -1,21 +1,25 @@
+/**
+ * @fileoverview TurnstileGuard
+ * 
+ * Protects public mutation endpoints (mainly Contact form) against spam and bots
+ * using Cloudflare Turnstile verification.
+ * 
+ * Fail-closed design: any verification failure results in rejection.
+ * Placed in Interface Adapters layer — use cases remain unaware of anti-bot mechanisms.
+ */
+
 import {
   Injectable,
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
+  BadRequestException,
   Logger,
   Inject,
 } from '@nestjs/common'
 import type { Request } from 'express'
+
 import type { ITurnstileVerifier } from '../../application/ports/ITurnstileVerifier'
 
-// =============================================================================
-// TurnstileGuard
-// Verifies Cloudflare Turnstile token before any use case executes.
-// Depends on ITurnstileVerifier interface — never on concrete implementation.
-// Placed at interface-adapters layer — use cases stay unaware of HTTP context.
-// Applied only on public mutation endpoints (contact form).
-// =============================================================================
 @Injectable()
 export class TurnstileGuard implements CanActivate {
   private readonly logger = new Logger(TurnstileGuard.name)
@@ -27,22 +31,28 @@ export class TurnstileGuard implements CanActivate {
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<Request>()
-    const token = (req.body as Record<string, unknown>)?.turnstileToken
+    const token = req.body?.turnstileToken as string | undefined
 
-    if (typeof token !== 'string' || token.trim() === '') {
-      throw new ForbiddenException('Missing Turnstile token')
+    if (typeof token !== 'string' || token.trim().length === 0) {
+      this.logger.warn(`Missing Turnstile token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
+      throw new BadRequestException('Turnstile token is required')
     }
 
-    const isValid = await this.turnstile.verifyToken(token)
+    try {
+      const isValid = await this.turnstile.verifyToken(token.trim())
 
-    if (!isValid) {
-      // Log failed verifications — useful for detecting bot activity patterns
-      this.logger.warn(
-        `Turnstile verification failed — IP: ${req.ip ?? 'unknown'}`,
-      )
-      throw new ForbiddenException('Turnstile verification failed')
+      if (!isValid) {
+        this.logger.warn(`Invalid Turnstile token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
+        throw new BadRequestException('Turnstile verification failed. Please try again.')
+      }
+
+      // Clean up token from body after successful verification
+      delete req.body.turnstileToken
+
+      return true
+    } catch (error) {
+      this.logger.error(`Turnstile verification error | IP: ${req.ip ?? 'unknown'}`, error)
+      throw new BadRequestException('Turnstile verification failed')
     }
-
-    return true
   }
 }

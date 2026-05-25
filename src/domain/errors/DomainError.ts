@@ -1,18 +1,20 @@
-// =============================================================================
-// DomainError — Abstract Base
-// All domain errors extend this class.
-// code property used by DomainExceptionFilter for structured HTTP responses.
-// name set to concrete class name — enables instanceof checks in filter.
-// =============================================================================
+/**
+ * @fileoverview DomainError
+ * 
+ * Abstract base class for all domain/business errors.
+ * Keeps domain layer free from HTTP/presentation concerns.
+ */
+
 export abstract class DomainError extends Error {
   public readonly code: string
+  public readonly statusCode: number
 
-  constructor(message: string) {
+  constructor(message: string, statusCode: number = 500) {
     super(message)
     this.name = this.constructor.name
     this.code = this.constructor.name
+    this.statusCode = statusCode
 
-    // Maintains proper prototype chain in transpiled JavaScript
     Object.setPrototypeOf(this, new.target.prototype)
   }
 }

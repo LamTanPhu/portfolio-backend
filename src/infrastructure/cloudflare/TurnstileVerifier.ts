@@ -1,61 +1,78 @@
-import { Injectable, Logger } from '@nestjs/common'
+/**
+ * @fileoverview TurnstileVerifier
+ * 
+ * Concrete implementation of ITurnstileVerifier.
+ * Verifies Cloudflare Turnstile tokens to protect against bots and spam.
+ * Fail-closed design: any failure results in rejection.
+ */
+
+import { Injectable, Logger, Inject } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type { ITurnstileVerifier } from '../../application/ports/ITurnstileVerifier'
 
-// =============================================================================
-// Cloudflare Turnstile API response shape
-// =============================================================================
 interface TurnstileVerifyResponse {
-  success:    boolean
+  success: boolean
   'error-codes'?: string[]
+  action?: string
+  cdata?: string
 }
 
-// =============================================================================
-// TurnstileVerifier
-// Implements ITurnstileVerifier — verifies Cloudflare Turnstile tokens.
-// secretKey read at call time — picks up env changes without restart.
-// Logs failed verifications with error codes for bot pattern analysis.
-// Never throws on Cloudflare API failure — returns false instead.
-// =============================================================================
 @Injectable()
 export class TurnstileVerifier implements ITurnstileVerifier {
   private readonly logger = new Logger(TurnstileVerifier.name)
 
+  constructor(
+    @Inject(ConfigService)
+    private readonly configService: ConfigService,
+  ) {}
+
   async verifyToken(token: string): Promise<boolean> {
-    const secretKey = process.env.TURNSTILE_SECRET_KEY ?? ''
+    const secretKey = this.configService.get<string>('TURNSTILE_SECRET_KEY')
 
     if (!secretKey) {
-      this.logger.warn('TURNSTILE_SECRET_KEY not configured — verification skipped')
+      this.logger.warn('TURNSTILE_SECRET_KEY is not configured — skipping verification')
+      return false // Fail closed in production
+    }
+
+    if (!token?.trim()) {
+      this.logger.warn('Empty Turnstile token received')
       return false
     }
 
     try {
-      const res = await fetch(
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 8000) // 8s timeout
+
+      const response = await fetch(
         'https://challenges.cloudflare.com/turnstile/v0/siteverify',
         {
-          method:  'POST',
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ secret: secretKey, response: token }),
+          body: JSON.stringify({
+            secret: secretKey,
+            response: token.trim(),
+          }),
+          signal: controller.signal,
         },
       )
 
-      if (!res.ok) {
-        this.logger.error(`Turnstile API returned ${res.status}`)
+      clearTimeout(timeout)
+
+      if (!response.ok) {
+        this.logger.error(`Turnstile API returned status ${response.status}`)
         return false
       }
 
-      const data = await res.json() as TurnstileVerifyResponse
+      const data = (await response.json()) as TurnstileVerifyResponse
 
       if (!data.success && data['error-codes']?.length) {
-        this.logger.warn(`Turnstile error codes: ${data['error-codes'].join(', ')}`)
+        this.logger.warn(`Turnstile failed with codes: ${data['error-codes'].join(', ')}`)
       }
 
-      return data.success
+      return data.success === true
     } catch (error) {
-      // Never throw — Cloudflare API failure must not crash contact form
-      this.logger.error(
-        `Turnstile verification request failed: ${(error as Error).message}`,
-      )
-      return false
+      this.logger.error(`Turnstile verification request failed`, error)
+      return false // Fail closed
     }
   }
 }

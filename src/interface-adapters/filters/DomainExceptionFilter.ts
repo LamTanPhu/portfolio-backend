@@ -1,70 +1,56 @@
+/**
+ * @fileoverview DomainExceptionFilter
+ * 
+ * Global filter that catches all DomainErrors and maps them to proper HTTP responses.
+ * Keeps domain layer completely clean of HTTP concerns.
+ */
+
 import {
   ExceptionFilter,
   Catch,
   ArgumentsHost,
-  HttpStatus,
   Logger,
 } from '@nestjs/common'
 import type { Request, Response } from 'express'
-import { DomainError } from '../../domain/errors/DomainError'
-import { NotFoundError } from '../../domain/errors/NotFoundError'
-import { ValidationError } from '../../domain/errors/ValidationError'
-import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
+import { DomainError } from '../../domain/errors'
 
-// =============================================================================
-// DomainExceptionFilter
-// Catches all DomainError subclasses thrown from use cases.
-// Maps them to correct HTTP status codes at the interface-adapters layer.
-// Domain layer stays clean — zero HTTP knowledge inside use cases.
-// Logs 401/403 at warn — repeated patterns indicate probing attacks.
-// Logs 5xx at error — always needs investigation.
-// Never leaks internal error details in production.
-// =============================================================================
 @Catch(DomainError)
 export class DomainExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(DomainExceptionFilter.name)
 
   catch(exception: DomainError, host: ArgumentsHost): void {
     const ctx = host.switchToHttp()
-    const res = ctx.getResponse<Response>()
-    const req = ctx.getRequest<Request>()
+    const response = ctx.getResponse<Response>()
+    const request = ctx.getRequest<Request>()
 
-    const status = DomainExceptionFilter.resolveStatus(exception)
+    const statusCode = exception.statusCode
 
-    // Log unauthorized attempts at warn — useful for detecting probing attacks
-    if (status === HttpStatus.UNAUTHORIZED || status === HttpStatus.FORBIDDEN) {
+    // ─── Logging ─────────────────────────────────────────────────────
+    if (statusCode === 401 || statusCode === 403) {
       this.logger.warn(
-        `[${exception.name}] ${exception.message} — IP: ${req.ip ?? 'unknown'} — ${req.method} ${req.url}`,
+        `[${exception.name}] ${exception.message} | IP: ${request.ip ?? 'unknown'} | ${request.method} ${request.url}`,
       )
-    }
-
-    // Log server errors at error — always requires investigation
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+    } else if (statusCode >= 500) {
       this.logger.error(
         `[${exception.name}] ${exception.message}`,
         exception.stack,
       )
     }
 
-    // Never leak internal error details in production
-    const message =
-      process.env.NODE_ENV === 'production' && status >= 500
+    // ─── Safe Response ───────────────────────────────────────────────
+    const isProduction = process.env.NODE_ENV === 'production'
+
+    response.status(statusCode).json({
+      statusCode,
+      error: exception.code,
+      message: isProduction && statusCode >= 500
         ? 'Internal server error'
-        : exception.message
-
-    res.status(status).json({
-      statusCode: status,
-      error:      exception.code,
-      message,
-      // Include request path in development only — never in production
-      ...(process.env.NODE_ENV !== 'production' && { path: req.url }),
+        : exception.message,
+      timestamp: new Date().toISOString(),
+      ...( !isProduction && {
+        path: request.url,
+        stack: exception.stack,
+      }),
     })
-  }
-
-  private static resolveStatus(exception: DomainError): number {
-    if (exception instanceof NotFoundError)     return HttpStatus.NOT_FOUND
-    if (exception instanceof ValidationError)   return HttpStatus.BAD_REQUEST
-    if (exception instanceof UnauthorizedError) return HttpStatus.UNAUTHORIZED
-    return HttpStatus.INTERNAL_SERVER_ERROR
   }
 }

@@ -1,8 +1,10 @@
-import { DomainError } from './DomainError';
+import { DomainError } from './DomainError'
 
-// =============================================================================
-// ValidationError
-// Raised when domain invariants or input validation fails.
-// Mapped to HTTP 400 by DomainExceptionFilter.
-// =============================================================================
-export class ValidationError extends DomainError {}
+/**
+ * Input validation or business rule violation (HTTP 400)
+ */
+export class ValidationError extends DomainError {
+    constructor(message: string = 'Validation failed') {
+        super(message, 400)
+    }
+}

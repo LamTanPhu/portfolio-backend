@@ -1,8 +1,10 @@
 import { DomainError } from './DomainError'
 
-// =============================================================================
-// NotFoundError
-// Raised when a requested resource does not exist.
-// Mapped to HTTP 404 by DomainExceptionFilter.
-// =============================================================================
-export class NotFoundError extends DomainError {}
+/**
+ * Resource not found (HTTP 404)
+ */
+export class NotFoundError extends DomainError {
+    constructor(message: string = 'Resource not found') {
+        super(message, 404)
+    }
+}

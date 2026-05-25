@@ -1,9 +1,9 @@
 /**
- * @fileoverview AppModule - Root module of the application
- * 
- * This is the main composition root of the application.
- * It wires together all infrastructure, feature modules, and global providers
- * following Clean Architecture principles.
+ * @fileoverview AppModule
+ *
+ * Root module of the entire application.
+ * Acts as the composition root — wires infrastructure and all feature modules together.
+ * Follows Clean Architecture principles.
  */
 
 import { CacheModule } from '@nestjs/cache-manager'
@@ -35,106 +35,85 @@ import { UserModule } from './interface-adapters/modules/user/user.module'
 
 // Global Providers
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
-
-// Cache
-import { redisStore } from 'cache-manager-redis-yet'
-import { CACHE_TTL } from './infrastructure/cache/cache.constants'
+import { ConfigValidationService } from './infrastructure/config/config-validation.service'   // ← Added
 
 @Module({
     imports: [
-    // ─── Core Configuration ─────────────────────────────────────────────
-    ConfigModule.forRoot({
-        isGlobal: true,
-        envFilePath: '.env',
-        validate: (config) => {
-            if (!config.JWT_SECRET) {
-                throw new Error('JWT_SECRET environment variable is required')
-            }
-            return config
-        },
-    }),
+        // ─── Core Configuration ─────────────────────────────────────────────
+        ConfigModule.forRoot({ isGlobal: true }),
 
-    // ─── Scheduling ─────────────────────────────────────────────────────
-    ScheduleModule.forRoot(),
+        // ─── Scheduling ─────────────────────────────────────────────────────
+        ScheduleModule.forRoot(),
 
-    // ─── Rate Limiting ──────────────────────────────────────────────────
-    ThrottlerModule.forRoot({
-        throttlers: [
-            {
-                name: 'global',
-                ttl: 60_000,     // 1 minute
-                limit: 120,
-            },
-        ],
-    }),
+        // ─── Rate Limiting ──────────────────────────────────────────────────
+        ThrottlerModule.forRoot({
+            throttlers: [{ name: 'global', ttl: 60_000, limit: 120 }],
+        }),
 
-    // ─── Redis Cache (Production Ready) ─────────────────────────────────
-    CacheModule.registerAsync({
+        // ─── Redis Cache ────────────────────────────────────────────────────
+        CacheModule.registerAsync({
         isGlobal: true,
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: async (configService: ConfigService) => ({
-            store: await redisStore({
-                socket: {
-                    host: configService.get<string>('REDIS_HOST', 'localhost'),
-                    port: configService.get<number>('REDIS_PORT', 6379),
-                },
-                // password: configService.get<string>('REDIS_PASSWORD'),
-                ttl: CACHE_TTL.MEDIUM.fresh, // Default TTL
+            useFactory: async (configService: ConfigService) => ({
+                store: await import('cache-manager-redis-yet').then(({ redisStore }) =>
+                    redisStore({
+                        socket: {
+                        host: configService.get<string>('REDIS_HOST', 'localhost'),
+                        port: configService.get<number>('REDIS_PORT', 6379),
+                        },
+                        ttl: 300,
+                    }),
+                ),
             }),
         }),
-    }),
 
-    // ─── JWT Authentication ─────────────────────────────────────────────
-    JwtModule.registerAsync({
+        // ─── JWT Configuration ──────────────────────────────────────────────
+        JwtModule.registerAsync({
         imports: [ConfigModule],
         inject: [ConfigService],
-        useFactory: (configService: ConfigService) => ({
-            secret: configService.get<string>('JWT_SECRET'),
-            signOptions: {
-                expiresIn: '15m',
-                issuer: 'portfolio-api',
-                audience: 'portfolio-admin',
-            },
-            verifyOptions: {
-                issuer: 'portfolio-api',
-                audience: 'portfolio-admin',
-            },
-            global: true,
+            useFactory: (configService: ConfigService) => ({
+                secret: configService.get<string>('JWT_SECRET'),
+                signOptions: {
+                    expiresIn: '15m',
+                    issuer: 'portfolio-api',
+                    audience: 'portfolio-admin',
+                },
+            }),
         }),
-    }),
 
-    // ─── Infrastructure ─────────────────────────────────────────────────
-    PrismaModule,
-    CacheInfrastructureModule,
+        // ─── Infrastructure ─────────────────────────────────────────────────
+        PrismaModule,
+        CacheInfrastructureModule,
 
-    // ─── Auth Module (must come before feature modules that depend on it) ─
-    AuthModule,
+        // ─── Auth (MUST come before feature modules that depend on it) ───────
+        AuthModule,
 
-    // ─── Feature Modules ────────────────────────────────────────────────
-    ProjectModule,
-    BlogModule,
-    SkillModule,
-    SocialModule,
-    AboutModule,
-    ContactModule,
-    SpotifyModule,
-    AnalyticsModule,
-    UserModule,
-    EducationModule,
-    JobModule,
-    CertificationModule,
-  ],
+        // ─── Feature Modules ────────────────────────────────────────────────
+        ProjectModule,
+        BlogModule,
+        SkillModule,
+        SocialModule,
+        AboutModule,
+        ContactModule,
+        SpotifyModule,
+        AnalyticsModule,
+        UserModule,
+        EducationModule,
+        JobModule,
+        CertificationModule,
+    ],
 
     providers: [
-        // Global Guards
+        ConfigValidationService,
+
         { provide: APP_GUARD, useClass: ThrottlerGuard },
-
-        // Global Exception Filter
         { provide: APP_FILTER, useClass: DomainExceptionFilter },
-
-        // Scheduled Tasks (uncomment when ready)
-        // TokenCleanupTask,
     ],
 })
-export class AppModule {}
+
+export class AppModule {
+    constructor(private readonly configValidation: ConfigValidationService) {
+        this.configValidation.validate()
+    }
+}
