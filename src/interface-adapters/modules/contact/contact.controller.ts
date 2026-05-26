@@ -31,9 +31,9 @@ import type { Request } from 'express'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { TurnstileGuard } from '../../guards/TurnstileGuard'
 
+import { DeleteContactMessageCommand } from '../../../application/use-cases/commands/contact/DeleteContactMessageCommand'
 import { SubmitContactCommand } from '../../../application/use-cases/commands/contact/SubmitContactCommand'
 import { GetContactMessagesQuery } from '../../../application/use-cases/queries/contact/GetContactMessagesQuery'
-import { DeleteContactMessageCommand } from '../../../application/use-cases/commands/contact/DeleteContactMessageCommand'
 
 import type { ContactMessageDTO } from '../../../application/dtos/contact/ContactMessageDTO'
 import { SubmitContactDto } from './contact.dto'
@@ -62,13 +62,14 @@ export class ContactController {
     @Body() dto: SubmitContactDto,
     @Req() req: Request,
   ): Promise<{ success: boolean; message: string }> {
+    // Command emits 'contact.submitted' event internally — no event handling needed here
     await this.submitContact.execute({
-      name: dto.name,
-      email: dto.email,
-      message: dto.message,
+      name:           dto.name,
+      email:          dto.email,
+      message:        dto.message,
       turnstileToken: dto.turnstileToken,
-      ipAddress: req.ip ?? 'unknown',
-      browserInfo: req.headers['user-agent'] ?? null,
+      ipAddress:      req.ip ?? 'unknown',
+      browserInfo:    req.headers['user-agent'] ?? null,
     })
 
     return {

@@ -3,9 +3,13 @@
  * 
  * Event handler for ContactSubmittedEvent.
  * Sends admin notification email with useful context for spam review.
+ * 
+ * Triggered automatically by EventEmitter2 when 'contact.submitted' is emitted.
+ * Runs asynchronously — does not block the HTTP response.
  */
 
 import { Injectable, Inject } from '@nestjs/common'
+import { OnEvent } from '@nestjs/event-emitter'
 import type { IMailService } from '../ports/IMailService'
 import type { ILogger } from '../ports/ILogger'
 import type { ContactSubmittedEvent } from '../../domain/events/ContactSubmittedEvent'
@@ -20,6 +24,8 @@ export class OnContactSubmitted {
     private readonly logger: ILogger,
   ) {}
 
+  // Bound to 'contact.submitted' event — dispatched by SubmitContactCommand
+  @OnEvent('contact.submitted')
   async handle(event: ContactSubmittedEvent): Promise<void> {
     try {
       const emailBody = this.buildEmailBody(event)

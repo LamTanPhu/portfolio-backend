@@ -15,10 +15,11 @@ import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
 // Infrastructure
-import { PrismaModule } from './infrastructure/database/prisma/prisma.module'
 import { CacheInfrastructureModule } from './infrastructure/cache/cache.module'
+import { PrismaModule } from './infrastructure/database/prisma/prisma.module'
 
 // Feature Modules
+import { EventEmitterModule } from '@nestjs/event-emitter'
 import { AboutModule } from './interface-adapters/modules/about/about.module'
 import { AnalyticsModule } from './interface-adapters/modules/analytics/analytics.module'
 import { AuthModule } from './interface-adapters/modules/auth/auth.module'
@@ -34,8 +35,8 @@ import { SpotifyModule } from './interface-adapters/modules/spotify/spotify.modu
 import { UserModule } from './interface-adapters/modules/user/user.module'
 
 // Global Providers
+import { ConfigValidationService } from './infrastructure/config/config-validation.service'; // ← Added
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
-import { ConfigValidationService } from './infrastructure/config/config-validation.service'   // ← Added
 
 @Module({
     imports: [
@@ -102,6 +103,10 @@ import { ConfigValidationService } from './infrastructure/config/config-validati
         EducationModule,
         JobModule,
         CertificationModule,
+
+        // ─── Event Modules ────────────────────────────────────────────────
+        EventEmitterModule.forRoot(),
+
     ],
 
     providers: [

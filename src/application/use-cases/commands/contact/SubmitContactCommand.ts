@@ -10,6 +10,7 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
+import { EventEmitter2 } from '@nestjs/event-emitter'
 import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
 import type { ITurnstileVerifier } from '../../../ports/ITurnstileVerifier'
 import { ContactSubmittedEvent } from '../../../../domain/events/ContactSubmittedEvent'
@@ -17,12 +18,12 @@ import { ValidationError } from '../../../../domain/errors/ValidationError'
 import { Email } from '../../../../domain/value-objects/Email'
 
 export interface SubmitContactInput {
-  name:          string
-  email:         string
-  message:       string
+  name:           string
+  email:          string
+  message:        string
   turnstileToken: string
-  ipAddress:     string
-  browserInfo:   string | null
+  ipAddress:      string
+  browserInfo:    string | null
 }
 
 @Injectable()
@@ -33,9 +34,12 @@ export class SubmitContactCommand {
 
     @Inject('ITurnstileVerifier')
     private readonly turnstile: ITurnstileVerifier,
+
+    // Event bus — decouples command from downstream side effects (email, analytics, etc.)
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  async execute(input: SubmitContactInput): Promise<ContactSubmittedEvent> {
+  async execute(input: SubmitContactInput): Promise<void> {
     // 1. Turnstile verification (anti-bot)
     const isHuman = await this.turnstile.verifyToken(input.turnstileToken)
     if (!isHuman) {
@@ -69,13 +73,17 @@ export class SubmitContactCommand {
       createdAt:   new Date(),
     })
 
-    // 6. Raise domain event (with metadata for email & spam analysis)
-    return new ContactSubmittedEvent(
-      input.name.trim(),
-      email.toString(),
-      input.message.trim(),
-      input.ipAddress,           // ← Added
-      input.browserInfo,         // ← Added
+    // 6. Emit domain event — OnContactSubmitted handler will send admin notification email.
+    //    Fire-and-forget: email failure must not affect the HTTP response.
+    this.eventEmitter.emit(
+      'contact.submitted',
+      new ContactSubmittedEvent(
+        input.name.trim(),
+        email.toString(),
+        input.message.trim(),
+        input.ipAddress,
+        input.browserInfo,
+      ),
     )
   }
 }
