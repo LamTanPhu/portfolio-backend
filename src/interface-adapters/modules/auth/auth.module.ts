@@ -51,6 +51,10 @@ import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.m
         },
     ],
 
-    exports: [AuthService],
+    exports: [
+        AuthService,
+        PrismaRevokedTokenRepository,
+        { provide: 'ITokenRepository', useExisting: PrismaRevokedTokenRepository },
+    ],
 })
 export class AuthModule {}

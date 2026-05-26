@@ -26,6 +26,14 @@ export interface SubmitContactInput {
   browserInfo:    string | null
 }
 
+// =============================================================================
+// Validation Constants
+// Must match DB schema constraints (ContactMe model in schema.prisma).
+// Changing DB limits requires updating these constants too.
+// =============================================================================
+const MAX_NAME_LENGTH    = 60   // @db.VarChar(60)
+const MAX_MESSAGE_LENGTH = 300  // @db.VarChar(300)
+
 @Injectable()
 export class SubmitContactCommand {
   constructor(
@@ -46,12 +54,18 @@ export class SubmitContactCommand {
       throw new ValidationError('Turnstile verification failed. Please try again.')
     }
 
-    // 2. Input validation & sanitization
-    if (input.name.length > 100) {
-      throw new ValidationError('Name is too long (max 100 characters)')
+    // 2. Input validation & sanitization — limits mirror DB schema constraints
+    if (input.name.trim().length === 0) {
+      throw new ValidationError('Name is required')
     }
-    if (input.message.length > 2000) {
-      throw new ValidationError('Message is too long (max 2000 characters)')
+    if (input.name.length > MAX_NAME_LENGTH) {
+      throw new ValidationError(`Name is too long (max ${MAX_NAME_LENGTH} characters)`)
+    }
+    if (input.message.trim().length === 0) {
+      throw new ValidationError('Message is required')
+    }
+    if (input.message.length > MAX_MESSAGE_LENGTH) {
+      throw new ValidationError(`Message is too long (max ${MAX_MESSAGE_LENGTH} characters)`)
     }
 
     // 3. Email validation via Value Object

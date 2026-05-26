@@ -60,20 +60,17 @@ export class CacheInvalidationService implements ICacheInvalidationService {
      */
     private async deletePattern(pattern: string): Promise<void> {
         const namespacedPattern = this.getNamespacedKey(pattern)
-
         try {
-        await this.delete(pattern) // Try direct key first
-
-        const store = (this.cacheManager as any).store
-        if (store?.keys) {
-            const keys = await store.keys(namespacedPattern)
-            if (keys?.length > 0) {
-            await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
-            this.logger.log(`Invalidated ${keys.length} keys with pattern: ${pattern}`)
+            const store = (this.cacheManager as any).store
+            if (store?.keys) {
+                const keys = await store.keys(namespacedPattern)
+                if (keys?.length > 0) {
+                    await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
+                    this.logger.log(`Invalidated ${keys.length} keys with pattern: ${pattern}`)
+                }
             }
-        }
         } catch (error) {
-        this.logger.warn(`Pattern invalidation partially failed for: ${pattern}`, error)
+            this.logger.warn(`Pattern invalidation partially failed for: ${pattern}`, error)
         }
     }
 

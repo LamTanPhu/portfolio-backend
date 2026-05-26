@@ -29,7 +29,7 @@ export interface RefreshTokenPayload {
 
 @Injectable()
 export class AuthService {
-    private static readonly ACCESS_TOKEN_EXPIRY    = '15m'
+    private static readonly ACCESS_TOKEN_EXPIRY     = '15m'
     private static readonly REFRESH_TOKEN_EXPIRY    = '7d'
     private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -53,19 +53,22 @@ export class AuthService {
     ): Promise<{ accessToken: string; refreshToken: string }> {
         const adminPassword = process.env.ADMIN_PASSWORD
         if (!adminPassword) {
-        throw new Error('[AuthService] ADMIN_PASSWORD environment variable is not set')
+            throw new Error('[AuthService] ADMIN_PASSWORD environment variable is not set')
         }
 
-        const isValid = crypto.timingSafeEqual(
-        Buffer.from(password),
-        Buffer.from(adminPassword)
-        )
+        // timingSafeEqual requires equal-length buffers — length mismatch means
+        // wrong password, short-circuit before calling it to avoid RangeError.
+        const isValid = password.length === adminPassword.length &&
+            crypto.timingSafeEqual(
+                Buffer.from(password),
+                Buffer.from(adminPassword),
+            )
 
         if (!isValid) throw new UnauthorizedError('Invalid credentials')
 
         const [accessToken, refreshToken] = await Promise.all([
-        this.issueAccessToken(userId, fingerprint),
-        this.issueRefreshToken(userId),
+            this.issueAccessToken(userId, fingerprint),
+            this.issueRefreshToken(userId),
         ])
 
         return { accessToken, refreshToken }
@@ -78,9 +81,9 @@ export class AuthService {
         let payload: RefreshTokenPayload
 
         try {
-        payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken)
+            payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken)
         } catch {
-        throw new UnauthorizedError('Invalid refresh token')
+            throw new UnauthorizedError('Invalid refresh token')
         }
 
         if (payload.type !== 'refresh') throw new UnauthorizedError('Invalid token type')
@@ -106,16 +109,16 @@ export class AuthService {
         let payload: AccessTokenPayload
 
         try {
-        payload = await this.jwt.verifyAsync<AccessTokenPayload>(token)
+            payload = await this.jwt.verifyAsync<AccessTokenPayload>(token)
         } catch {
-        throw new UnauthorizedError('Invalid or expired token')
+            throw new UnauthorizedError('Invalid or expired token')
         }
 
         const revoked = await this.isTokenRevoked(payload.jti)
         if (revoked) throw new UnauthorizedError('Token has been revoked')
 
         if (this.shouldEnforceFingerprint() && payload.fingerprint !== fingerprint) {
-        throw new UnauthorizedError('Token fingerprint mismatch')
+            throw new UnauthorizedError('Token fingerprint mismatch')
         }
 
         return payload
@@ -126,9 +129,9 @@ export class AuthService {
     // ===========================================================================
     private async isTokenRevoked(jti: string): Promise<boolean> {
         return this.cacheQuery.getOrSetWithProfile(
-        `revoked-token:${jti}`,
-        'REALTIME',
-        async () => await this.tokenRepo.isRevoked(jti),
+            `revoked-token:${jti}`,
+            'REALTIME',
+            async () => await this.tokenRepo.isRevoked(jti),
         )
     }
 
@@ -141,9 +144,9 @@ export class AuthService {
     // ===========================================================================
     static buildFingerprint(userAgent: string, ip: string): string {
         return crypto
-        .createHash('sha256')
-        .update(`${userAgent}:${ip}`)
-        .digest('hex')
+            .createHash('sha256')
+            .update(`${userAgent}:${ip}`)
+            .digest('hex')
     }
 
     static getRefreshTokenExpiryMs(): number {
@@ -157,8 +160,8 @@ export class AuthService {
         const jti = crypto.randomUUID()
 
         return this.jwt.signAsync(
-        { sub: userId, role: 'admin' as const, jti, fingerprint },
-        { expiresIn: AuthService.ACCESS_TOKEN_EXPIRY }
+            { sub: userId, role: 'admin' as const, jti, fingerprint },
+            { expiresIn: AuthService.ACCESS_TOKEN_EXPIRY },
         )
     }
 
@@ -166,8 +169,8 @@ export class AuthService {
         const jti = crypto.randomUUID()
 
         return this.jwt.signAsync(
-        { sub: userId, jti, type: 'refresh' as const },
-        { expiresIn: AuthService.REFRESH_TOKEN_EXPIRY }
+            { sub: userId, jti, type: 'refresh' as const },
+            { expiresIn: AuthService.REFRESH_TOKEN_EXPIRY },
         )
     }
 }

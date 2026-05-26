@@ -3,6 +3,12 @@
  * 
  * Global filter that catches all DomainErrors and maps them to proper HTTP responses.
  * Keeps domain layer completely clean of HTTP concerns.
+ *
+ * Security policy:
+ * - 4xx errors: message is always returned (safe, user-facing)
+ * - 5xx errors: message is redacted in production — "Internal server error" only
+ * - Stack traces: never exposed in production, always stripped from response
+ * - Path included in development only — aids debugging without leaking in prod
  */
 
 import {
@@ -18,38 +24,50 @@ import { DomainError } from '../../domain/errors'
 export class DomainExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(DomainExceptionFilter.name)
 
+  private get isProduction(): boolean {
+    return process.env.NODE_ENV === 'production'
+  }
+
   catch(exception: DomainError, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp()
+    const ctx      = host.switchToHttp()
     const response = ctx.getResponse<Response>()
-    const request = ctx.getRequest<Request>()
+    const request  = ctx.getRequest<Request>()
 
-    const statusCode = exception.statusCode
+    const { statusCode, message, name, code, stack } = exception
+    const method = request.method
+    const url    = request.url
+    const ip     = request.ip ?? 'unknown'
 
-    // ─── Logging ─────────────────────────────────────────────────────
+    // ─── Logging ──────────────────────────────────────────────────────────────
     if (statusCode === 401 || statusCode === 403) {
-      this.logger.warn(
-        `[${exception.name}] ${exception.message} | IP: ${request.ip ?? 'unknown'} | ${request.method} ${request.url}`,
-      )
+      // Auth failures — log with IP for security audit trail
+      this.logger.warn(`[${name}] ${message} | IP: ${ip} | ${method} ${url}`)
+    } else if (statusCode === 429) {
+      // Rate limit — log with IP to spot abuse patterns
+      this.logger.warn(`[${name}] Rate limit hit | IP: ${ip} | ${method} ${url}`)
     } else if (statusCode >= 500) {
-      this.logger.error(
-        `[${exception.name}] ${exception.message}`,
-        exception.stack,
-      )
+      // Server errors — full stack in logs always, never in response
+      this.logger.error(`[${name}] ${message} | ${method} ${url}`, stack)
     }
+    // 400, 404, 409, 422 — no log noise, these are normal client errors
 
-    // ─── Safe Response ───────────────────────────────────────────────
-    const isProduction = process.env.NODE_ENV === 'production'
-
+    // ─── Safe Response ────────────────────────────────────────────────────────
     response.status(statusCode).json({
       statusCode,
-      error: exception.code,
-      message: isProduction && statusCode >= 500
+      error:   code,
+
+      // 5xx in production: redact real message — never leak internals
+      message: this.isProduction && statusCode >= 500
         ? 'Internal server error'
-        : exception.message,
+        : message,
+
       timestamp: new Date().toISOString(),
-      ...( !isProduction && {
-        path: request.url,
-        stack: exception.stack,
+
+      // Development extras — path and stack for easier debugging
+      // Strictly excluded in production
+      ...(!this.isProduction && {
+        path:  url,
+        stack: stack,
       }),
     })
   }

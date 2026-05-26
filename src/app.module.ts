@@ -37,6 +37,7 @@ import { UserModule } from './interface-adapters/modules/user/user.module'
 // Global Providers
 import { ConfigValidationService } from './infrastructure/config/config-validation.service'; // ← Added
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
+import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
 
 @Module({
     imports: [
@@ -111,10 +112,10 @@ import { DomainExceptionFilter } from './interface-adapters/filters/DomainExcept
 
     providers: [
         ConfigValidationService,
-
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        TokenCleanupTask,
+        { provide: APP_GUARD,  useClass: ThrottlerGuard        },
         { provide: APP_FILTER, useClass: DomainExceptionFilter },
-    ],
+    ]
 })
 
 export class AppModule {
