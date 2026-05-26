@@ -16,7 +16,7 @@ export class MailService implements IMailService {
 
       if (process.env.NODE_ENV !== 'production') {
         // Development fallback — log instead of send
-        this.logger.warn('📧 [DEVELOPMENT] Real email sending is disabled. Email content logged below:')
+        this.logger.warn('[DEVELOPMENT] Real email sending is disabled. Email content logged below:')
         this.logger.log('─'.repeat(60))
         this.logger.log(html)
         this.logger.log('─'.repeat(60))
