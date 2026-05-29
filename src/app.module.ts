@@ -49,7 +49,10 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
 
         // ─── Rate Limiting ──────────────────────────────────────────────────
         ThrottlerModule.forRoot({
-            throttlers: [{ name: 'global', ttl: 60_000, limit: 120 }],
+            throttlers: [
+                { name: 'global', ttl: 60_000, limit: 600 },
+                { name: 'per-ip', ttl: 60_000, limit: 100  },
+            ],
         }),
 
         // ─── Redis Cache ────────────────────────────────────────────────────

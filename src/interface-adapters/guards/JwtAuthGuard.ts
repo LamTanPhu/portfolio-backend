@@ -12,16 +12,16 @@
  */
 
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
-  UnauthorizedException,
+  Injectable,
   Logger,
+  UnauthorizedException,
 } from '@nestjs/common'
 import type { Request } from 'express'
 
-import { AuthService } from '../../application/services/AuthService'
 import type { AccessTokenPayload } from '../../application/services/AuthService'
+import { AuthService } from '../../application/services/AuthService'
 
 export interface AuthenticatedRequest extends Request {
   user: AccessTokenPayload
@@ -44,9 +44,10 @@ export class JwtAuthGuard implements CanActivate {
 
     const token = authHeader.slice(7) // Remove "Bearer "
 
+    // Compute once, reuse
     const fingerprint = AuthService.buildFingerprint(
-      req.headers['user-agent'] ?? '',
-      req.ip ?? '',
+        req.headers['user-agent'] ?? '',
+        req.ip ?? '',
     )
 
     try {
