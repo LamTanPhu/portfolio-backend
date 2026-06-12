@@ -64,12 +64,11 @@ export class ContactController {
   ): Promise<{ success: boolean; message: string }> {
     // Command emits 'contact.submitted' event internally — no event handling needed here
     await this.submitContact.execute({
-      name:           dto.name,
-      email:          dto.email,
-      message:        dto.message,
-      turnstileToken: dto.turnstileToken,
-      ipAddress:      req.ip ?? 'unknown',
-      browserInfo:    req.headers['user-agent'] ?? null,
+      name:        dto.name,
+      email:       dto.email,
+      message:     dto.message,
+      ipAddress:   req.ip ?? 'unknown',
+      browserInfo: req.headers['user-agent'] ?? null,
     })
 
     return {

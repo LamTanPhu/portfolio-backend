@@ -11,6 +11,7 @@ import * as crypto from 'crypto'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import type { ITokenRepository } from '../ports/ITokenRepository'
+import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 
 export interface AccessTokenPayload {
     sub:         number
@@ -41,6 +42,9 @@ export class AuthService implements OnModuleInit {
 
         @Inject('ICacheQueryService')
         private readonly cacheQuery: ICacheQueryService,
+
+        @Inject('IUserWriteRepository')
+        private readonly userRepo: IUserWriteRepository,
     ) {}
 
     // ===========================================================================
@@ -76,6 +80,9 @@ export class AuthService implements OnModuleInit {
             )
 
         if (!isValid) throw new UnauthorizedError('Invalid credentials')
+
+        // Update lastLogin — fire-and-forget, never block token issuance
+        void this.userRepo.update(userId, { lastLogin: new Date() })
 
         const [accessToken, refreshToken] = await Promise.all([
             this.issueAccessToken(userId, fingerprint),

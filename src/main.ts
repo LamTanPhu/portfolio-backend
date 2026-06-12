@@ -13,18 +13,28 @@ async function bootstrap(): Promise<void> {
     const logger = new Logger('Bootstrap')
     const isDev = process.env.NODE_ENV !== 'production'
 
-    // ─── Force HTTPS Configuration ─────────────────────────────────────
-    let httpsOptions
+    // ─── HTTPS Configuration ────────────────────────────────────────────
+    // Enabled only when USE_HTTPS=true. In development, plain HTTP is fine.
+    // In production behind a reverse proxy (Nginx, Cloudflare), TLS is
+    // typically terminated at the proxy — USE_HTTPS=false is correct there too.
+    let httpsOptions: { key: Buffer; cert: Buffer } | undefined
 
-    try {
-        httpsOptions = {
-        key: readFileSync('./certificates/key.pem'),
-        cert: readFileSync('./certificates/cert.pem'),
+    if (process.env.USE_HTTPS === 'true') {
+        const keyPath  = process.env.CERT_KEY_PATH  ?? './certificates/key.pem'
+        const certPath = process.env.CERT_CERT_PATH ?? './certificates/cert.pem'
+
+        try {
+            httpsOptions = {
+                key:  readFileSync(keyPath),
+                cert: readFileSync(certPath),
+            }
+            logger.log(`HTTPS enabled — certs loaded from ${keyPath} / ${certPath}`)
+        } catch (error) {
+            logger.error('USE_HTTPS=true but certificates could not be loaded!', error)
+            throw new Error(`HTTPS certificates required. Check CERT_KEY_PATH and CERT_CERT_PATH.`)
         }
-        logger.log('HTTPS enabled with custom certificates')
-    } catch (error) {
-        logger.error('Failed to load SSL certificates!', error)
-        throw new Error('HTTPS certificates are required. Please check the certificates folder.')
+    } else {
+        logger.log('HTTPS disabled (USE_HTTPS != true) — running plain HTTP')
     }
 
     const app = await NestFactory.create(AppModule, { httpsOptions })
@@ -87,13 +97,14 @@ async function bootstrap(): Promise<void> {
     }
 
     // ─── Start Server ───────────────────────────────────────────────────
-    const port = parseInt(process.env.PORT ?? '3001', 10)
+    const port     = parseInt(process.env.PORT ?? '3001', 10)
+    const protocol = httpsOptions ? 'https' : 'http'
     await app.listen(port)
 
-    logger.log(`Server running on https://localhost:${port}`)
+    logger.log(`Server running on ${protocol}://localhost:${port}`)
 
     if (isDev) {
-        logger.log(`Swagger UI at https://localhost:${port}/api/docs`)
+        logger.log(`Swagger UI at ${protocol}://localhost:${port}/api/docs`)
     }
 }
 

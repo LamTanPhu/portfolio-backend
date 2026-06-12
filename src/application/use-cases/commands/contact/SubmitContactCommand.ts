@@ -2,28 +2,29 @@
  * @fileoverview SubmitContactCommand
  * 
  * Handles public contact form submission with multiple security layers:
- * - Turnstile bot protection
  * - Input validation & sanitization
  * - Email validation via Value Object
  * - Basic spam content filtering
  * - Raises domain event with metadata for notification & spam analysis
+ * 
+ * Note: Turnstile bot protection is enforced upstream by TurnstileGuard
+ * (interface adapter layer). This command does NOT re-verify the token —
+ * doing so would issue two Cloudflare API calls per submission.
  */
 
 import { Injectable, Inject } from '@nestjs/common'
 import { EventEmitter2 } from '@nestjs/event-emitter'
 import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
-import type { ITurnstileVerifier } from '../../../ports/ITurnstileVerifier'
 import { ContactSubmittedEvent } from '../../../../domain/events/ContactSubmittedEvent'
 import { ValidationError } from '../../../../domain/errors/ValidationError'
 import { Email } from '../../../../domain/value-objects/Email'
 
 export interface SubmitContactInput {
-  name:           string
-  email:          string
-  message:        string
-  turnstileToken: string
-  ipAddress:      string
-  browserInfo:    string | null
+  name:        string
+  email:       string
+  message:     string
+  ipAddress:   string
+  browserInfo: string | null
 }
 
 // =============================================================================
@@ -40,21 +41,12 @@ export class SubmitContactCommand {
     @Inject('IContactWriteRepository')
     private readonly repo: IContactWriteRepository,
 
-    @Inject('ITurnstileVerifier')
-    private readonly turnstile: ITurnstileVerifier,
-
     // Event bus — decouples command from downstream side effects (email, analytics, etc.)
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(input: SubmitContactInput): Promise<void> {
-    // 1. Turnstile verification (anti-bot)
-    const isHuman = await this.turnstile.verifyToken(input.turnstileToken)
-    if (!isHuman) {
-      throw new ValidationError('Turnstile verification failed. Please try again.')
-    }
-
-    // 2. Input validation & sanitization — limits mirror DB schema constraints
+    // 1. Input validation & sanitization — limits mirror DB schema constraints
     if (input.name.trim().length === 0) {
       throw new ValidationError('Name is required')
     }
