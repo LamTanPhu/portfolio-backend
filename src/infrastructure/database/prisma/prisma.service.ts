@@ -21,9 +21,13 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       throw new Error('[PrismaService] DATABASE_URL environment variable is not set')
     }
 
+    // Pool size defaults to 10 — enough for a portfolio workload.
+    // Set DATABASE_POOL_SIZE to tune for your hosting tier (e.g. 3 on free-tier PaaS).
+    const poolSize = parseInt(this.configService.get<string>('DATABASE_POOL_SIZE') ?? '10', 10)
+
     const adapter = new PrismaPg({
       connectionString: databaseUrl,
-      max: 10,
+      max: poolSize,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
     })

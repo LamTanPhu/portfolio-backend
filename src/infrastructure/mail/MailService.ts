@@ -23,8 +23,13 @@ export class MailService implements IMailService {
         return
       }
 
+      // RESEND_FROM_ADDRESS must be a verified domain in production.
+      // 'onboarding@resend.dev' only works for Resend sandbox — never in prod.
+      // Example value: 'Portfolio <hello@yourdomain.com>'
+      const fromAddress = process.env.RESEND_FROM_ADDRESS ?? 'Portfolio <onboarding@resend.dev>'
+
       await this.resend.emails.send({
-        from: 'Portfolio <onboarding@resend.dev>',
+        from: fromAddress,
         to: safeTo,
         subject: safeSubject,
         html,

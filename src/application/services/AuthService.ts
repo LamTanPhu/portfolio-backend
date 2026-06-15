@@ -9,9 +9,9 @@ import { Inject, Injectable, OnModuleInit } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
 import * as crypto from 'crypto'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
+import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import type { ITokenRepository } from '../ports/ITokenRepository'
-import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 
 export interface AccessTokenPayload {
     sub:         number
@@ -146,9 +146,12 @@ export class AuthService implements OnModuleInit {
     // Cached Revocation Check
     // ===========================================================================
     private async isTokenRevoked(jti: string): Promise<boolean> {
+        // REALTIME profile: 10s fresh + 30s stale = 40s max window.
+        // A revoked token can pass at most 40s after logout — acceptable trade-off
+        // given access tokens only live 15 minutes and the cache massively reduces
         return this.cacheQuery.getOrSetWithProfile(
             `revoked-token:${jti}`,
-            'SHORT',  // ← was REALTIME (10s fresh), now SHORT (60s fresh)
+            'REALTIME',
             async () => await this.tokenRepo.isRevoked(jti),
         )
     }

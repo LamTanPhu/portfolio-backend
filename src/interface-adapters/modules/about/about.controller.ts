@@ -39,6 +39,7 @@ export class AboutController {
     }
 
     @Get('education')
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all education records ordered by most recent' })
     @ApiResponse({ status: 200, description: 'List of education records' })
     async education(): Promise<EducationDTO[]> {
@@ -46,6 +47,7 @@ export class AboutController {
     }
 
     @Get('jobs')
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all work experience ordered by most recent' })
     @ApiResponse({ status: 200, description: 'List of work experience records' })
     async jobs(): Promise<JobDTO[]> {
@@ -53,6 +55,7 @@ export class AboutController {
     }
 
     @Get('certifications')
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all published certifications' })
     @ApiResponse({ status: 200, description: 'List of published certifications' })
     async certifications(): Promise<CertificationDTO[]> {
@@ -60,6 +63,7 @@ export class AboutController {
     }
 
     @Get('social')
+    @Throttle({ default: { limit: 120, ttl: 60_000 } })
     @ApiOperation({ summary: 'Get all public social accounts — GitHub, LinkedIn etc.' })
     @ApiResponse({ status: 200, description: 'List of public social accounts' })
     async social(): Promise<SocialAccountDTO[]> {

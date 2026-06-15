@@ -59,63 +59,23 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
     // Read Operations
     // ===========================================================================
 
-async findPublished(): Promise<BlogSummary[]> {
+    async findPublished(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
-            where: { isPublished: true },
-            select: {
-                id:          true,
-                title:       true,
-                slug:        true,
-                excerpt:     true,
-                isPublished: true,
-                publishedAt: true,
-                createdAt:   true,
-                tags: {
-                    select: { name: true },
-                },
-            },
+            where:   { isPublished: true },
+            select:  LIST_SELECT,
             orderBy: { publishedAt: 'desc' },
         })
 
-        return rows.map(row => ({
-            id:          row.id,
-            title:       row.title,
-            slug:        row.slug,
-            excerpt:     row.excerpt,
-            tags:        row.tags.map(t => t.name),
-            isPublished: row.isPublished,
-            publishedAt: row.publishedAt,
-            createdAt:   row.createdAt,
-        }))
+        return rows.map(PrismaBlogReadRepository.toBlogSummary)
     }
 
     async findAll(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
-            select: {
-                id:          true,
-                title:       true,
-                slug:        true,
-                excerpt:     true,
-                isPublished: true,
-                publishedAt: true,
-                createdAt:   true,
-                tags: {
-                    select: { name: true },
-                },
-            },
+            select:  LIST_SELECT,
             orderBy: { createdAt: 'desc' },
         })
 
-        return rows.map(row => ({
-            id:          row.id,
-            title:       row.title,
-            slug:        row.slug,
-            excerpt:     row.excerpt,
-            tags:        row.tags.map(t => t.name),
-            isPublished: row.isPublished,
-            publishedAt: row.publishedAt,
-            createdAt:   row.createdAt,
-        }))
+        return rows.map(PrismaBlogReadRepository.toBlogSummary)
     }
 
     async findById(id: number): Promise<Blog | null> {

@@ -63,9 +63,32 @@ export class SubmitContactCommand {
     // 3. Email validation via Value Object
     const email = new Email(input.email)
 
-    // 4. Basic spam / suspicious content filtering
-    const suspiciousPatterns = /(http|www\.|\.com|\.net|bitcoin|crypto|viagra|porn|casino|loan)/i
-    if (suspiciousPatterns.test(input.message)) {
+    // 4. Spam filtering — multi-signal approach.
+    //
+    // The previous single-regex approach blocked legitimate messages containing
+    // ".com", ".net", or common industry words (e.g. "I work at company.com").
+    //
+    // Strategy: a message is flagged as spam only when MULTIPLE signals fire
+    // together. Any one signal alone is not enough to reject.
+    const spamSignals: Array<RegExp | ((msg: string) => boolean)> = [
+      // Bare URLs (http/https links or www. prefixes)
+      /https?:\/\/|www\./i,
+      // More than one email address in the message body (one is fine — it's theirs)
+      (msg: string) => (msg.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) ?? []).length > 1,
+      // Classic unsolicited-commercial-email keywords
+      /(viagra|casino|porn|bitcoin|crypto\s+invest|make money fast|click here|free money|loan offer)/i,
+      // Excessive punctuation / shouting (!!!, $$$, etc.)
+      /[!$]{3,}/,
+    ]
+
+    const signalsFired = spamSignals.filter(signal =>
+      typeof signal === 'function'
+        ? signal(input.message)
+        : signal.test(input.message),
+    ).length
+
+    // Two or more signals together = spam. One signal alone lets it through.
+    if (signalsFired >= 2) {
       throw new ValidationError('Message contains suspicious content. Please remove links or promotional text.')
     }
 
