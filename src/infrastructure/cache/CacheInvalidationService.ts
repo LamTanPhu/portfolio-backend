@@ -1,16 +1,24 @@
 /**
  * @fileoverview CacheInvalidationService
- * 
+ *
  * Centralized cache invalidation service for the portfolio backend.
- * 
+ *
  * Responsibilities:
  * - Single source of truth for cache key management
  * - Consistent namespacing to prevent collisions
  * - Safe pattern-based invalidation with graceful degradation
  * - Comprehensive logging for observability
- * 
- * This service is part of the Infrastructure layer and implements
- * the ICacheInvalidationService port from the Application layer.
+ *
+ * Pattern deletion uses Redis SCAN instead of KEYS:
+ * - KEYS blocks the Redis event loop for the full scan duration — O(N) where
+ *   N is total key count in the entire Redis instance. Under traffic, this
+ *   causes latency spikes for every other Redis command while it runs.
+ * - SCAN is non-blocking and iterates in small cursor-based batches (COUNT hint),
+ *   yielding between iterations. It takes the same total O(N) work but spreads
+ *   it across many non-blocking steps so other commands are never starved.
+ *
+ * For a portfolio this difference is academic, but SCAN is the correct tool
+ * regardless of scale — there is no reason to ever use KEYS in production.
  */
 
 import { Injectable, Inject, Logger } from '@nestjs/common'
@@ -18,6 +26,11 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import type { Cache } from 'cache-manager'
 
 import type { ICacheInvalidationService } from '../../application/ports/ICacheInvalidationService'
+
+// How many keys Redis returns per SCAN cursor iteration.
+// 100 is a safe default — large enough to be efficient, small enough not to
+// block the event loop on any single iteration.
+const SCAN_COUNT = 100
 
 @Injectable()
 export class CacheInvalidationService implements ICacheInvalidationService {
@@ -47,28 +60,78 @@ export class CacheInvalidationService implements ICacheInvalidationService {
      */
     private async delete(key: string): Promise<void> {
         try {
-        const namespacedKey = this.getNamespacedKey(key)
-        await this.cacheManager.del(namespacedKey)
+            const namespacedKey = this.getNamespacedKey(key)
+            await this.cacheManager.del(namespacedKey)
         } catch (error) {
-        this.logger.error(`Failed to delete cache key: ${key}`, error)
+            this.logger.error(`Failed to delete cache key: ${key}`, error)
         }
     }
 
     /**
-     * Deletes multiple keys matching a pattern.
-     * Uses Redis-specific API when available, falls back gracefully.
+     * Deletes all keys matching a glob pattern using Redis SCAN.
+     *
+     * Why SCAN instead of KEYS:
+     *   KEYS '*pattern*' is a single O(N) blocking call that halts the Redis
+     *   event loop until it completes. SCAN iterates in cursor-based batches
+     *   of ~SCAN_COUNT keys, yielding control between each batch so other
+     *   Redis commands are never starved.
+     *
+     * Falls back gracefully if the underlying store does not expose a Redis
+     * client (e.g. in-memory cache during tests).
      */
     private async deletePattern(pattern: string): Promise<void> {
         const namespacedPattern = this.getNamespacedKey(pattern)
+
         try {
             const store = (this.cacheManager as any).store
-            if (store?.keys) {
-                const keys = await store.keys(namespacedPattern)
-                if (keys?.length > 0) {
-                    await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
-                    this.logger.log(`Invalidated ${keys.length} keys with pattern: ${pattern}`)
+
+            // Prefer SCAN via the raw ioredis client
+            const redisClient = store?.client ?? store?.getClient?.()
+
+            if (redisClient?.scan) {
+                let cursor = '0'
+                let totalDeleted = 0
+
+                do {
+                    // SCAN returns [nextCursor, matchedKeys]
+                    const [nextCursor, keys]: [string, string[]] = await redisClient.scan(
+                        cursor,
+                        'MATCH', namespacedPattern,
+                        'COUNT', SCAN_COUNT,
+                    )
+
+                    cursor = nextCursor
+
+                    if (keys.length > 0) {
+                        // DEL accepts multiple keys in one call — one round-trip per batch
+                        await redisClient.del(...keys)
+                        totalDeleted += keys.length
+                    }
+                } while (cursor !== '0')
+
+                if (totalDeleted > 0) {
+                    this.logger.log(
+                        `SCAN invalidated ${totalDeleted} keys with pattern: ${pattern}`,
+                    )
                 }
+
+            } else if (store?.keys) {
+                // Fallback: in-memory store (e.g. cache-manager MemoryStore in tests)
+                // does not have a Redis client — use its own keys() method instead.
+                const keys: string[] = await store.keys(namespacedPattern)
+                if (keys.length > 0) {
+                    await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
+                    this.logger.log(
+                        `[fallback] Invalidated ${keys.length} keys with pattern: ${pattern}`,
+                    )
+                }
+
+            } else {
+                this.logger.warn(
+                    `Pattern invalidation skipped — store exposes neither SCAN nor keys(): ${pattern}`,
+                )
             }
+
         } catch (error) {
             this.logger.warn(`Pattern invalidation partially failed for: ${pattern}`, error)
         }

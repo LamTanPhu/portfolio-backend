@@ -1,4 +1,4 @@
-import { ProjectDTO } from '../../../application/dtos/ProjectDTO'
+import { ProjectDTO, ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
 import type { Project } from '../../entities/Project'
 
 // =============================================================================
@@ -9,8 +9,8 @@ import type { Project } from '../../entities/Project'
 // findById and findBySlug return full project including description.
 // =============================================================================
 export interface IProjectReadRepository {
-  findAll(): Promise<ProjectDTO[]>
-  findPublished(): Promise<ProjectDTO[]>
+  findAll(): Promise<ProjectSummaryDTO[]>
+  findPublished(): Promise<ProjectSummaryDTO[]>
   findById(id: number): Promise<Project | null>
   findBySlug(slug: string): Promise<Project | null>
 }

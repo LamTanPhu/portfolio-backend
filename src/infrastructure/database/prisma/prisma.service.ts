@@ -56,9 +56,10 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
       try {
           await this.prisma.$connect()
 
-          await Promise.all(
-              Array.from({ length: 5 }, () => this.prisma.$queryRaw`SELECT 1`)
-          )
+          // Single connectivity probe — $connect() already opens the first
+          // connection; one SELECT 1 confirms the DB is reachable without
+          // burning 4 extra pool slots on startup for no gain.
+          await this.prisma.$queryRaw`SELECT 1`
 
           this.logger.log('Prisma Database connected successfully')
       } catch (error) {

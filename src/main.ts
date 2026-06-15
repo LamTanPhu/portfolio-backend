@@ -63,6 +63,9 @@ async function bootstrap(): Promise<void> {
     })
 
     // ─── Global Settings ────────────────────────────────────────────────
+    // ORDER DEPENDENCY: setGlobalPrefix() MUST come before SwaggerModule.setup().
+    // Swagger reads the registered prefix to build correct route paths in the UI.
+    // Moving Swagger setup above this line silently breaks all documented routes.
     app.setGlobalPrefix('api')
 
     app.useGlobalPipes(
