@@ -7,6 +7,7 @@ import { AuthService } from '../../../application/services/AuthService'
 // Infrastructure
 import { PrismaRevokedTokenRepository } from '../../../infrastructure/database/repositories/PrismaRevokedTokenRepository'
 import { PrismaUserWriteRepository } from '../../../infrastructure/database/repositories/user/PrismaUserWriteRepository'
+import { PrismaAdminCredentialRepository } from '../../../infrastructure/database/repositories/user/PrismaAdminCredentialRepository'
 import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
 
 @Module({
@@ -31,20 +32,35 @@ import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.m
     providers: [
         PrismaRevokedTokenRepository,
         PrismaUserWriteRepository,
+        PrismaAdminCredentialRepository,
 
-        { provide: 'ITokenRepository',    useExisting: PrismaRevokedTokenRepository },
-        { provide: 'IUserWriteRepository', useExisting: PrismaUserWriteRepository   },
+        { provide: 'ITokenRepository',          useExisting: PrismaRevokedTokenRepository    },
+        { provide: 'IUserWriteRepository',       useExisting: PrismaUserWriteRepository       },
+        { provide: 'IAdminCredentialRepository', useExisting: PrismaAdminCredentialRepository },
 
-        // AuthService with all 4 dependencies
+        // AuthService with all 5 dependencies
         {
         provide: AuthService,
         useFactory: (
-            jwtService: JwtService,
-            tokenRepository: PrismaRevokedTokenRepository,
-            cacheQueryService: any,           // ICacheQueryService
-            userWriteRepository: PrismaUserWriteRepository,
-        ) => new AuthService(jwtService, tokenRepository, cacheQueryService, userWriteRepository),
-        inject: [JwtService, 'ITokenRepository', 'ICacheQueryService', 'IUserWriteRepository'],
+            jwtService:           JwtService,
+            tokenRepository:      PrismaRevokedTokenRepository,
+            cacheQueryService:    any,           // ICacheQueryService
+            userWriteRepository:  PrismaUserWriteRepository,
+            credentialRepository: PrismaAdminCredentialRepository,
+        ) => new AuthService(
+            jwtService,
+            tokenRepository,
+            cacheQueryService,
+            userWriteRepository,
+            credentialRepository,
+        ),
+        inject: [
+            JwtService,
+            'ITokenRepository',
+            'ICacheQueryService',
+            'IUserWriteRepository',
+            'IAdminCredentialRepository',
+        ],
         },
     ],
 

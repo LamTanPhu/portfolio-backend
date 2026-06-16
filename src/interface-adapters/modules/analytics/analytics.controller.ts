@@ -23,6 +23,7 @@ import { TrackProjectViewCommand } from '../../../application/use-cases/commands
 import { TrackResumeDownloadCommand } from '../../../application/use-cases/commands/analytics/TrackResumeDownloadCommand'
 import { GetPageViewsQuery } from '../../../application/use-cases/queries/analytics/GetPageViewsQuery'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
+import { TrackPageViewDto } from './analytics.dto'
 
 // =============================================================================
 // AnalyticsController
@@ -49,9 +50,9 @@ export class AnalyticsController {
     @ApiOperation({ summary: 'Track a page view — called by frontend on navigation' })
     @ApiResponse({ status: 201, description: 'Page view recorded' })
     async trackPage(
-        @Body('route') route: string,
+        @Body() dto: TrackPageViewDto,
     ): Promise<{ success: boolean }> {
-        await this.trackPageView.execute(route)
+        await this.trackPageView.execute(dto.route)
         return { success: true }
     }
 

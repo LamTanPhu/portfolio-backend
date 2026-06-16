@@ -8,7 +8,7 @@
  * They are intentionally separate from Application DTOs.
  */
 
-import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 // =============================================================================
@@ -49,6 +49,9 @@ export class CreateBlogDto {
         type: [String],
     })
     @IsArray()
+    @IsString({ each: true })
+    @IsNotEmpty({ each: true })
+    @MaxLength(45, { each: true })
     @IsOptional()
     tags?: string[]
 
@@ -89,6 +92,9 @@ export class UpdateBlogDto {
         type: [String],
     })
     @IsArray()
+    @IsString({ each: true })
+    @IsNotEmpty({ each: true })
+    @MaxLength(45, { each: true })
     @IsOptional()
     tags?: string[]
 

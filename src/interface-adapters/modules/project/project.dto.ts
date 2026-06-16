@@ -2,7 +2,7 @@
  * @fileoverview Project DTOs (Request Models)
  */
 
-import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator'
+import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class CreateProjectDto {
@@ -28,6 +28,9 @@ export class CreateProjectDto {
     type: [String],
   })
   @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(50, { each: true })
   techStack!: string[]
 
   @ApiProperty({ description: 'Is this project open source?', example: true })
@@ -68,6 +71,9 @@ export class UpdateProjectDto {
 
   @ApiPropertyOptional({ description: 'Technology stack', example: ['React', 'Node.js'], type: [String] })
   @IsArray()
+  @IsString({ each: true })
+  @IsNotEmpty({ each: true })
+  @MaxLength(50, { each: true })
   @IsOptional()
   techStack?: string[]
 

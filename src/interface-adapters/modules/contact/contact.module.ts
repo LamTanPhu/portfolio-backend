@@ -38,10 +38,12 @@ import { NestLogger } from '../../../infrastructure/logging/NestLogger'
         NestLogger,
 
         // Ports (Interface Adapters → Infrastructure)
+        // PrismaContactRepository implements BOTH interfaces — registered twice as different tokens
         { provide: 'IContactWriteRepository', useExisting: PrismaContactRepository },
-        { provide: 'ITurnstileVerifier', useExisting: TurnstileVerifier },
-        { provide: 'IMailService', useExisting: MailService },
-        { provide: 'ILogger', useExisting: NestLogger },
+        { provide: 'IContactReadRepository',  useExisting: PrismaContactRepository },
+        { provide: 'ITurnstileVerifier',       useExisting: TurnstileVerifier       },
+        { provide: 'IMailService',             useExisting: MailService             },
+        { provide: 'ILogger',                  useExisting: NestLogger              },
 
         // Use Cases & Event Handlers
         SubmitContactCommand,

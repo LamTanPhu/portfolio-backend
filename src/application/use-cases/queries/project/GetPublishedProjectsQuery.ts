@@ -9,7 +9,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
 
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
-import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import type { ProjectDTO, ProjectSummaryDTO } from '../../../dtos/ProjectDTO'
 
 @Injectable()
 export class GetPublishedProjectsQuery {
@@ -21,7 +21,7 @@ export class GetPublishedProjectsQuery {
     private readonly cacheQuery: ICacheQueryService,
   ) {}
 
-  async execute(): Promise<ProjectDTO[]> {
+  async execute(): Promise<ProjectSummaryDTO[]> {
     return this.cacheQuery.getOrSetWithProfile(
       'project:list:public',
       'MEDIUM',
@@ -31,7 +31,6 @@ export class GetPublishedProjectsQuery {
         return projects.map((p) => ({
           id:           p.id,
           name:         p.name,
-          description:  p.description,
           slug:         p.slug,
           techStack:    p.techStack,
           repoUrl:      p.repoUrl,

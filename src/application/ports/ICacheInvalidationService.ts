@@ -26,6 +26,10 @@ export interface ICacheInvalidationService {
     invalidatePublicJobs(): Promise<void>
     invalidatePublicSocialAccounts(): Promise<void>
 
+    // Contact (admin)
+    /** Clears the cached admin contact message list — call after any write to ContactMe */
+    invalidateContactList(): Promise<void>
+
     // Advanced
     invalidatePattern(pattern: string): Promise<void>
 }

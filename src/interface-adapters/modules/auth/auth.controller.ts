@@ -59,10 +59,14 @@ export class AuthController {
       req.ip ?? '',
     )
 
+    // ADMIN_EMAIL is validated at startup by ConfigValidationService — safe to use here.
+    // We pass it to AuthService so it can look up the credential from DB.
+    const adminEmail = process.env.ADMIN_EMAIL ?? ''
+
     const { accessToken, refreshToken } = await this.authService.login(
       dto.password,
       fingerprint,
-      1, // Single admin user
+      adminEmail,
     )
 
     // Secure httpOnly cookie for refresh token

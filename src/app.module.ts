@@ -35,7 +35,7 @@ import { SpotifyModule } from './interface-adapters/modules/spotify/spotify.modu
 import { UserModule } from './interface-adapters/modules/user/user.module'
 
 // Global Providers
-import { ConfigValidationService } from './infrastructure/config/config-validation.service'; // ← Added
+import { ConfigValidationService } from './infrastructure/config/config-validation.service'
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
 import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
 
@@ -50,33 +50,35 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
         // ─── Rate Limiting ──────────────────────────────────────────────────
         ThrottlerModule.forRoot({
             throttlers: [
-                { name: 'global', ttl: 60_000, limit: 600 },
-                { name: 'per-ip', ttl: 60_000, limit: 100  },
+                { name: 'per-ip', ttl: 60_000, limit: 100 },
             ],
         }),
 
-        // ─── Redis Cache ────────────────────────────────────────────────────
-        CacheModule.registerAsync({
-        isGlobal: true,
-        imports: [ConfigModule],
-        inject: [ConfigService],
-            useFactory: async (configService: ConfigService) => ({
-                store: await import('cache-manager-redis-yet').then(({ redisStore }) =>
-                    redisStore({
-                        socket: {
-                        host: configService.get<string>('REDIS_HOST', 'localhost'),
-                        port: configService.get<number>('REDIS_PORT', 6379),
-                        },
-                        ttl: 300,
-                    }),
-                ),
-            }),
+        // ─── In-Memory Cache ─────────────────────────────────────────────────
+        // Uses cache-manager's built-in Keyv memory store — no Redis required.
+        //
+        // Why this is fine for a portfolio backend:
+        //   - All TTLs are short (10 s – 24 h). A process restart clears the
+        //     cache, costing one cold DB hit per key — not data loss.
+        //   - Single-instance deployment: no need for a shared cache layer.
+        //   - Zero infrastructure cost and zero operational overhead.
+        //
+        // CacheQueryService implements Stale-While-Revalidate on top of this,
+        // so the in-memory store still gets all the SWR benefits.
+        //
+        // To restore Redis later (multi-instance deploy, persistent cache):
+        //   1. npm install cache-manager-redis-yet redis
+        //   2. Swap this block for CacheModule.registerAsync + redisStore
+        //      (see git history for the exact previous config).
+        CacheModule.register({
+            isGlobal: true,
+            ttl: 300, // 5 min default — overridden per-call by CacheQueryService profiles
         }),
 
         // ─── JWT Configuration ──────────────────────────────────────────────
         JwtModule.registerAsync({
-        imports: [ConfigModule],
-        inject: [ConfigService],
+            imports: [ConfigModule],
+            inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
                 secret: configService.get<string>('JWT_SECRET'),
                 signOptions: {
@@ -110,7 +112,6 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
 
         // ─── Event Modules ────────────────────────────────────────────────
         EventEmitterModule.forRoot(),
-
     ],
 
     providers: [
@@ -118,9 +119,8 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
         TokenCleanupTask,
         { provide: APP_GUARD,  useClass: ThrottlerGuard        },
         { provide: APP_FILTER, useClass: DomainExceptionFilter },
-    ]
+    ],
 })
-
 export class AppModule {
     constructor(private readonly configValidation: ConfigValidationService) {
         this.configValidation.validate()

@@ -36,7 +36,7 @@ import { CreateProjectCommand } from '../../../application/use-cases/commands/pr
 import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
 import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
 
-import type { ProjectDTO } from '../../../application/dtos/ProjectDTO'
+import type { ProjectDTO, ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
 import { CreateProjectDto, UpdateProjectDto } from './project.dto'
 
 @ApiTags('Projects')
@@ -54,7 +54,7 @@ export class ProjectController {
   @Throttle({ default: { limit: 120, ttl: 60_000 } })
   @ApiOperation({ summary: 'Get all published projects (Public)' })
   @ApiResponse({ status: 200, description: 'List of published projects' })
-  async findAll(): Promise<ProjectDTO[]> {
+  async findAll(): Promise<ProjectSummaryDTO[]> {
     return this.getPublishedQuery.execute()
   }
 

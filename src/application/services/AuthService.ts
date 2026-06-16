@@ -7,8 +7,10 @@
 
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common'
 import { JwtService } from '@nestjs/jwt'
+import * as bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
+import type { IAdminCredentialRepository } from '../../domain/repositories/user/IAdminCredentialRepository'
 import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import type { ITokenRepository } from '../ports/ITokenRepository'
@@ -34,6 +36,10 @@ export class AuthService implements OnModuleInit {
     private static readonly REFRESH_TOKEN_EXPIRY    = '7d'
     private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
 
+    // bcrypt cost factor — 12 matches the seed script.
+    // Never compare using timingSafeEqual on hashes; bcrypt.compare() handles that.
+    private static readonly BCRYPT_WORK_FACTOR = 12
+
     constructor(
         private readonly jwt: JwtService,
 
@@ -45,6 +51,9 @@ export class AuthService implements OnModuleInit {
 
         @Inject('IUserWriteRepository')
         private readonly userRepo: IUserWriteRepository,
+
+        @Inject('IAdminCredentialRepository')
+        private readonly credentialRepo: IAdminCredentialRepository,
     ) {}
 
     // ===========================================================================
@@ -64,29 +73,34 @@ export class AuthService implements OnModuleInit {
     async login(
         password:    string,
         fingerprint: string,
-        userId:      number,
+        adminEmail:  string,
     ): Promise<{ accessToken: string; refreshToken: string }> {
-        const adminPassword = process.env.ADMIN_PASSWORD
-        if (!adminPassword) {
-            throw new Error('[AuthService] ADMIN_PASSWORD environment variable is not set')
+        // Fetch credential record (id + hashPassword) from DB.
+        // Returns null when email doesn't exist — intentionally indistinguishable
+        // from a wrong password to prevent user enumeration.
+        const credential = await this.credentialRepo.findCredentialByEmail(adminEmail)
+
+        // If user not found, compare against a dummy hash so timing is identical
+        // regardless of whether the email exists. This prevents timing-based user
+        // enumeration attacks that would be possible if we returned early on null.
+        const dummyHash = '$2b$12$invalidhashpaddingtomakethisexactly60charslong1234567'
+        const hashToCompare = credential?.hashPassword ?? dummyHash
+
+        // bcrypt.compare() is inherently timing-safe — runs full Blowfish key setup
+        // regardless of where the strings differ. No need for timingSafeEqual here.
+        const isValid = await bcrypt.compare(password, hashToCompare)
+
+        // Reject either: no user found OR wrong password (after dummy comparison)
+        if (!credential || !isValid) {
+            throw new UnauthorizedError('Invalid credentials')
         }
 
-        // timingSafeEqual requires equal-length buffers — length mismatch means
-        // wrong password, short-circuit before calling it to avoid RangeError.
-        const isValid = password.length === adminPassword.length &&
-            crypto.timingSafeEqual(
-                Buffer.from(password),
-                Buffer.from(adminPassword),
-            )
-
-        if (!isValid) throw new UnauthorizedError('Invalid credentials')
-
         // Update lastLogin — fire-and-forget, never block token issuance
-        void this.userRepo.update(userId, { lastLogin: new Date() })
+        void this.userRepo.update(credential.id, { lastLogin: new Date() })
 
         const [accessToken, refreshToken] = await Promise.all([
-            this.issueAccessToken(userId, fingerprint),
-            this.issueRefreshToken(userId),
+            this.issueAccessToken(credential.id, fingerprint),
+            this.issueRefreshToken(credential.id),
         ])
 
         return { accessToken, refreshToken }

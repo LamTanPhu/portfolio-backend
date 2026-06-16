@@ -2,14 +2,29 @@
  * @fileoverview AuthService Unit Tests
  *
  * Tests core auth logic in isolation.
- * All external dependencies (JwtService, ITokenRepository, ICacheQueryService)
- * are mocked — no database, no Redis, no network calls.
+ * All external dependencies (JwtService, ITokenRepository, ICacheQueryService,
+ * IUserWriteRepository, IAdminCredentialRepository) are mocked —
+ * no database, no Redis, no bcrypt I/O, no network calls.
+ *
+ * bcrypt.compare is mocked at the module level so tests remain fast
+ * (real bcrypt with work factor 12 takes ~300 ms per call).
  */
 
 import { Test, TestingModule } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
 import { AuthService } from './AuthService'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
+
+// =============================================================================
+// Module-level bcrypt mock
+// Must be declared before any import that transitively loads bcrypt,
+// and before the jest.mock() call below.
+// =============================================================================
+jest.mock('bcrypt', () => ({
+    compare: jest.fn(),
+}))
+
+import * as bcrypt from 'bcrypt'
 
 // =============================================================================
 // Mocks
@@ -28,6 +43,23 @@ const mockTokenRepo = {
 const mockCacheQuery = {
     getOrSetWithProfile: jest.fn(),
 }
+
+const mockUserWriteRepo = {
+    update: jest.fn(),
+}
+
+// Fakes the IAdminCredentialRepository.findCredentialByEmail response
+const mockCredentialRepo = {
+    findCredentialByEmail: jest.fn(),
+}
+
+// =============================================================================
+// Constants shared across login() tests
+// =============================================================================
+
+const ADMIN_EMAIL    = 'admin@example.com'
+const CORRECT_HASH   = '$2b$12$validhashabcdefghijklmnopqrstuvwxyz0123456' // fake hash, bcrypt is mocked
+const FAKE_CREDENTIAL = { id: 1, hashPassword: CORRECT_HASH }
 
 // =============================================================================
 // Helpers
@@ -53,25 +85,31 @@ describe('AuthService', () => {
     beforeEach(async () => {
         jest.clearAllMocks()
 
+        // Default happy-path mock state
         mockCacheQuery.getOrSetWithProfile.mockResolvedValue(false)
         mockTokenRepo.isRevoked.mockResolvedValue(false)
         mockJwtService.signAsync.mockResolvedValue('signed-token')
+        mockUserWriteRepo.update.mockResolvedValue(undefined)
+
+        // Default: credential found and password matches
+        mockCredentialRepo.findCredentialByEmail.mockResolvedValue(FAKE_CREDENTIAL)
+        ;(bcrypt.compare as jest.Mock).mockResolvedValue(true)
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AuthService,
-                { provide: JwtService,           useValue: mockJwtService },
-                { provide: 'ITokenRepository',   useValue: mockTokenRepo  },
-                { provide: 'ICacheQueryService', useValue: mockCacheQuery },
+                { provide: JwtService,                    useValue: mockJwtService      },
+                { provide: 'ITokenRepository',            useValue: mockTokenRepo        },
+                { provide: 'ICacheQueryService',          useValue: mockCacheQuery       },
+                { provide: 'IUserWriteRepository',        useValue: mockUserWriteRepo    },
+                { provide: 'IAdminCredentialRepository',  useValue: mockCredentialRepo   },
             ],
         }).compile()
 
         service = module.get<AuthService>(AuthService)
-        process.env.ADMIN_PASSWORD = 'correct-password'
     })
 
     afterEach(() => {
-        delete process.env.ADMIN_PASSWORD
         delete process.env.FINGERPRINT_STRICT
     })
 
@@ -98,15 +136,27 @@ describe('AuthService', () => {
     // ===========================================================================
     describe('login()', () => {
         it('returns access and refresh tokens on valid credentials', async () => {
-            const result = await service.login('correct-password', 'fp', 1)
+            const result = await service.login('correct-password', 'fp', ADMIN_EMAIL)
 
             expect(result).toHaveProperty('accessToken')
             expect(result).toHaveProperty('refreshToken')
             expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2)
         })
 
+        it('looks up credential by email before comparing password', async () => {
+            await service.login('correct-password', 'fp', ADMIN_EMAIL)
+
+            expect(mockCredentialRepo.findCredentialByEmail).toHaveBeenCalledWith(ADMIN_EMAIL)
+        })
+
+        it('calls bcrypt.compare with input password and stored hash', async () => {
+            await service.login('correct-password', 'fp', ADMIN_EMAIL)
+
+            expect(bcrypt.compare).toHaveBeenCalledWith('correct-password', FAKE_CREDENTIAL.hashPassword)
+        })
+
         it('signs access token with correct claims', async () => {
-            await service.login('correct-password', 'fp', 1)
+            await service.login('correct-password', 'fp', ADMIN_EMAIL)
 
             expect(mockJwtService.signAsync).toHaveBeenCalledWith(
                 expect.objectContaining({ sub: 1, role: 'admin' }),
@@ -115,7 +165,7 @@ describe('AuthService', () => {
         })
 
         it('signs refresh token with correct claims', async () => {
-            await service.login('correct-password', 'fp', 1)
+            await service.login('correct-password', 'fp', ADMIN_EMAIL)
 
             expect(mockJwtService.signAsync).toHaveBeenCalledWith(
                 expect.objectContaining({ type: 'refresh' }),
@@ -123,35 +173,61 @@ describe('AuthService', () => {
             )
         })
 
-        it('throws UnauthorizedError on wrong password', async () => {
+        it('throws UnauthorizedError when bcrypt.compare returns false', async () => {
+            ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
+
             await expect(
-                service.login('wrong-password', 'fp', 1)
+                service.login('wrong-password', 'fp', ADMIN_EMAIL)
             ).rejects.toThrow(UnauthorizedError)
         })
 
-        it('throws UnauthorizedError on shorter wrong password', async () => {
-            await expect(
-                service.login('short', 'fp', 1)
-            ).rejects.toThrow(UnauthorizedError)
-        })
+        it('throws UnauthorizedError when email is not found in DB', async () => {
+            mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
 
-        it('throws UnauthorizedError on longer wrong password', async () => {
             await expect(
-                service.login('correct-password-but-longer', 'fp', 1)
+                service.login('any-password', 'fp', 'nobody@example.com')
             ).rejects.toThrow(UnauthorizedError)
         })
 
         it('does not call signAsync when password is wrong', async () => {
-            await expect(service.login('wrong', 'fp', 1)).rejects.toThrow()
+            ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
+
+            await expect(service.login('wrong', 'fp', ADMIN_EMAIL)).rejects.toThrow()
             expect(mockJwtService.signAsync).not.toHaveBeenCalled()
         })
 
-        it('throws if ADMIN_PASSWORD env var is not set', async () => {
-            delete process.env.ADMIN_PASSWORD
+        it('does not call signAsync when email is not found', async () => {
+            mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
 
             await expect(
-                service.login('any-password', 'fp', 1)
-            ).rejects.toThrow('[AuthService] ADMIN_PASSWORD environment variable is not set')
+                service.login('any-password', 'fp', 'nobody@example.com')
+            ).rejects.toThrow()
+            expect(mockJwtService.signAsync).not.toHaveBeenCalled()
+        })
+
+        it('still compares password against dummy hash when email not found (prevents timing enumeration)', async () => {
+            // Even when user is not found, bcrypt.compare must still be called
+            // so the response time is indistinguishable from a wrong-password attempt.
+            mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
+            ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
+
+            await expect(
+                service.login('any-password', 'fp', 'nobody@example.com')
+            ).rejects.toThrow(UnauthorizedError)
+
+            expect(bcrypt.compare).toHaveBeenCalledTimes(1)
+        })
+
+        it('updates lastLogin on successful login (fire-and-forget)', async () => {
+            await service.login('correct-password', 'fp', ADMIN_EMAIL)
+
+            // Allow the fire-and-forget void promise to settle
+            await new Promise(resolve => setImmediate(resolve))
+
+            expect(mockUserWriteRepo.update).toHaveBeenCalledWith(
+                FAKE_CREDENTIAL.id,
+                expect.objectContaining({ lastLogin: expect.any(Date) }),
+            )
         })
     })
 
@@ -205,18 +281,20 @@ describe('AuthService', () => {
             expect(result).toEqual(payload)
         })
 
-        it('uses SHORT cache profile for revocation check', async () => {
+        // Fix 6: was asserting 'SHORT' — implementation uses 'REALTIME'
+        it('uses REALTIME cache profile for revocation check', async () => {
             mockJwtService.verifyAsync.mockResolvedValue(makeAccessPayload())
 
             await service.verifyAccessToken('valid-token', 'test-fingerprint')
 
             expect(mockCacheQuery.getOrSetWithProfile).toHaveBeenCalledWith(
                 expect.stringContaining('revoked-token:'),
-                'SHORT',
+                'REALTIME',
                 expect.any(Function),
             )
         })
 
+        // Fix 6: was asserting 'SHORT' — implementation uses 'REALTIME'
         it('caches revocation check with jti-specific key', async () => {
             const payload = makeAccessPayload({ jti: 'unique-jti-123' })
             mockJwtService.verifyAsync.mockResolvedValue(payload)
@@ -225,7 +303,7 @@ describe('AuthService', () => {
 
             expect(mockCacheQuery.getOrSetWithProfile).toHaveBeenCalledWith(
                 'revoked-token:unique-jti-123',
-                'SHORT',
+                'REALTIME',
                 expect.any(Function),
             )
         })
@@ -274,7 +352,7 @@ describe('AuthService', () => {
             ).rejects.toThrow(UnauthorizedError)
         })
 
-        it('only issues access token not refresh token on refresh', async () => {
+        it('only issues access token — no new refresh token on refresh', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
                 sub: 1, jti: 'refresh-jti', type: 'refresh',
             })

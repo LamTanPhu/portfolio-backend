@@ -9,16 +9,12 @@
  * - Safe pattern-based invalidation with graceful degradation
  * - Comprehensive logging for observability
  *
- * Pattern deletion uses Redis SCAN instead of KEYS:
- * - KEYS blocks the Redis event loop for the full scan duration — O(N) where
- *   N is total key count in the entire Redis instance. Under traffic, this
- *   causes latency spikes for every other Redis command while it runs.
- * - SCAN is non-blocking and iterates in small cursor-based batches (COUNT hint),
- *   yielding between iterations. It takes the same total O(N) work but spreads
- *   it across many non-blocking steps so other commands are never starved.
+ * Current store: in-memory Keyv (cache-manager built-in).
+ * deletePattern() uses the store's keys() method for pattern matching.
  *
- * For a portfolio this difference is academic, but SCAN is the correct tool
- * regardless of scale — there is no reason to ever use KEYS in production.
+ * If Redis is ever restored, deletePattern() will automatically prefer the
+ * Redis SCAN path (non-blocking, cursor-based) over KEYS (blocking O(N) scan).
+ * The fallback branches below handle both cases without changes.
  */
 
 import { Injectable, Inject, Logger } from '@nestjs/common'
@@ -190,6 +186,16 @@ export class CacheInvalidationService implements ICacheInvalidationService {
     // --------------------- Social ---------------------
     async invalidatePublicSocialAccounts(): Promise<void> {
         await this.delete('social:list:public')
+    }
+
+    // --------------------- Contact (Admin) ---------------------
+    /**
+     * Clears the admin contact message list cache.
+     * Must be called after any write to the ContactMe table (delete).
+     * Key matches CONTACT_LIST_CACHE_KEY in GetContactMessagesQuery.
+     */
+    async invalidateContactList(): Promise<void> {
+        await this.delete('contact:list:admin')
     }
 
     // --------------------- Advanced ---------------------

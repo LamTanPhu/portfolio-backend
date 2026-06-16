@@ -1,4 +1,5 @@
 import { NestFactory } from '@nestjs/core'
+import type { NestExpressApplication } from '@nestjs/platform-express'
 import { ValidationPipe, Logger } from '@nestjs/common'
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger'
 import helmet from 'helmet'
@@ -37,7 +38,23 @@ async function bootstrap(): Promise<void> {
         logger.log('HTTPS disabled (USE_HTTPS != true) — running plain HTTP')
     }
 
-    const app = await NestFactory.create(AppModule, { httpsOptions })
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, { httpsOptions })
+
+    // ─── Reverse-Proxy Trust ────────────────────────────────────────────
+    // CRITICAL: Without this, req.ip returns the proxy's IP (127.0.0.1),
+    // not the real client IP. This breaks:
+    //   - Device fingerprinting in JwtAuthGuard (every token gets same fingerprint)
+    //   - IP-based rate limiting via ThrottlerGuard
+    //   - IP logging for security audit in DomainExceptionFilter
+    //   - Spam IP recording in SubmitContactCommand
+    //
+    // trust proxy = 1 means: trust exactly one hop of X-Forwarded-For headers.
+    // Set to the number of reverse proxies in front of this server:
+    //   1 = Nginx/Caddy/Cloudflare only
+    //   2 = Cloudflare → Nginx → app
+    // Do NOT use `true` — it trusts all proxies and lets clients spoof their IP via a custom X-Forwarded-For header.
+    const proxyHops = parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10)
+    app.set('trust proxy', proxyHops)
 
     // ─── Middleware ─────────────────────────────────────────────────────
     app.use(compression({ threshold: 1024, level: 6 }))
