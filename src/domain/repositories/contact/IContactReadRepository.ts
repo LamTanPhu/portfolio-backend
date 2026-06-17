@@ -11,9 +11,19 @@
 
 import type { ContactMe } from '../../entities/ContactMe'
 
+export interface ContactPage {
+    items:      ContactMe[]
+    nextCursor: number | null   // ID of the last item — pass as cursor on next request
+    total:      number          // total row count for display ("Showing X of Y")
+}
+
 export interface IContactReadRepository {
-    /** Returns all contact messages, newest first */
-    findAll(): Promise<ContactMe[]>
+    /**
+     * Returns a page of contact messages, newest first.
+     * cursor: return messages with id < cursor (i.e. older than the last seen row).
+     * limit:  max rows to return — defaults to 20, capped at 100.
+     */
+    findPaginated(cursor?: number, limit?: number): Promise<ContactPage>
 
     /** Returns a single message by PK — used by delete command to confirm existence */
     findById(id: number): Promise<ContactMe | null>

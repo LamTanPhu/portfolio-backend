@@ -23,12 +23,16 @@ export class PrismaResumeDownloadRepository implements IResumeDownloadRepository
         })
     }
 
+    // Capped at 500 rows — resume downloads are admin-only analytics.
+    // A full table scan here would silently degrade as the table grows.
+    // 500 recent entries are more than enough for any analytical use.
     async findAll(): Promise<ResumeDownload[]> {
         const rows = await this.prisma.client.resumeDownload.findMany({
-        orderBy: { downloadedAt: 'desc' },
+            orderBy: { downloadedAt: 'desc' },
+            take: 500,
         })
         return rows.map(
-        (r) => new ResumeDownload(r.id, r.ipAddress, r.browserInfo, r.downloadedAt),
+            (r) => new ResumeDownload(r.id, r.ipAddress, r.browserInfo, r.downloadedAt),
         )
     }
 }

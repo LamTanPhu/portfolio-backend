@@ -16,7 +16,8 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import type { Cache } from 'cache-manager'
 
 import type { ICacheQueryService, GetOrSetOptions } from '../../application/ports/ICacheQueryService'
-import { CACHE_TTL, type CacheProfile } from './cache.constants'
+import { CACHE_TTL } from './cache.constants'
+import type { CacheProfile } from '../../application/ports/ICacheQueryService'
 
 interface CacheEnvelope<T> {
     data: T

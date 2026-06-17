@@ -12,7 +12,7 @@ import type { IBlogReadRepository } from '../../../../domain/repositories/blog/I
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
 import { BlogMapper } from '../../../mappers/BlogMapper'
 import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
-import { CACHE_QUERY_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class GetBlogBySlugQuery {

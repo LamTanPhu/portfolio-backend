@@ -16,7 +16,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
-import { CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteContactMessageCommand {

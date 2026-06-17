@@ -123,13 +123,25 @@ export class CacheInvalidationService implements ICacheInvalidationService {
                 }
 
             } else {
-                this.logger.warn(
-                    `Pattern invalidation skipped — store exposes neither SCAN nor keys(): ${pattern}`,
+                // Neither Redis SCAN nor in-memory keys() is available.
+                // This is a misconfiguration — the cache store is unknown.
+                // Log as ERROR (not warn) so it surfaces in monitoring.
+                // Callers will silently serve stale data until the process restarts.
+                this.logger.error(
+                    `Pattern invalidation FAILED — store exposes neither SCAN nor keys(). ` +
+                    `Stale cache entries will persist until TTL expiry or process restart. ` +
+                    `Pattern: ${pattern}`,
                 )
             }
 
         } catch (error) {
-            this.logger.warn(`Pattern invalidation partially failed for: ${pattern}`, error)
+            // Log as ERROR — a caught failure here means cache entries were NOT
+            // cleared. This is not a safe degradation; callers will serve stale data.
+            this.logger.error(
+                `Pattern invalidation FAILED for pattern: ${pattern}. ` +
+                `Stale cache entries may persist.`,
+                error,
+            )
         }
     }
 

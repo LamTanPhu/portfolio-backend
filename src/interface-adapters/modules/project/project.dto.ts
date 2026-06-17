@@ -12,6 +12,7 @@ export class CreateProjectDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name!: string
 
   @ApiProperty({
@@ -20,6 +21,7 @@ export class CreateProjectDto {
   })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10_000)
   description!: string
 
   @ApiProperty({
@@ -53,7 +55,7 @@ export class CreateProjectDto {
   liveUrl?: string | null
 
   @ApiPropertyOptional({ description: 'Thumbnail image URL', example: 'https://cdn.example.com/thumb.png' })
-  @IsString()
+  @IsUrl()
   @IsOptional()
   thumbnailUrl?: string | null
 }
@@ -62,11 +64,13 @@ export class UpdateProjectDto {
   @ApiPropertyOptional({ description: 'Project name', example: 'Updated Project Name' })
   @IsString()
   @IsOptional()
+  @MaxLength(255)
   name?: string
 
   @ApiPropertyOptional({ description: 'Project description', example: 'Updated description.' })
   @IsString()
   @IsOptional()
+  @MaxLength(10_000)
   description?: string
 
   @ApiPropertyOptional({ description: 'Technology stack', example: ['React', 'Node.js'], type: [String] })
@@ -98,7 +102,7 @@ export class UpdateProjectDto {
   liveUrl?: string | null
 
   @ApiPropertyOptional({ description: 'Thumbnail image URL', example: 'https://cdn.example.com/thumb.png' })
-  @IsString()
+  @IsUrl()
   @IsOptional()
   thumbnailUrl?: string | null
 }

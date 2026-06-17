@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { Blog } from '../../../../domain/entities/Blog'
+import { ConflictError } from '../../../../domain/errors/ConflictError'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type {
     CreateBlogInput,
@@ -48,23 +49,33 @@ export class PrismaBlogWriteRepository implements IBlogWriteRepository {
     // ===========================================================================
 
     async create(data: CreateBlogInput, tx?: TransactionalClient): Promise<Blog> {
-        const row = await this.db(tx).blog.create({
-            data: {
-                title:       data.title,
-                slug:        data.slug,
-                content:     data.content,
-                excerpt:     data.excerpt,
-                isPublished: data.isPublished,
-                publishedAt: data.publishedAt,
-                userId:      data.userId,
-                tags: {
-                    create: data.tags.map((name) => ({ name })),
+        try {
+            const row = await this.db(tx).blog.create({
+                data: {
+                    title:       data.title,
+                    slug:        data.slug,
+                    content:     data.content,
+                    excerpt:     data.excerpt,
+                    isPublished: data.isPublished,
+                    publishedAt: data.publishedAt,
+                    userId:      data.userId,
+                    tags: {
+                        create: data.tags.map((name) => ({ name })),
+                    },
                 },
-            },
-            include: { tags: true },
-        })
+                include: { tags: true },
+            })
 
-        return PrismaBlogMapper.toDomain(row as BlogWithTags)
+            return PrismaBlogMapper.toDomain(row as BlogWithTags)
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002'
+            ) {
+                throw new ConflictError(`A blog with slug "${data.slug}" already exists`)
+            }
+            throw error
+        }
     }
 
     async update(id: number, data: UpdateBlogInput, tx?: TransactionalClient): Promise<Blog> {

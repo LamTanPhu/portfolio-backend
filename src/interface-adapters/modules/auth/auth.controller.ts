@@ -27,6 +27,7 @@ import {
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 
+import { ConfigService } from '@nestjs/config'
 import { AuthService } from '../../../application/services/AuthService'
 import type { AccessTokenPayload } from '../../../application/services/AuthService'
 
@@ -36,7 +37,10 @@ import { LoginDto } from './login.dto'
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService:   AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   // ===========================================================================
   // Login
@@ -59,9 +63,9 @@ export class AuthController {
       req.ip ?? '',
     )
 
-    // ADMIN_EMAIL is validated at startup by ConfigValidationService — safe to use here.
-    // We pass it to AuthService so it can look up the credential from DB.
-    const adminEmail = process.env.ADMIN_EMAIL ?? ''
+    // ConfigService is the single source of truth for env vars — consistent with
+    // every other part of the app. ConfigValidationService already guarantees this value.
+    const adminEmail = this.configService.get<string>('ADMIN_EMAIL') ?? ''
 
     const { accessToken, refreshToken } = await this.authService.login(
       dto.password,
@@ -125,8 +129,9 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
     const user = (req as any).user as AccessTokenPayload
+    const refreshToken = req.cookies?.refreshToken as string | undefined
 
-    await this.authService.logout(user.jti)
+    await this.authService.logout(user.jti, refreshToken)
 
     // Clear refresh token cookie
     res.clearCookie('refreshToken', { path: '/api/auth' })

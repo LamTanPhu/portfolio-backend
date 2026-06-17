@@ -27,9 +27,9 @@ export class ConfigValidationService {
         // ─── Database ───────────────────────────────────────────────────
         this.validateRequired('DATABASE_URL', errors)
 
-        // ─── Redis Cache ────────────────────────────────────────────────
-        this.validateRequired('REDIS_HOST', errors)
-        this.validateRequired('REDIS_PORT', errors)
+        // ─── Redis Cache (optional — comment back in when wiring Redis) ────
+        // this.validateRequired('REDIS_HOST', errors)
+        // this.validateRequired('REDIS_PORT', errors)
 
         // ─── Anti-Bot (Turnstile) ───────────────────────────────────────
         this.validateRequired('TURNSTILE_SECRET_KEY', errors)

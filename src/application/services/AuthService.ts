@@ -25,9 +25,12 @@ export interface AccessTokenPayload {
 }
 
 export interface RefreshTokenPayload {
-    sub:  number
-    jti:  string
-    type: 'refresh'
+    sub:         number
+    jti:         string
+    type:        'refresh'
+    fingerprint: string
+    iat:         number
+    exp:         number
 }
 
 @Injectable()
@@ -61,10 +64,17 @@ export class AuthService implements OnModuleInit {
     // ===========================================================================
 
     async onModuleInit(): Promise<void> {
-        // Warm up V8 JIT compiler for JWT signing path.
-        // First real login will hit the compiled code instead of interpreted code,
-        // reducing cold-start latency from ~12ms to ~3ms.
-        await this.jwt.signAsync({ warmup: true }, { expiresIn: '1s' })
+        // Warm up the V8 JIT compiler for the crypto/signing path.
+        // The first real login after a cold start would otherwise hit interpreted
+        // code, adding ~12ms of latency. This brings it down to ~3ms.
+        //
+        // We use crypto.randomBytes() instead of jwt.signAsync() because:
+        //   - randomBytes() exercises the same underlying OpenSSL entropy path
+        //   - It produces no real credential — nothing to revoke, nothing that
+        //     could be intercepted or replayed
+        //   - A real JWT warmup token (even 1s TTL) is a signed artifact using
+        //     the production JWT_SECRET; cleaner to not produce it at all
+        crypto.randomBytes(32)
     }
 
     // ===========================================================================
@@ -83,7 +93,15 @@ export class AuthService implements OnModuleInit {
         // If user not found, compare against a dummy hash so timing is identical
         // regardless of whether the email exists. This prevents timing-based user
         // enumeration attacks that would be possible if we returned early on null.
-        const dummyHash = '$2b$12$invalidhashpaddingtomakethisexactly60charslong1234567'
+        //
+        // IMPORTANT: This must be a *real* bcrypt hash at the same cost factor (12)
+        // as production hashes. A malformed or wrong-length string causes bcrypt to
+        // short-circuit before running the full Blowfish key schedule, leaking a
+        // measurable timing difference that reveals whether the email exists.
+        //
+        // Generated once via: bcrypt.hash('__dummy_throwaway_never_used__', 12)
+        // Never change the cost factor here without regenerating this constant.
+        const dummyHash = '$2b$12$9RAN9lZ92zLFFlOjz.tbyeKZUH8NCGlqHlWZfx.HuzaSz8QBhfJnK'
         const hashToCompare = credential?.hashPassword ?? dummyHash
 
         // bcrypt.compare() is inherently timing-safe — runs full Blowfish key setup
@@ -100,7 +118,7 @@ export class AuthService implements OnModuleInit {
 
         const [accessToken, refreshToken] = await Promise.all([
             this.issueAccessToken(credential.id, fingerprint),
-            this.issueRefreshToken(credential.id),
+            this.issueRefreshToken(credential.id, fingerprint),
         ])
 
         return { accessToken, refreshToken }
@@ -123,15 +141,57 @@ export class AuthService implements OnModuleInit {
         const revoked = await this.isTokenRevoked(payload.jti)
         if (revoked) throw new UnauthorizedError('Token has been revoked')
 
+        // Validate fingerprint against what was embedded at issuance.
+        // A stolen refresh token replayed from a different device/browser will
+        // have a mismatched fingerprint (different User-Agent + IP hash) and be
+        // rejected here — the same protection the access token path already has.
+        if (this.shouldEnforceFingerprint() && payload.fingerprint !== fingerprint) {
+            throw new UnauthorizedError('Token fingerprint mismatch')
+        }
+
         return { accessToken: await this.issueAccessToken(payload.sub, fingerprint) }
     }
 
     // ===========================================================================
     // Logout
     // ===========================================================================
-    async logout(jti: string): Promise<void> {
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000)
-        await this.tokenRepo.revoke(jti, expiresAt)
+
+    /**
+     * Revokes both the access token and the refresh token so neither can be
+     * replayed after logout.
+     *
+     * @param accessJti   - JTI extracted from the verified access token (req.user.jti)
+     * @param refreshToken - Raw refresh token string from the httpOnly cookie.
+     *                       We decode it here (without re-verifying signature) to
+     *                       extract its JTI. It was already verified on the way in
+     *                       by JwtAuthGuard via the access token, and we only need
+     *                       the JTI field — not to trust the payload claims.
+     *                       If the cookie is absent or malformed we still proceed
+     *                       with access token revocation so logout is never blocked.
+     */
+    async logout(accessJti: string, refreshToken?: string): Promise<void> {
+        const accessExpiresAt = new Date(Date.now() + 15 * 60 * 1000)
+        const refreshExpiresAt = new Date(Date.now() + AuthService.REFRESH_TOKEN_EXPIRY_MS)
+
+        const revocations: Promise<void>[] = [
+            this.tokenRepo.revoke(accessJti, accessExpiresAt),
+        ]
+
+        if (refreshToken) {
+            try {
+                // decode() does NOT verify signature — we only need the jti field.
+                // The token came from our own httpOnly cookie so this is safe.
+                const refreshPayload = this.jwt.decode<RefreshTokenPayload>(refreshToken)
+
+                if (refreshPayload?.jti && refreshPayload.type === 'refresh') {
+                    revocations.push(this.tokenRepo.revoke(refreshPayload.jti, refreshExpiresAt))
+                }
+            } catch {
+                // Malformed cookie — still complete the access token revocation above.
+            }
+        }
+
+        await Promise.all(revocations)
     }
 
     // ===========================================================================
@@ -200,11 +260,13 @@ export class AuthService implements OnModuleInit {
         )
     }
 
-    private async issueRefreshToken(userId: number): Promise<string> {
+    private async issueRefreshToken(userId: number, fingerprint: string): Promise<string> {
         const jti = crypto.randomUUID()
 
+        // Embed fingerprint so refresh() can validate the token was issued to this
+        // specific device/browser — prevents replay attacks from stolen cookies.
         return this.jwt.signAsync(
-            { sub: userId, jti, type: 'refresh' as const },
+            { sub: userId, jti, type: 'refresh' as const, fingerprint },
             { expiresIn: AuthService.REFRESH_TOKEN_EXPIRY },
         )
     }

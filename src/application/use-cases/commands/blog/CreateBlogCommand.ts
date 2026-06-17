@@ -9,7 +9,7 @@ import { Slug } from '../../../../domain/value-objects/Slug'
 import type { IBlogWriteRepository } from '../../../../domain/repositories/blog/IBlogWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { BlogMapper } from '../../../mappers/BlogMapper'
-import { CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
 
 @Injectable()

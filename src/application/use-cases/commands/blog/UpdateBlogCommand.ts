@@ -1,8 +1,19 @@
 /**
  * @fileoverview UpdateBlogCommand
- * 
+ *
  * Updates an existing blog post and performs comprehensive cache invalidation.
  * Handles slug changes gracefully.
+ *
+ * INTENTIONAL DESIGN — Slug stability:
+ * Slugs are deliberately NOT regenerated when the title changes.
+ * Once a post is published, its slug is its permanent URL identity.
+ * Regenerating on title edit would silently break:
+ *   - All external links and bookmarks pointing to the old URL
+ *   - Search engine indexes (SEO penalty)
+ *   - Any frontend routes cached by CDN or browser
+ *
+ * To change a slug, it must be supplied explicitly in the update payload.
+ * The optional `slug?` field in UpdateBlogInput exists for this purpose.
  */
 
 import { Injectable, Inject } from '@nestjs/common'
@@ -14,7 +25,7 @@ import type {
 } from '../../../../domain/repositories/blog/IBlogWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { BlogMapper } from '../../../mappers/BlogMapper'
-import { CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 import { BlogDetailDTO } from '../../../dtos/blog/BlogDetailDTO'
 
 interface UpdateInput extends UpdateBlogInput {

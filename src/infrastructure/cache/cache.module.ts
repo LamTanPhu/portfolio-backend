@@ -12,12 +12,14 @@ import { Global, Module } from '@nestjs/common'
 import { CacheQueryService } from './CacheQueryService'
 import { CacheInvalidationService } from './CacheInvalidationService'
 
-import type { ICacheQueryService } from '../../application/ports/ICacheQueryService'
-import type { ICacheInvalidationService } from '../../application/ports/ICacheInvalidationService'
+// import type { ICacheQueryService } from '../../application/ports/ICacheQueryService'
+// import type { ICacheInvalidationService } from '../../application/ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE, CACHE_QUERY_SERVICE } from '../../application/ports/cache.tokens'
 
-// Cache Service Tokens
-export const CACHE_QUERY_SERVICE = 'ICacheQueryService'
-export const CACHE_INVALIDATION_SERVICE = 'ICacheInvalidationService'
+// Re-export tokens from application ports — single source of truth.
+// Infrastructure modules may import from here for convenience, but the
+// canonical definition lives in application/ports/cache.tokens.ts.
+export { CACHE_QUERY_SERVICE, CACHE_INVALIDATION_SERVICE } from '../../application/ports/cache.tokens'
 
 @Global()
 @Module({

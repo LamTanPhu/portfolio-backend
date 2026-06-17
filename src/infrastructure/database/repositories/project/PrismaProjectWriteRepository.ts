@@ -6,6 +6,7 @@
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import type { Project } from '../../../../domain/entities/Project'
+import { ConflictError } from '../../../../domain/errors/ConflictError'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type {
     CreateProjectInput,
@@ -20,35 +21,45 @@ export class PrismaProjectWriteRepository implements IProjectWriteRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     async create(data: CreateProjectInput): Promise<Project> {
-        const row = await this.prisma.client.project.create({
-        data: ProjectMapper.toPrisma(data),
-        })
-        return ProjectMapper.toDomain(row)
+        try {
+            const row = await this.prisma.client.project.create({
+                data: ProjectMapper.toPrisma(data),
+            })
+            return ProjectMapper.toDomain(row)
+        } catch (error) {
+            if (
+                error instanceof Prisma.PrismaClientKnownRequestError &&
+                error.code === 'P2002'
+            ) {
+                throw new ConflictError(`A project with slug "${data.slug}" already exists`)
+            }
+            throw error
+        }
     }
 
     async update(id: number, data: UpdateProjectInput): Promise<Project> {
         try {
-        const row = await this.prisma.client.project.update({
-            where: { id },
-            data: { ...data, techStack: data.techStack ?? undefined },
-        })
-        return ProjectMapper.toDomain(row)
+            const row = await this.prisma.client.project.update({
+                where: { id },
+                data: { ...data, techStack: data.techStack ?? undefined },
+            })
+            return ProjectMapper.toDomain(row)
         } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError(`Project not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Project not found: ${id}`)
+            }
+            throw error
         }
     }
 
     async delete(id: number): Promise<void> {
         try {
-        await this.prisma.client.project.delete({ where: { id } })
+            await this.prisma.client.project.delete({ where: { id } })
         } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError(`Project not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Project not found: ${id}`)
+            }
+            throw error
         }
     }
 }

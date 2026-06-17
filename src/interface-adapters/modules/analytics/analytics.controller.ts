@@ -46,7 +46,7 @@ export class AnalyticsController {
     // Called by frontend on every page navigation — public, no auth.
     // ===========================================================================
     @Post('page-view')
-    @Throttle({ default: { limit: 50, ttl: 60_000 } })
+    @Throttle({ default: { limit: 20, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a page view — called by frontend on navigation' })
     @ApiResponse({ status: 201, description: 'Page view recorded' })
     async trackPage(
@@ -62,7 +62,7 @@ export class AnalyticsController {
     // Daily bucketed — O(1) upsert, never unbounded row growth.
     // ===========================================================================
     @Post('project-view/:id')
-    @Throttle({ default: { limit: 50, ttl: 60_000 } })
+    @Throttle({ default: { limit: 20, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a project detail page view' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 201, description: 'Project view recorded' })
@@ -76,18 +76,27 @@ export class AnalyticsController {
     // ===========================================================================
     // POST /api/analytics/resume-download
     // Called by frontend when visitor downloads resume PDF — public, no auth.
+    //
+    // Throttle: 5 per minute per IP. Resume download is a single intentional
+    // action — anything beyond a handful of requests per minute is either a
+    // bug or abuse. This directly bounds row growth in resume_downloads.
+    //
+    // Input sanitization: ipAddress and browserInfo are stored raw in the DB
+    // and later surfaced in the admin dashboard. Truncate both to their column
+    // limits so oversized values never reach Prisma (P2000 → 500 otherwise).
     // ===========================================================================
     @Post('resume-download')
-    @Throttle({ default: { limit: 50, ttl: 60_000 } })
+    @Throttle({ default: { limit: 5, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a resume PDF download' })
     @ApiResponse({ status: 201, description: 'Resume download recorded' })
     async trackResume(
         @Req() req: Request,
     ): Promise<{ success: boolean }> {
-        await this.trackResumeDownload.execute(
-        req.ip ?? '',
-        req.headers['user-agent'] ?? null,
-        )
+        const ipAddress   = (req.ip ?? '').slice(0, 45)        // VARCHAR(45) in DB
+        const browserInfo = (req.headers['user-agent'] ?? null) // TEXT — safe unbounded,
+            ?.slice(0, 500) ?? null                             // but 500 chars is plenty
+
+        await this.trackResumeDownload.execute(ipAddress, browserInfo)
         return { success: true }
     }
 

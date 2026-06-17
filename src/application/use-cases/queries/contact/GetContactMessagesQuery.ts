@@ -12,12 +12,19 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { IContactReadRepository } from '../../../../domain/repositories/contact/IContactReadRepository'
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
-import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { ContactMessageDTO } from '../../../dtos/contact/ContactMessageDTO'
-import { CACHE_QUERY_SERVICE, CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
+import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
-/** Stable cache key — invalidated by DeleteContactMessageCommand on every delete */
-export const CONTACT_LIST_CACHE_KEY = 'contact:list:admin'
+export interface ContactPageDTO {
+    items:      ContactMessageDTO[]
+    nextCursor: number | null
+    total:      number
+}
+
+// Cache key includes cursor+limit so different pages are cached independently.
+// Invalidated by DeleteContactMessageCommand on every delete.
+export const contactListCacheKey = (cursor?: number, limit?: number) =>
+    `contact:list:admin:cursor=${cursor ?? 'start'}:limit=${limit ?? 20}`
 
 @Injectable()
 export class GetContactMessagesQuery {
@@ -29,21 +36,25 @@ export class GetContactMessagesQuery {
         private readonly cacheQuery: ICacheQueryService,
     ) {}
 
-    async execute(): Promise<ContactMessageDTO[]> {
+    async execute(cursor?: number, limit?: number): Promise<ContactPageDTO> {
         return this.cacheQuery.getOrSetWithProfile(
-            CONTACT_LIST_CACHE_KEY,
+            contactListCacheKey(cursor, limit),
             'SHORT',                    // 1 min fresh, 5 min stale
             async () => {
-                const messages = await this.repo.findAll()
-                return messages.map((m) => ({
-                    id:          m.id,
-                    name:        m.name,
-                    email:       m.email,
-                    message:     m.message,
-                    ipAddress:   m.ipAddress,
-                    browserInfo: m.browserInfo,
-                    createdAt:   m.createdAt.toISOString(),
-                }))
+                const page = await this.repo.findPaginated(cursor, limit)
+                return {
+                    items: page.items.map((m) => ({
+                        id:          m.id,
+                        name:        m.name,
+                        email:       m.email,
+                        message:     m.message,
+                        ipAddress:   m.ipAddress,
+                        browserInfo: m.browserInfo,
+                        createdAt:   m.createdAt.toISOString(),
+                    })),
+                    nextCursor: page.nextCursor,
+                    total:      page.total,
+                }
             },
         )
     }

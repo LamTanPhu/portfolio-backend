@@ -15,6 +15,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common'
@@ -35,7 +36,7 @@ import { DeleteContactMessageCommand } from '../../../application/use-cases/comm
 import { SubmitContactCommand } from '../../../application/use-cases/commands/contact/SubmitContactCommand'
 import { GetContactMessagesQuery } from '../../../application/use-cases/queries/contact/GetContactMessagesQuery'
 
-import type { ContactMessageDTO } from '../../../application/dtos/contact/ContactMessageDTO'
+import type { ContactPageDTO } from '../../../application/use-cases/queries/contact/GetContactMessagesQuery'
 import { SubmitContactDto } from './contact.dto'
 
 @ApiTags('Contact')
@@ -83,10 +84,13 @@ export class ContactController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get all contact messages — admin only' })
-  @ApiResponse({ status: 200, description: 'List of contact messages' })
-  async findAll(): Promise<ContactMessageDTO[]> {
-    return this.getMessages.execute()
+  @ApiOperation({ summary: 'Get contact messages (paginated) — admin only' })
+  @ApiResponse({ status: 200, description: 'Paginated contact messages' })
+  async findAll(
+    @Query('cursor', new ParseIntPipe({ optional: true })) cursor?: number,
+    @Query('limit',  new ParseIntPipe({ optional: true })) limit?: number,
+  ): Promise<ContactPageDTO> {
+    return this.getMessages.execute(cursor, limit)
   }
 
   @Delete(':id')

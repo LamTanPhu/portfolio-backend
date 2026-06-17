@@ -25,6 +25,7 @@ export class CreateBlogDto {
     })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(255)
     title!: string
 
     @ApiProperty({
@@ -33,6 +34,7 @@ export class CreateBlogDto {
     })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(50_000)
     content!: string
 
     @ApiPropertyOptional({
@@ -41,6 +43,7 @@ export class CreateBlogDto {
     })
     @IsString()
     @IsOptional()
+    @MaxLength(500)
     excerpt?: string | null
 
     @ApiPropertyOptional({
@@ -74,16 +77,19 @@ export class UpdateBlogDto {
     @ApiPropertyOptional({ description: 'New title', example: 'Updated Title' })
     @IsString()
     @IsOptional()
+    @MaxLength(255)
     title?: string
 
     @ApiPropertyOptional({ description: 'New content', example: 'Updated content...' })
     @IsString()
     @IsOptional()
+    @MaxLength(50_000)
     content?: string
 
     @ApiPropertyOptional({ description: 'New excerpt', example: 'Updated excerpt.' })
     @IsString()
     @IsOptional()
+    @MaxLength(500)
     excerpt?: string | null
 
     @ApiPropertyOptional({

@@ -6,7 +6,12 @@
  * this abstraction rather than concrete cache implementations.
  */
 
-import type { CacheProfile } from '../../infrastructure/cache/cache.constants'
+/**
+ * Cache TTL profile names — mirrors CACHE_TTL keys in infrastructure.
+ * Defined here so the application layer owns this type without importing
+ * from infrastructure (Clean Architecture dependency rule).
+ */
+export type CacheProfile = 'REALTIME' | 'SHORT' | 'MEDIUM' | 'LONG' | 'VERY_LONG' | 'STATIC'
 
 /**
  * Options for cache getOrSet operations.

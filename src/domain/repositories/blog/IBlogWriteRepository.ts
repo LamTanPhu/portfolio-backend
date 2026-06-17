@@ -21,10 +21,15 @@ export interface CreateBlogInput {
 // UpdateBlogInput
 // All fields optional — PATCH semantics.
 // tags replaced in full when provided — partial tag updates not supported.
+//
+// slug is intentionally ABSENT from this interface.
+// Slugs are stable identifiers — regenerating on title change would silently
+// break external links, SEO indexes, and CDN-cached routes. Callers that
+// genuinely need to change a slug must do so via a dedicated operation with
+// explicit uniqueness checking. No current use case requires this.
 // =============================================================================
 export interface UpdateBlogInput {
   title?:       string
-  slug?:        string
   content?:     string
   excerpt?:     string | null
   tags?:        string[]

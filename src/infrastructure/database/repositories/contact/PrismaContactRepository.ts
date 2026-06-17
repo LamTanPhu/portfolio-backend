@@ -13,7 +13,7 @@ import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { ContactMe } from '../../../../domain/entities/ContactMe'
 import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
-import type { IContactReadRepository } from '../../../../domain/repositories/contact/IContactReadRepository'
+import type { IContactReadRepository, ContactPage } from '../../../../domain/repositories/contact/IContactReadRepository'
 import { PrismaService } from '../../prisma/prisma.service'
 
 const CONTACT_SELECT = {
@@ -91,13 +91,26 @@ export class PrismaContactRepository
     // IContactReadRepository
     // ──────────────────────────────────────────────────────────────────────────
 
-    // O(n) — full table scan with index-ordered createdAt desc
-    async findAll(): Promise<ContactMe[]> {
-        const rows = await this.prisma.client.contactMe.findMany({
-            select:  CONTACT_SELECT,
-            orderBy: { createdAt: 'desc' },
-        })
-        return rows.map(PrismaContactRepository.toDomain)
+    // Cursor-based pagination — O(log n) via PK index scan.
+    // Fetches `limit` rows with id < cursor (newest first).
+    // Returns nextCursor = null when no more pages remain.
+    async findPaginated(cursor?: number, limit = 20): Promise<ContactPage> {
+        const take = Math.min(Math.max(1, limit), 100) // clamp: 1–100
+
+        const [rows, total] = await Promise.all([
+            this.prisma.client.contactMe.findMany({
+                select:  CONTACT_SELECT,
+                where:   cursor ? { id: { lt: cursor } } : undefined,
+                orderBy: { id: 'desc' }, // PK desc = newest first, uses PK index
+                take,
+            }),
+            this.prisma.client.contactMe.count(),
+        ])
+
+        const items      = rows.map(PrismaContactRepository.toDomain)
+        const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
+
+        return { items, nextCursor, total }
     }
 
     // O(1) — PK lookup
