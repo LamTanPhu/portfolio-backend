@@ -12,8 +12,8 @@
  *   - Search engine indexes (SEO penalty)
  *   - Any frontend routes cached by CDN or browser
  *
- * To change a slug, it must be supplied explicitly in the update payload.
- * The optional `slug?` field in UpdateBlogInput exists for this purpose.
+ * To change a slug, a dedicated operation with explicit uniqueness
+ * checking must be implemented. No current use case requires this.
  */
 
 import { Injectable, Inject } from '@nestjs/common'

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type { ISpotifyService, TrackData } from '../../application/ports/ISpotifyService'
 
 // =============================================================================
@@ -71,6 +72,8 @@ export class SpotifyService implements ISpotifyService {
   private tokenCache: CachedToken | null = null
   private trackCache: CachedTrack | null = null
 
+  constructor(private readonly configService: ConfigService) {}
+
   // ===========================================================================
   // Access Token — cached, refreshed only on expiry
   // ===========================================================================
@@ -82,9 +85,9 @@ export class SpotifyService implements ISpotifyService {
       return this.tokenCache.value
     }
 
-    const clientId     = process.env.SPOTIFY_CLIENT_ID     ?? ''
-    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET ?? ''
-    const refreshToken = process.env.SPOTIFY_REFRESH_TOKEN ?? ''
+    const clientId     = this.configService.get<string>('SPOTIFY_CLIENT_ID')     ?? ''
+    const clientSecret = this.configService.get<string>('SPOTIFY_CLIENT_SECRET') ?? ''
+    const refreshToken = this.configService.get<string>('SPOTIFY_REFRESH_TOKEN') ?? ''
 
     if (!clientId || !clientSecret || !refreshToken) {
       this.logger.warn('Spotify credentials not configured — skipping token fetch')

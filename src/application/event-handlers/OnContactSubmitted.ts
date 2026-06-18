@@ -9,6 +9,7 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { OnEvent } from '@nestjs/event-emitter'
 import type { IMailService } from '../ports/IMailService'
 import type { ILogger } from '../ports/ILogger'
@@ -22,6 +23,8 @@ export class OnContactSubmitted {
 
     @Inject('ILogger')
     private readonly logger: ILogger,
+
+    private readonly configService: ConfigService,
   ) {}
 
   // Bound to 'contact.submitted' event — dispatched by SubmitContactCommand
@@ -31,7 +34,7 @@ export class OnContactSubmitted {
       const emailBody = this.buildEmailBody(event)
 
       await this.mail.send(
-        process.env.ADMIN_EMAIL ?? 'your@email.com',
+        this.configService.get<string>('ADMIN_EMAIL') ?? 'your@email.com',
         `New Contact Message from ${event.name}`,
         emailBody,
       )

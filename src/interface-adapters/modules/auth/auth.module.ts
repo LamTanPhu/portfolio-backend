@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { JwtModule, JwtService } from '@nestjs/jwt'
 
 import { AuthController } from './auth.controller'
@@ -13,12 +14,13 @@ import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.m
 @Module({
     imports: [
         JwtModule.registerAsync({
-        useFactory: () => ({
-            secret: process.env.JWT_SECRET,
+        inject:     [ConfigService],
+        useFactory: (config: ConfigService) => ({
+            secret: config.get<string>('JWT_SECRET'),
             signOptions: {
             expiresIn: '15m',
-            issuer: 'portfolio-api',
-            audience: 'portfolio-admin',
+            issuer:    'portfolio-api',
+            audience:  'portfolio-admin',
             },
         }),
         }),
