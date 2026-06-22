@@ -12,6 +12,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
+import { ConfigService } from '@nestjs/config'
 import { AuthService } from './AuthService'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 
@@ -51,6 +52,12 @@ const mockUserWriteRepo = {
 // Fakes the IAdminCredentialRepository.findCredentialByEmail response
 const mockCredentialRepo = {
     findCredentialByEmail: jest.fn(),
+}
+
+// ConfigService mock — delegates to process.env so fingerprint tests can set
+// FINGERPRINT_STRICT directly without rebuilding the module.
+const mockConfigService = {
+    get: jest.fn((key: string) => process.env[key]),
 }
 
 // =============================================================================
@@ -103,6 +110,7 @@ describe('AuthService', () => {
                 { provide: 'ICacheQueryService',          useValue: mockCacheQuery       },
                 { provide: 'IUserWriteRepository',        useValue: mockUserWriteRepo    },
                 { provide: 'IAdminCredentialRepository',  useValue: mockCredentialRepo   },
+                { provide: ConfigService,                  useValue: mockConfigService     },
             ],
         }).compile()
 
@@ -313,19 +321,45 @@ describe('AuthService', () => {
     // refresh()
     // ===========================================================================
     describe('refresh()', () => {
-        it('issues a new access token for a valid refresh token', async () => {
+        it('returns both a new access token and a new refresh token', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh',
+                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             const result = await service.refresh('valid-refresh-token', 'fp')
 
             expect(result).toHaveProperty('accessToken', 'signed-token')
+            expect(result).toHaveProperty('refreshToken', 'signed-token')
+        })
+
+        it('issues both tokens in parallel — two signAsync calls on valid refresh', async () => {
+            mockJwtService.verifyAsync.mockResolvedValue({
+                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+            })
+
+            await service.refresh('valid-refresh-token', 'fp')
+
+            // One call for the new access token, one for the new refresh token
+            expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2)
+        })
+
+        it('revokes the consumed refresh token (rotation)', async () => {
+            mockJwtService.verifyAsync.mockResolvedValue({
+                sub: 1, jti: 'old-refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+            })
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+
+            await service.refresh('valid-refresh-token', 'fp')
+
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith(
+                'old-refresh-jti',
+                expect.any(Date),
+            )
         })
 
         it('throws UnauthorizedError if refresh token is revoked', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh',
+                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
             })
             mockCacheQuery.getOrSetWithProfile.mockResolvedValue(true)
 
@@ -336,7 +370,7 @@ describe('AuthService', () => {
 
         it('throws UnauthorizedError if token type is not refresh', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'some-jti', type: 'access',
+                sub: 1, jti: 'some-jti', type: 'access', exp: Math.floor(Date.now() / 1000) + 900,
             })
 
             await expect(
@@ -350,17 +384,6 @@ describe('AuthService', () => {
             await expect(
                 service.refresh('garbage-token', 'fp')
             ).rejects.toThrow(UnauthorizedError)
-        })
-
-        it('only issues access token — no new refresh token on refresh', async () => {
-            mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh',
-            })
-
-            await service.refresh('valid-refresh-token', 'fp')
-
-            // Only one signAsync call — access token only, no new refresh token
-            expect(mockJwtService.signAsync).toHaveBeenCalledTimes(1)
         })
     })
 

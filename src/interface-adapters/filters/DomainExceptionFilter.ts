@@ -17,15 +17,19 @@ import {
   ArgumentsHost,
   Logger,
 } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import type { Request, Response } from 'express'
 import { DomainError } from '../../domain/errors'
 
 @Catch(DomainError)
 export class DomainExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(DomainExceptionFilter.name)
+  private readonly isProduction: boolean
 
-  private get isProduction(): boolean {
-    return process.env.NODE_ENV === 'production'
+  constructor(private readonly config: ConfigService) {
+    // Resolved once at construction time — NODE_ENV never changes at runtime.
+    // Using ConfigService keeps this consistent with every other env access in the app.
+    this.isProduction = this.config.get<string>('NODE_ENV') === 'production'
   }
 
   catch(exception: DomainError, host: ArgumentsHost): void {

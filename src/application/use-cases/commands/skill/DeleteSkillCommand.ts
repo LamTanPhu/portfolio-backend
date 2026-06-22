@@ -7,6 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { ISkillWriteRepository } from '../../../../domain/repositories/skill/ISkillWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteSkillCommand {
@@ -14,7 +15,7 @@ export class DeleteSkillCommand {
         @Inject('ISkillWriteRepository')
         private readonly repo: ISkillWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

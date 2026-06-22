@@ -6,6 +6,7 @@
  */
 
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { JwtService } from '@nestjs/jwt'
 import * as bcrypt from 'bcrypt'
 import * as crypto from 'crypto'
@@ -14,6 +15,7 @@ import type { IAdminCredentialRepository } from '../../domain/repositories/user/
 import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import type { ITokenRepository } from '../ports/ITokenRepository'
+import { CACHE_QUERY_SERVICE } from '../../application/ports/cache.tokens'
 
 export interface AccessTokenPayload {
     sub:         number
@@ -49,7 +51,7 @@ export class AuthService implements OnModuleInit {
         @Inject('ITokenRepository')
         private readonly tokenRepo: ITokenRepository,
 
-        @Inject('ICacheQueryService')
+        @Inject(CACHE_QUERY_SERVICE)
         private readonly cacheQuery: ICacheQueryService,
 
         @Inject('IUserWriteRepository')
@@ -57,6 +59,8 @@ export class AuthService implements OnModuleInit {
 
         @Inject('IAdminCredentialRepository')
         private readonly credentialRepo: IAdminCredentialRepository,
+
+        private readonly config: ConfigService,
     ) {}
 
     // ===========================================================================
@@ -127,7 +131,7 @@ export class AuthService implements OnModuleInit {
     // ===========================================================================
     // Refresh Token
     // ===========================================================================
-    async refresh(refreshToken: string, fingerprint: string): Promise<{ accessToken: string }> {
+    async refresh(refreshToken: string, fingerprint: string): Promise<{ accessToken: string; refreshToken: string }> {
         let payload: RefreshTokenPayload
 
         try {
@@ -149,7 +153,32 @@ export class AuthService implements OnModuleInit {
             throw new UnauthorizedError('Token fingerprint mismatch')
         }
 
-        return { accessToken: await this.issueAccessToken(payload.sub, fingerprint) }
+        // Rotate: issue both tokens in parallel, then revoke the old refresh token.
+        //
+        // Why revoke AFTER issuing (not before)?
+        //   Issuing first ensures the client always gets a usable token pair even
+        //   if the revocation write fails (e.g. transient DB hiccup). The old token
+        //   will expire naturally within its TTL in the worst case — far better than
+        //   leaving the client logged out with no new token.
+        //
+        // Why parallel issuance?
+        //   Both sign calls are independent CPU work (HMAC-SHA256). Running them in
+        //   parallel halves the signing latency on the hot refresh path.
+        const [newAccessToken, newRefreshToken] = await Promise.all([
+            this.issueAccessToken(payload.sub, fingerprint),
+            this.issueRefreshToken(payload.sub, fingerprint),
+        ])
+
+        // Revoke the consumed refresh token so it cannot be replayed.
+        // Fire-and-forget is intentional: a revocation write failure is not worth
+        // blocking the response — the token will expire within its 7-day window anyway,
+        // and fingerprint enforcement already stops cross-device replay.
+        void this.tokenRepo.revoke(
+            payload.jti,
+            new Date(payload.exp * 1000),
+        )
+
+        return { accessToken: newAccessToken, refreshToken: newRefreshToken }
     }
 
     // ===========================================================================
@@ -231,7 +260,7 @@ export class AuthService implements OnModuleInit {
     }
     
     private shouldEnforceFingerprint(): boolean {
-        return process.env.FINGERPRINT_STRICT !== 'false'
+        return this.config.get<string>('FINGERPRINT_STRICT') !== 'false'
     }
 
     // ===========================================================================

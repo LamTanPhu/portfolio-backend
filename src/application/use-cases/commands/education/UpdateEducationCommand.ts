@@ -11,6 +11,7 @@ import type {
 } from '../../../../domain/repositories/education/IEducationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { EducationDTO } from '../../../dtos/education/EducationDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface UpdateInput extends UpdateEducationInput {
     id: number
@@ -22,7 +23,7 @@ export class UpdateEducationCommand {
         @Inject('IEducationWriteRepository')
         private readonly repo: IEducationWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

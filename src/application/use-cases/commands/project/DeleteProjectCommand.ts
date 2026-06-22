@@ -9,6 +9,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
 import type { IProjectWriteRepository } from '../../../../domain/repositories/project/IProjectWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteProjectCommand {
@@ -19,7 +20,7 @@ export class DeleteProjectCommand {
         @Inject('IProjectWriteRepository')
         private readonly writeRepo: IProjectWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

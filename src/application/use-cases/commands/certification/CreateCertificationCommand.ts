@@ -9,6 +9,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { ICertificationWriteRepository } from '../../../../domain/repositories/certification/ICertificationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { CertificationDTO } from '../../../dtos/certification/CertificationDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class CreateCertificationCommand {
@@ -16,7 +17,7 @@ export class CreateCertificationCommand {
         @Inject('ICertificationWriteRepository')
         private readonly repo: ICertificationWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

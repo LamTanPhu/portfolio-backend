@@ -10,6 +10,7 @@ import type { IBlogReadRepository } from '../../../../domain/repositories/blog/I
 import type { IBlogWriteRepository } from '../../../../domain/repositories/blog/IBlogWriteRepository'
 
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteBlogCommand {
@@ -20,7 +21,7 @@ export class DeleteBlogCommand {
         @Inject('IBlogWriteRepository')
         private readonly writeRepo: IBlogWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

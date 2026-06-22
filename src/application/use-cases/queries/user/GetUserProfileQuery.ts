@@ -11,6 +11,7 @@ import type { IUserReadRepository } from '../../../../domain/repositories/user/I
 
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
 import type { UserProfileDTO } from '../../../dtos/UserProfileDTO'
+import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class GetUserProfileQuery {
@@ -18,7 +19,7 @@ export class GetUserProfileQuery {
     @Inject('IUserReadRepository')
     private readonly repo: IUserReadRepository,
 
-    @Inject('ICacheQueryService')
+    @Inject(CACHE_QUERY_SERVICE)
     private readonly cacheQuery: ICacheQueryService,
   ) {}
 

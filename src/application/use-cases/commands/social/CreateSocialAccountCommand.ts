@@ -8,6 +8,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { CreateSocialAccountInput, ISocialAccountWriteRepository } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class CreateSocialAccountCommand {
@@ -15,7 +16,7 @@ export class CreateSocialAccountCommand {
         @Inject('ISocialAccountWriteRepository')
         private readonly repo: ISocialAccountWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

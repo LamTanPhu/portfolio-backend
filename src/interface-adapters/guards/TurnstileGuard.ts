@@ -13,6 +13,7 @@ import {
   CanActivate,
   ExecutionContext,
   BadRequestException,
+  HttpException,
   Logger,
   Inject,
 } from '@nestjs/common'
@@ -51,6 +52,11 @@ export class TurnstileGuard implements CanActivate {
 
       return true
     } catch (error) {
+      // Re-throw NestJS HTTP exceptions as-is (e.g. the BadRequestException thrown
+      // above when isValid is false). Without this guard the outer catch would
+      // swallow the specific message and replace it with the generic fallback below.
+      if (error instanceof HttpException) throw error
+
       this.logger.error(`Turnstile verification error | IP: ${req.ip ?? 'unknown'}`, error)
       throw new BadRequestException('Turnstile verification failed')
     }

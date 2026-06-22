@@ -11,6 +11,7 @@ import type { IProjectReadRepository } from '../../../../domain/repositories/pro
 
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class GetProjectBySlugQuery {
@@ -18,7 +19,7 @@ export class GetProjectBySlugQuery {
     @Inject('IProjectReadRepository')
     private readonly repo: IProjectReadRepository,
 
-    @Inject('ICacheQueryService')
+    @Inject(CACHE_QUERY_SERVICE)
     private readonly cacheQuery: ICacheQueryService,
   ) {}
 

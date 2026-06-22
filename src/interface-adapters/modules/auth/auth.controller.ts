@@ -76,7 +76,7 @@ export class AuthController {
     // Secure httpOnly cookie for refresh token
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
       sameSite: 'strict',
       maxAge: AuthService.getRefreshTokenExpiryMs(),
       path: '/api/auth',
@@ -109,7 +109,17 @@ export class AuthController {
       req.ip ?? '',
     )
 
-    const { accessToken } = await this.authService.refresh(refreshToken, fingerprint)
+    const { accessToken, refreshToken: newRefreshToken } = await this.authService.refresh(refreshToken, fingerprint)
+
+    // Rotate the refresh cookie — old token is now revoked in AuthService.
+    // Cookie options mirror login exactly so the client sees seamless renewal.
+    res.cookie('refreshToken', newRefreshToken, {
+      httpOnly: true,
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: AuthService.getRefreshTokenExpiryMs(),
+      path: '/api/auth',
+    })
 
     return { accessToken }
   }

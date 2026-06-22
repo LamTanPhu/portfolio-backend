@@ -7,6 +7,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import type { IJobWriteRepository } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteJobCommand {
@@ -14,7 +15,7 @@ export class DeleteJobCommand {
         @Inject('IJobWriteRepository')
         private readonly repo: IJobWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

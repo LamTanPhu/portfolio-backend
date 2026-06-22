@@ -11,6 +11,7 @@ import type {
 } from '../../../../domain/repositories/project/IProjectWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface UpdateInput extends UpdateProjectInput {
     id: number
@@ -22,7 +23,7 @@ export class UpdateProjectCommand {
         @Inject('IProjectWriteRepository')
         private readonly repo: IProjectWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

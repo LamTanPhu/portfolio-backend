@@ -8,6 +8,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IJobWriteRepository } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { JobDTO } from '../../../dtos/JobDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class CreateJobCommand {
@@ -15,7 +16,7 @@ export class CreateJobCommand {
         @Inject('IJobWriteRepository')
         private readonly repo: IJobWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

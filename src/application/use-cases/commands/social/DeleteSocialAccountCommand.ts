@@ -7,6 +7,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import type { ISocialAccountWriteRepository } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class DeleteSocialAccountCommand {
@@ -14,7 +15,7 @@ export class DeleteSocialAccountCommand {
         @Inject('ISocialAccountWriteRepository')
         private readonly repo: ISocialAccountWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

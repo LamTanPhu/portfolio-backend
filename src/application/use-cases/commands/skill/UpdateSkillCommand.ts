@@ -6,11 +6,12 @@
 
 import { Injectable, Inject } from '@nestjs/common'
 import type {
-  ISkillWriteRepository,
-  UpdateSkillInput,
+    ISkillWriteRepository,
+    UpdateSkillInput,
 } from '../../../../domain/repositories/skill/ISkillWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SkillDTO } from '../../../dtos/SkillDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface UpdateInput extends UpdateSkillInput {
     id: number
@@ -22,7 +23,7 @@ export class UpdateSkillCommand {
         @Inject('ISkillWriteRepository')
         private readonly repo: ISkillWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

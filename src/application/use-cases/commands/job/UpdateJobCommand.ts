@@ -11,6 +11,7 @@ import type {
 } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { JobDTO } from '../../../dtos/JobDTO'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface UpdateInput extends UpdateJobInput {
     id: number
@@ -22,7 +23,7 @@ export class UpdateJobCommand {
         @Inject('IJobWriteRepository')
         private readonly repo: IJobWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

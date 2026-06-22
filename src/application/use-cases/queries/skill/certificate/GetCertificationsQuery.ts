@@ -9,6 +9,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { ICertificationReadRepository } from '../../../../../domain/repositories/certification/ICertificationReadRepository'
 import { CertificationDTO } from '../../../../dtos/certification/CertificationDTO'
 import type { ICacheQueryService } from '../../../../ports/ICacheQueryService'
+import { CACHE_QUERY_SERVICE } from '../../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class GetCertificationsQuery {
@@ -16,18 +17,18 @@ export class GetCertificationsQuery {
         @Inject('ICertificationReadRepository')
         private readonly repo: ICertificationReadRepository,
 
-        @Inject('ICacheQueryService')
+        @Inject(CACHE_QUERY_SERVICE)
         private readonly cacheQuery: ICacheQueryService,
     ) {}
 
     async execute(): Promise<CertificationDTO[]> {
         return this.cacheQuery.getOrSetWithProfile(
-        'certification:list:public',
-        'LONG',
-        async () => {
-            const certifications = await this.repo.findPublished()
-            return certifications
-        },
+            'certification:list:public',
+            'LONG',
+            async () => {
+                const certifications = await this.repo.findPublished()
+                return certifications
+            },
         )
     }
 }

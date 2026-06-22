@@ -11,6 +11,7 @@ import type { IProjectWriteRepository } from '../../../../domain/repositories/pr
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { Slug } from '../../../../domain/value-objects/Slug'
 import type { ProjectDTO } from '../../../dtos/ProjectDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface Input {
   name:         string
@@ -30,7 +31,7 @@ export class CreateProjectCommand {
     @Inject('IProjectWriteRepository')
     private readonly repo: IProjectWriteRepository,
 
-    @Inject('ICacheInvalidationService')
+    @Inject(CACHE_INVALIDATION_SERVICE)
     private readonly cacheService: ICacheInvalidationService,
   ) {}
 

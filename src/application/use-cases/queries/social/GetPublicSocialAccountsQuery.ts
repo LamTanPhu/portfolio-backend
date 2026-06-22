@@ -10,6 +10,7 @@ import type { ISocialAccountReadRepository } from '../../../../domain/repositori
 
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
+import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class GetPublicSocialAccountsQuery {
@@ -17,7 +18,7 @@ export class GetPublicSocialAccountsQuery {
         @Inject('ISocialAccountReadRepository')
         private readonly repo: ISocialAccountReadRepository,
 
-        @Inject('ICacheQueryService')
+        @Inject(CACHE_QUERY_SERVICE)
         private readonly cacheQuery: ICacheQueryService,
     ) {}
 

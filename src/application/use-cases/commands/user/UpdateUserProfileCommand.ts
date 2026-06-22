@@ -8,6 +8,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IUserWriteRepository, UpdateUserInput } from '../../../../domain/repositories/user/IUserWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { UserProfileDTO } from '../../../dtos/UserProfileDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class UpdateUserProfileCommand {
@@ -15,7 +16,7 @@ export class UpdateUserProfileCommand {
     @Inject('IUserWriteRepository')
     private readonly repo: IUserWriteRepository,
 
-    @Inject('ICacheInvalidationService')
+    @Inject(CACHE_INVALIDATION_SERVICE)
     private readonly cacheService: ICacheInvalidationService,
   ) {}
 

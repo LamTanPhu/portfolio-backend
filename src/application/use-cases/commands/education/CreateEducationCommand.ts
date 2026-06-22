@@ -6,6 +6,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import type { IEducationWriteRepository } from '../../../../domain/repositories/education/IEducationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { EducationDTO } from '../../../dtos/education/EducationDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()
 export class CreateEducationCommand {
@@ -13,7 +14,7 @@ export class CreateEducationCommand {
         @Inject('IEducationWriteRepository')
         private readonly repo: IEducationWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

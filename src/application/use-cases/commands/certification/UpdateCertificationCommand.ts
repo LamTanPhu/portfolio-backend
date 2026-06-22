@@ -5,14 +5,14 @@
  * If the certification is published, the public list cache is cleared.
  */
 
-import { Injectable, Inject } from '@nestjs/common'
-import { NotFoundError } from '../../../../domain/errors/NotFoundError'
+import { Inject, Injectable } from '@nestjs/common'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 import type {
-  ICertificationWriteRepository,
-  UpdateCertificationInput,
+    ICertificationWriteRepository,
+    UpdateCertificationInput,
 } from '../../../../domain/repositories/certification/ICertificationWriteRepository'
-import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { CertificationDTO } from '../../../dtos/certification/CertificationDTO'
+import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 
 interface UpdateInput extends UpdateCertificationInput {
     id: number
@@ -24,7 +24,7 @@ export class UpdateCertificationCommand {
         @Inject('ICertificationWriteRepository')
         private readonly repo: ICertificationWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

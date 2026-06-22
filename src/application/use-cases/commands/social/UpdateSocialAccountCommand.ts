@@ -11,6 +11,7 @@ import type {
 } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
+import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface UpdateInput extends UpdateSocialAccountInput {
     id: number
@@ -22,7 +23,7 @@ export class UpdateSocialAccountCommand {
         @Inject('ISocialAccountWriteRepository')
         private readonly repo: ISocialAccountWriteRepository,
 
-        @Inject('ICacheInvalidationService')
+        @Inject(CACHE_INVALIDATION_SERVICE)
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 

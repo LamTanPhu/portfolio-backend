@@ -9,6 +9,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { IJobReadRepository } from '../../../../../domain/repositories/job/IJobReadRepository'
 import { JobDTO } from '../../../../dtos/JobDTO'
 import type { ICacheQueryService } from '../../../../ports/ICacheQueryService'
+import { CACHE_QUERY_SERVICE } from '../../../../../application/ports/cache.tokens'
 
 
 @Injectable()
@@ -17,7 +18,7 @@ export class GetJobsQuery {
         @Inject('IJobReadRepository')
         private readonly repo: IJobReadRepository,
 
-        @Inject('ICacheQueryService')
+        @Inject(CACHE_QUERY_SERVICE)
         private readonly cacheQuery: ICacheQueryService,
     ) {}
 
