@@ -200,6 +200,15 @@ export class CacheInvalidationService implements ICacheInvalidationService {
         await this.delete('social:list:public')
     }
 
+    // --------------------- User ---------------------
+    /**
+     * Clears the cached user profile for a specific user.
+     * Key matches the pattern used in GetUserProfileQuery.
+     */
+    async invalidateUserProfile(userId: number): Promise<void> {
+        await this.delete(`user:profile:${userId}`)
+    }
+
     // --------------------- Contact (Admin) ---------------------
     /**
      * Clears the admin contact message list cache.

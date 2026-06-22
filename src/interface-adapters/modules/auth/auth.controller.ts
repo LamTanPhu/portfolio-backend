@@ -77,6 +77,10 @@ export class AuthController {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: this.configService.get<string>('NODE_ENV') === 'production',
+      // 'strict': the refresh cookie is scoped to path '/api/auth' (POST only).
+      // lax vs strict makes no difference here — lax only relaxes same-site rules
+      // for top-level GET navigations, which never hit /api/auth anyway.
+      // 'strict' is the more defensive choice with zero practical downside.
       sameSite: 'strict',
       maxAge: AuthService.getRefreshTokenExpiryMs(),
       path: '/api/auth',
@@ -116,6 +120,7 @@ export class AuthController {
     res.cookie('refreshToken', newRefreshToken, {
       httpOnly: true,
       secure: this.configService.get<string>('NODE_ENV') === 'production',
+      // 'strict' — see login cookie comment above for rationale.
       sameSite: 'strict',
       maxAge: AuthService.getRefreshTokenExpiryMs(),
       path: '/api/auth',

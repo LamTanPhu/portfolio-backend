@@ -26,6 +26,10 @@ export interface ICacheInvalidationService {
     invalidatePublicJobs(): Promise<void>
     invalidatePublicSocialAccounts(): Promise<void>
 
+    // User
+    /** Clears the cached profile for a specific user — call after any profile update */
+    invalidateUserProfile(userId: number): Promise<void>
+
     // Contact (admin)
     /** Clears the cached admin contact message list — call after any write to ContactMe */
     invalidateContactList(): Promise<void>

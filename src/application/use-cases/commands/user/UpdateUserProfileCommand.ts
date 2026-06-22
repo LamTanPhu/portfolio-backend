@@ -23,8 +23,7 @@ export class UpdateUserProfileCommand {
   async execute(userId: number, data: UpdateUserInput): Promise<UserProfileDTO> {
     const user = await this.repo.update(userId, data)
 
-    // Invalidate cached profile
-    await this.cacheService.invalidatePattern(`user:profile:${userId}`)
+    await this.cacheService.invalidateUserProfile(userId)
 
     return {
       id:        user.id,
