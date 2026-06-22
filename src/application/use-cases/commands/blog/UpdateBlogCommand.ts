@@ -62,7 +62,7 @@ export class UpdateBlogCommand {
         const updatedBlog = await this.writeRepo.update(id, payload)
 
         // Always invalidate public list and the original slug
-        await this.cacheService.invalidatePublicBlogs()auths
+        await this.cacheService.invalidatePublicBlogs()
         await this.cacheService.invalidateBlogBySlug(existing.slug)
 
         // Invalidate new slug if it changed — both old and new must be cleared

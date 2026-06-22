@@ -60,7 +60,10 @@ async function bootstrap(): Promise<void> {
     app.use(compression({ threshold: 1024, level: 6 }))
 
     app.use(helmet({
-        crossOriginResourcePolicy: { policy: 'cross-origin' },
+        // Keep Helmet's default CORP of 'same-origin'.
+        // 'cross-origin' would allow any site to embed responses from this API,
+        // which is unnecessary for a JSON-only backend with no embeddable assets.
+        // CORS (configured below) already handles legitimate cross-origin API calls.
     }))
 
     app.use(json({ limit: '10kb' }))
