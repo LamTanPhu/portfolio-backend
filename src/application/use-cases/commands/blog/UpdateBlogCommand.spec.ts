@@ -170,21 +170,14 @@ describe('UpdateBlogCommand', () => {
     })
 
   // ===========================================================================
-  // Cache invalidation — slug changed
+  // Cache invalidation — slug is immutable
+  //
+  // FIX: removed a "slug changed" test that mocked writeRepo.update() to
+  // return a different slug than the one passed in. That can't happen for
+  // real — UpdateBlogInput has no `slug` field (see IBlogWriteRepository.ts),
+  // so the command has no way to change it. This test was covering a branch
+  // in UpdateBlogCommand that has since been removed as unreachable dead code.
   // ===========================================================================
-    describe('execute() — cache invalidation, slug changed', () => {
-        it('invalidates both old and new slug when slug changes', async () => {
-            mockWriteRepo.update.mockResolvedValue(
-                makeUpdatedBlog({ slug: 'brand-new-slug' })
-            )
-
-            await command.execute(makeInput({ title: 'Brand New Slug' }))
-
-            expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledWith('original-title')
-            expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledWith('brand-new-slug')
-            expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledTimes(2)
-        })
-    })
 
   // ===========================================================================
   // publishedAt handling

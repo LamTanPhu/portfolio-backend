@@ -6,7 +6,7 @@
  * and Swagger documentation.
  */
 
-import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsDateString } from 'class-validator'
+import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsDateString, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class CreateJobDto {
@@ -16,6 +16,7 @@ export class CreateJobDto {
     })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(255) // matches Job.companyName @db.VarChar(255) — prevents P2000 surfacing as 500
     companyName!: string
 
     @ApiProperty({
@@ -58,6 +59,7 @@ export class UpdateJobDto {
     })
     @IsString()
     @IsOptional()
+    @MaxLength(255) // matches Job.companyName @db.VarChar(255) — prevents P2000 surfacing as 500
     companyName?: string
 
     @ApiPropertyOptional({

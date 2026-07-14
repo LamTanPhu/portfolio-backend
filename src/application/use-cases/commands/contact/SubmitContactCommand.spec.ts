@@ -19,10 +19,6 @@ const mockRepo = {
     save: jest.fn(),
 }
 
-const mockTurnstile = {
-    verifyToken: jest.fn(),
-}
-
 const mockEventEmitter = {
     emit: jest.fn(),
 }
@@ -36,7 +32,6 @@ const makeInput = (overrides: Partial<SubmitContactInput> = {}): SubmitContactIn
     name:           'John Doe',
     email:          'john@example.com',
     message:        'Hello, this is a test message.',
-    turnstileToken: 'valid-token',
     ipAddress:      '127.0.0.1',
     browserInfo:    'Mozilla/5.0',
     ...overrides,
@@ -52,15 +47,13 @@ const makeInput = (overrides: Partial<SubmitContactInput> = {}): SubmitContactIn
     beforeEach(async () => {
         jest.clearAllMocks()
 
-        // Default: Turnstile passes, repo saves successfully
-        mockTurnstile.verifyToken.mockResolvedValue(true)
+        // Default: repo saves successfully
         mockRepo.save.mockResolvedValue(undefined)
 
         const module: TestingModule = await Test.createTestingModule({
         providers: [
             SubmitContactCommand,
             { provide: 'IContactWriteRepository', useValue: mockRepo        },
-            { provide: 'ITurnstileVerifier',       useValue: mockTurnstile   },
             { provide: EventEmitter2,              useValue: mockEventEmitter },
         ],
         }).compile()
@@ -107,22 +100,17 @@ const makeInput = (overrides: Partial<SubmitContactInput> = {}): SubmitContactIn
 
   // ===========================================================================
   // Turnstile verification
+  //
+  // FIX: SubmitContactCommand does NOT verify Turnstile — see the class-level
+  // docstring in SubmitContactCommand.ts. That check happens upstream in
+  // TurnstileGuard, before this command is ever invoked, so there is nothing
+  // for this command's unit tests to exercise here. The old tests mocked an
+  // 'ITurnstileVerifier' the constructor doesn't even accept and asserted on
+  // a `turnstileToken` field SubmitContactInput doesn't have — both silently
+  // no-ops, so `command.execute(makeInput())` always ran the (valid, non-spam)
+  // happy path and resolved instead of rejecting. Guard behavior itself is
+  // covered by TurnstileGuard.spec.ts.
   // ===========================================================================
-    describe('execute() — Turnstile', () => {
-        it('throws ValidationError when Turnstile fails', async () => {
-        mockTurnstile.verifyToken.mockResolvedValue(false)
-
-        await expect(command.execute(makeInput()))
-            .rejects.toThrow(ValidationError)
-        })
-
-        it('does not save to DB when Turnstile fails', async () => {
-        mockTurnstile.verifyToken.mockResolvedValue(false)
-
-        await expect(command.execute(makeInput())).rejects.toThrow()
-        expect(mockRepo.save).not.toHaveBeenCalled()
-        })
-    })
 
   // ===========================================================================
   // Name validation
@@ -186,26 +174,46 @@ const makeInput = (overrides: Partial<SubmitContactInput> = {}): SubmitContactIn
 
   // ===========================================================================
   // Spam filter
+  //
+  // FIX: the filter is multi-signal now — a message is only rejected when TWO
+  // OR MORE signals fire together (see the comment block in
+  // SubmitContactCommand.ts explaining why the old single-regex approach was
+  // dropped: it blocked legitimate messages like "I work at company.com").
+  // A message containing exactly one signal (a bare URL, OR one spam keyword,
+  // OR one burst of "!!!", OR two email addresses) must be let through.
   // ===========================================================================
     describe('execute() — spam filter', () => {
-        const spamCases = [
-            ['http link',    'Check out http://spam.com'],
-            ['www link',     'Visit www.spam.com for deals'],
-            ['bitcoin',      'Send me bitcoin now'],
-            ['crypto',       'Invest in crypto today'],
-            ['viagra',       'Buy viagra cheap'],
-            ['casino',       'Win at casino'],
-            ['loan offer',   'Get a loan today'],
+        // A single signal alone must NOT be rejected — this is the exact
+        // behavior the two-signal design was introduced to fix.
+        const singleSignalCases = [
+            ['bare URL only',        'Check out http://myportfolio.dev for my work'],
+            ['www link only',        'Visit www.myportfolio.dev to see my projects'],
+            ['one keyword only',     'I would love to discuss a possible loan offer'],
+            ['punctuation only',     'This is amazing!!!'],
         ]
 
-    it.each(spamCases)('throws ValidationError for %s', async (_, message) => {
-        await expect(command.execute(makeInput({ message })))
-            .rejects.toThrow(ValidationError)
-    })
+        it.each(singleSignalCases)('does not throw for %s (single signal)', async (_, message) => {
+            await expect(command.execute(makeInput({ message })))
+                .resolves.not.toThrow()
+        })
+
+        // Two or more signals together must be rejected.
+        const multiSignalCases = [
+            ['URL + keyword',           'Check http://spam.com — win at our casino!'],
+            ['URL + punctuation',       'Visit www.deals.com now!!!'],
+            ['keyword + punctuation',   'Buy viagra now!!!'],
+            ['URL + multiple emails',   'Contact http://spam.com, reach us at a@spam.com or b@spam.com'],
+            ['keyword + multiple emails', 'Loan offer available — email a@spam.com or b@spam.com'],
+        ]
+
+        it.each(multiSignalCases)('throws ValidationError for %s (multiple signals)', async (_, message) => {
+            await expect(command.execute(makeInput({ message })))
+                .rejects.toThrow(ValidationError)
+        })
 
         it('does not save to DB when spam is detected', async () => {
             await expect(
-                command.execute(makeInput({ message: 'Buy bitcoin now' }))
+                command.execute(makeInput({ message: 'Buy viagra now!!!' }))
             ).rejects.toThrow()
 
             expect(mockRepo.save).not.toHaveBeenCalled()

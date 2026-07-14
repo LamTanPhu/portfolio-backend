@@ -13,6 +13,7 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { JwtService } from '@nestjs/jwt'
 import { ConfigService } from '@nestjs/config'
+import * as crypto from 'crypto'
 import { AuthService } from './AuthService'
 import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 
@@ -24,6 +25,23 @@ import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 jest.mock('bcrypt', () => ({
     compare: jest.fn(),
 }))
+
+// =============================================================================
+// Module-level crypto mock
+// Node's built-in `crypto` module exports are non-configurable, so
+// jest.spyOn(crypto, 'randomBytes') throws ("Cannot redefine property").
+// Wrapping randomBytes in jest.fn() at mock-registration time (while keeping
+// every other export, e.g. createHash, fully real) lets onModuleInit()'s
+// JIT-warmup call be asserted without breaking buildFingerprint()'s tests,
+// which rely on real crypto.createHash().
+// =============================================================================
+jest.mock('crypto', () => {
+    const actualCrypto = jest.requireActual('crypto')
+    return {
+        ...actualCrypto,
+        randomBytes: jest.fn(actualCrypto.randomBytes),
+    }
+})
 
 import * as bcrypt from 'bcrypt'
 
@@ -125,13 +143,14 @@ describe('AuthService', () => {
     // onModuleInit()
     // ===========================================================================
     describe('onModuleInit()', () => {
-        it('calls jwt.signAsync to warm up JIT on init', async () => {
+        // FIX: implementation now warms up the JIT with crypto.randomBytes(32)
+        // instead of a real signed JWT — see AuthService.onModuleInit() comment
+        // for the rationale (no throwaway credential is produced this way).
+        it('calls crypto.randomBytes to warm up JIT on init', async () => {
             await service.onModuleInit()
 
-            expect(mockJwtService.signAsync).toHaveBeenCalledWith(
-                expect.objectContaining({ warmup: true }),
-                expect.objectContaining({ expiresIn: '1s' }),
-            )
+            expect(crypto.randomBytes).toHaveBeenCalledWith(32)
+            expect(mockJwtService.signAsync).not.toHaveBeenCalled()
         })
 
         it('completes without throwing', async () => {
@@ -321,9 +340,14 @@ describe('AuthService', () => {
     // refresh()
     // ===========================================================================
     describe('refresh()', () => {
+        // FIX: refresh() enforces fingerprint matching the same way
+        // verifyAccessToken() does (FINGERPRINT_STRICT defaults to enforced).
+        // These payloads must carry a `fingerprint` matching the 'fp' arg
+        // passed to service.refresh() below, or every case here throws
+        // UnauthorizedError before reaching the behavior under test.
         it('returns both a new access token and a new refresh token', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             const result = await service.refresh('valid-refresh-token', 'fp')
@@ -334,7 +358,7 @@ describe('AuthService', () => {
 
         it('issues both tokens in parallel — two signAsync calls on valid refresh', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             await service.refresh('valid-refresh-token', 'fp')
@@ -345,7 +369,7 @@ describe('AuthService', () => {
 
         it('revokes the consumed refresh token (rotation)', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'old-refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1, jti: 'old-refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
             })
             mockTokenRepo.revoke.mockResolvedValue(undefined)
 
@@ -355,6 +379,16 @@ describe('AuthService', () => {
                 'old-refresh-jti',
                 expect.any(Date),
             )
+        })
+
+        it('throws UnauthorizedError on refresh fingerprint mismatch', async () => {
+            mockJwtService.verifyAsync.mockResolvedValue({
+                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'original-fp', exp: Math.floor(Date.now() / 1000) + 3600,
+            })
+
+            await expect(
+                service.refresh('valid-refresh-token', 'different-fp')
+            ).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError if refresh token is revoked', async () => {

@@ -2,7 +2,7 @@
  * @fileoverview Skill DTOs (Request Models)
  */
 
-import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl } from 'class-validator'
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export enum SkillCategoryEnum {
@@ -17,6 +17,7 @@ export class CreateSkillDto {
     @ApiProperty({ description: 'Skill name', example: 'TypeScript' })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(45) // matches Skill.name @db.VarChar(45) — prevents P2000 surfacing as 500
     name!: string
 
     @ApiPropertyOptional({ description: 'Icon/image URL', example: 'https://cdn.example.com/ts.svg' })
@@ -46,6 +47,7 @@ export class UpdateSkillDto {
     @ApiPropertyOptional({ description: 'Skill name', example: 'TypeScript' })
     @IsString()
     @IsOptional()
+    @MaxLength(45) // matches Skill.name @db.VarChar(45) — prevents P2000 surfacing as 500
     name?: string
 
     @ApiPropertyOptional({ description: 'Icon/image URL', example: 'https://cdn.example.com/ts.svg' })

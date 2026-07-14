@@ -76,7 +76,7 @@ export class SubmitContactCommand {
       // More than one email address in the message body (one is fine — it's theirs)
       (msg: string) => (msg.match(/[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi) ?? []).length > 1,
       // Classic unsolicited-commercial-email keywords
-      /(viagra|casino|porn|bitcoin|crypto\s+invest|make money fast|click here|free money|loan offer)/i,
+      /\b(viagra|casino|porn|bitcoin|crypto\s+invest|make money fast|click here|free money|loan offer)\b/i,
       // Excessive punctuation / shouting (!!!, $$$, etc.)
       /[!$]{3,}/,
     ]

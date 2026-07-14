@@ -5,10 +5,19 @@
  * Verifies production safety (no stack/path leaks) and dev mode extras.
  * Verifies logging behavior for auth failures, rate limits, and server errors.
  * Uses mock ArgumentsHost — no HTTP server needed.
+ *
+ * FIX: DomainExceptionFilter now takes a ConfigService dependency (it used to
+ * read process.env.NODE_ENV directly). It also resolves `isProduction` exactly
+ * once, in the constructor — so any test that needs a specific NODE_ENV must
+ * set process.env.NODE_ENV *before* constructing the filter, then construct
+ * a fresh instance. Constructing once in the outer beforeEach and mutating
+ * process.env afterwards (the old approach) has no effect on an
+ * already-constructed instance.
  */
 
 import { DomainExceptionFilter } from './DomainExceptionFilter'
 import { ArgumentsHost, Logger } from '@nestjs/common'
+import type { ConfigService } from '@nestjs/config'
 import { ValidationError }     from '../../domain/errors/ValidationError'
 import { UnauthorizedError }   from '../../domain/errors/UnauthorizedError'
 import { ForbiddenError }      from '../../domain/errors/ForbiddenError'
@@ -43,6 +52,20 @@ function makeMockHost(requestOverrides: Partial<{ method: string; url: string; i
 const mockHost = makeMockHost()
 
 // =============================================================================
+// Mock ConfigService
+// Reads process.env dynamically so tests can flip NODE_ENV per-case —
+// mirrors real ConfigService's default behavior of falling back to process.env.
+// =============================================================================
+
+const mockConfigService = {
+    get: jest.fn((key: string) => process.env[key]),
+}
+
+function makeFilter(): DomainExceptionFilter {
+    return new DomainExceptionFilter(mockConfigService as unknown as ConfigService)
+}
+
+// =============================================================================
 // Suite
 // =============================================================================
 
@@ -55,7 +78,7 @@ describe('DomainExceptionFilter', () => {
         jest.clearAllMocks()
         warnSpy  = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
         errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
-        filter   = new DomainExceptionFilter()
+        filter   = makeFilter()
     })
 
     afterEach(() => {
@@ -195,10 +218,14 @@ describe('DomainExceptionFilter', () => {
 
     // ===========================================================================
     // Production mode — safety
+    // isProduction is resolved once in the constructor, so NODE_ENV must be set
+    // BEFORE the filter is built. Reconstruct here rather than relying on the
+    // outer beforeEach's instance.
     // ===========================================================================
     describe('production mode', () => {
         beforeEach(() => {
             process.env.NODE_ENV = 'production'
+            filter = makeFilter()
         })
 
         it('redacts 5xx message in production', () => {
@@ -234,10 +261,12 @@ describe('DomainExceptionFilter', () => {
 
     // ===========================================================================
     // Development mode — debug extras
+    // Same reconstruction requirement as production mode above.
     // ===========================================================================
     describe('development mode', () => {
         beforeEach(() => {
             process.env.NODE_ENV = 'development'
+            filter = makeFilter()
         })
 
         it('includes path in development response', () => {
@@ -269,6 +298,7 @@ describe('DomainExceptionFilter', () => {
     describe('response shape', () => {
         it('always includes statusCode, error, message, timestamp', () => {
             process.env.NODE_ENV = 'production'
+            filter = makeFilter()
             filter.catch(new NotFoundError('not found'), mockHost)
 
             expect(mockJson).toHaveBeenCalledWith(

@@ -8,9 +8,8 @@
 
 import { CacheModule } from '@nestjs/cache-manager'
 import { Module } from '@nestjs/common'
-import { ConfigModule, ConfigService } from '@nestjs/config'
+import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD } from '@nestjs/core'
-import { JwtModule } from '@nestjs/jwt'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
@@ -75,19 +74,10 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
             ttl: 300, // 5 min default — overridden per-call by CacheQueryService profiles
         }),
 
-        // ─── JWT Configuration ──────────────────────────────────────────────
-        JwtModule.registerAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET'),
-                signOptions: {
-                    expiresIn: '15m',
-                    issuer: 'portfolio-api',
-                    audience: 'portfolio-admin',
-                },
-            }),
-        }),
+        // Note: JWT is configured inside AuthModule (its own JwtModule.registerAsync),
+        // not here at the root. A root-level registration used to exist too, but
+        // nothing outside AuthModule ever injects JwtService — it was dead config
+        // duplicating AuthModule's setup, so it was removed.
 
         // ─── Infrastructure ─────────────────────────────────────────────────
         PrismaModule,

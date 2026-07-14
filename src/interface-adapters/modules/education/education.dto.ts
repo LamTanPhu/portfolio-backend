@@ -6,7 +6,7 @@
  * and Swagger documentation.
  */
 
-import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsDateString, IsUrl } from 'class-validator'
+import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsDateString, IsUrl, MaxLength } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export class CreateEducationDto {
@@ -16,6 +16,7 @@ export class CreateEducationDto {
     })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(255) // matches Education.degreeName @db.VarChar(255) — prevents P2000 surfacing as 500
     degreeName!: string
 
     @ApiProperty({
@@ -24,6 +25,7 @@ export class CreateEducationDto {
     })
     @IsString()
     @IsNotEmpty()
+    @MaxLength(255) // matches Education.instituteName @db.VarChar(255) — prevents P2000 surfacing as 500
     instituteName!: string
 
     @ApiPropertyOptional({
@@ -66,6 +68,7 @@ export class UpdateEducationDto {
     })
     @IsString()
     @IsOptional()
+    @MaxLength(255) // matches Education.degreeName @db.VarChar(255) — prevents P2000 surfacing as 500
     degreeName?: string
 
     @ApiPropertyOptional({
@@ -74,6 +77,7 @@ export class UpdateEducationDto {
     })
     @IsString()
     @IsOptional()
+    @MaxLength(255) // matches Education.instituteName @db.VarChar(255) — prevents P2000 surfacing as 500
     instituteName?: string
 
     @ApiPropertyOptional({

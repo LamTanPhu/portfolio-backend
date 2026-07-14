@@ -38,6 +38,7 @@ import { DeleteProjectCommand } from '../../../application/use-cases/commands/pr
 
 import type { ProjectDTO, ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
 import { CreateProjectDto, UpdateProjectDto } from './project.dto'
+import { ProjectPresenter } from './project.presenter'
 
 @ApiTags('Projects')
 @Controller('projects')
@@ -55,7 +56,8 @@ export class ProjectController {
   @ApiOperation({ summary: 'Get all published projects (Public)' })
   @ApiResponse({ status: 200, description: 'List of published projects' })
   async findAll(): Promise<ProjectSummaryDTO[]> {
-    return this.getPublishedQuery.execute()
+    const dtos = await this.getPublishedQuery.execute()
+    return ProjectPresenter.toSummaryListResponse(dtos)
   }
 
   @Get(':slug')
@@ -65,7 +67,8 @@ export class ProjectController {
   @ApiResponse({ status: 200, description: 'Project found' })
   @ApiResponse({ status: 404, description: 'Project not found' })
   async findBySlug(@Param('slug') slug: string): Promise<ProjectDTO> {
-    return this.getBySlugQuery.execute(slug)
+    const dto = await this.getBySlugQuery.execute(slug)
+    return ProjectPresenter.toResponse(dto)
   }
 
   @Post()
@@ -78,7 +81,7 @@ export class ProjectController {
     @Body() dto: CreateProjectDto,
     @Req() req: AuthenticatedRequest,
   ): Promise<ProjectDTO> {
-    return this.createCommand.execute({
+    const result = await this.createCommand.execute({
       name:         dto.name,
       description:  dto.description,
       techStack:    dto.techStack,
@@ -89,6 +92,7 @@ export class ProjectController {
       thumbnailUrl: dto.thumbnailUrl ?? null,
       userId:       req.user.sub,
     })
+    return ProjectPresenter.toResponse(result)
   }
 
   @Patch(':id')
@@ -103,7 +107,7 @@ export class ProjectController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProjectDto,
   ): Promise<ProjectDTO> {
-    return this.updateCommand.execute({
+    const result = await this.updateCommand.execute({
       id,
       name:         dto.name,
       description:  dto.description,
@@ -114,6 +118,7 @@ export class ProjectController {
       liveUrl:      dto.liveUrl,
       thumbnailUrl: dto.thumbnailUrl,
     })
+    return ProjectPresenter.toResponse(result)
   }
 
   @Delete(':id')

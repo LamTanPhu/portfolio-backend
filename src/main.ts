@@ -66,7 +66,16 @@ async function bootstrap(): Promise<void> {
         // CORS (configured below) already handles legitimate cross-origin API calls.
     }))
 
-    app.use(json({ limit: '10kb' }))
+    // BUG FIX: this was '10kb'. CreateBlogDto.content allows up to 50,000
+    // characters and CreateProjectDto.description up to 10,000 — both are
+    // well past a 10kb request body, so any real blog post or project write
+    // was rejected by Express's body parser with a 413 before it ever reached
+    // the ValidationPipe. 256kb covers the largest DTO (blog: content 50,000
+    // + title 255 + excerpt 300 + ~20 tags) with headroom for JSON escaping
+    // and multi-byte UTF-8 (Vietnamese diacritics run up to 3-4 bytes/char in
+    // UTF-8 while only counting once against the DTO's character-length
+    // validators).
+    app.use(json({ limit: '256kb' }))
     app.use(cookieParser(process.env.COOKIE_SECRET))
 
     // ─── CORS ───────────────────────────────────────────────────────────

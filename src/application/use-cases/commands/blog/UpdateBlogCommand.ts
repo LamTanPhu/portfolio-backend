@@ -1,11 +1,11 @@
 /**
  * @fileoverview UpdateBlogCommand
  *
- * Updates an existing blog post and performs comprehensive cache invalidation.
- * Handles slug changes gracefully.
+ * Updates an existing blog post and invalidates the relevant caches.
  *
  * INTENTIONAL DESIGN — Slug stability:
- * Slugs are deliberately NOT regenerated when the title changes.
+ * Slugs are deliberately NOT regenerated when the title changes, and this
+ * command has no way to change a slug at all — UpdateBlogInput excludes it.
  * Once a post is published, its slug is its permanent URL identity.
  * Regenerating on title edit would silently break:
  *   - All external links and bookmarks pointing to the old URL
@@ -61,14 +61,10 @@ export class UpdateBlogCommand {
 
         const updatedBlog = await this.writeRepo.update(id, payload)
 
-        // Always invalidate public list and the original slug
+        // Invalidate public list and this post's (immutable) slug cache entry.
+        // No separate "new slug" invalidation needed — slug cannot change here.
         await this.cacheService.invalidatePublicBlogs()
         await this.cacheService.invalidateBlogBySlug(existing.slug)
-
-        // Invalidate new slug if it changed — both old and new must be cleared
-        if (existing.slug !== updatedBlog.slug) {
-            await this.cacheService.invalidateBlogBySlug(updatedBlog.slug)
-        }
 
         return BlogMapper.toDetailDTO(updatedBlog)
     }

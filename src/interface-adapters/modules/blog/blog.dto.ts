@@ -45,7 +45,7 @@ export class CreateBlogDto {
     })
     @IsString()
     @IsOptional()
-    @MaxLength(500)
+    @MaxLength(300) // matches Blog.excerpt @db.VarChar(300) — prevents P2000 surfacing as 500
     excerpt?: string | null
 
     @ApiPropertyOptional({
@@ -93,7 +93,7 @@ export class UpdateBlogDto {
     @ApiPropertyOptional({ description: 'New excerpt', example: 'Updated excerpt.' })
     @IsString()
     @IsOptional()
-    @MaxLength(500)
+    @MaxLength(300) // matches Blog.excerpt @db.VarChar(300) — prevents P2000 surfacing as 500
     excerpt?: string | null
 
     @ApiPropertyOptional({

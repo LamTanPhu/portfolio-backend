@@ -11,7 +11,7 @@
  * - Data transformation for specific clients
  */
 
-import type { ProjectDTO } from '../../../application/dtos/ProjectDTO'
+import type { ProjectDTO, ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
 
 export class ProjectPresenter {
   /**
@@ -26,5 +26,19 @@ export class ProjectPresenter {
    */
   static toListResponse(dtos: ProjectDTO[]): ProjectDTO[] {
     return dtos.map(ProjectPresenter.toResponse)
+  }
+
+  /**
+   * Transform a single project summary for response
+   */
+  static toSummaryResponse(dto: ProjectSummaryDTO): ProjectSummaryDTO {
+    return { ...dto }
+  }
+
+  /**
+   * Transform a list of project summaries for response
+   */
+  static toSummaryListResponse(dtos: ProjectSummaryDTO[]): ProjectSummaryDTO[] {
+    return dtos.map(ProjectPresenter.toSummaryResponse)
   }
 }

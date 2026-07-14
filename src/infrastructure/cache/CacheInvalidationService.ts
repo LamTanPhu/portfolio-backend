@@ -211,12 +211,20 @@ export class CacheInvalidationService implements ICacheInvalidationService {
 
     // --------------------- Contact (Admin) ---------------------
     /**
-     * Clears the admin contact message list cache.
+     * Clears all cached admin contact message list pages.
      * Must be called after any write to the ContactMe table (delete).
-     * Key matches CONTACT_LIST_CACHE_KEY in GetContactMessagesQuery.
+     *
+     * BUG FIX: this used to delete() the literal key 'contact:list:admin'.
+     * GetContactMessagesQuery actually caches under
+     * `contact:list:admin:cursor=<cursor>:limit=<limit>` (see
+     * contactListCacheKey in GetContactMessagesQuery.ts) — a different key
+     * per page. The exact-key delete never matched any real cached entry, so
+     * deleting a contact message never actually invalidated the admin list;
+     * it just silently no-op'd until the TTL expired. Pattern deletion
+     * catches every paginated variant.
      */
     async invalidateContactList(): Promise<void> {
-        await this.delete('contact:list:admin')
+        await this.deletePattern('contact:list:admin:*')
     }
 
     // --------------------- Advanced ---------------------
