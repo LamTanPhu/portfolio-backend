@@ -5,6 +5,7 @@
 
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import type { Education as PrismaEducationRow } from '@prisma/client'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import { Education } from '../../../../domain/entities/Education'
 import type {
@@ -49,7 +50,7 @@ export class PrismaEducationWriteRepository implements IEducationWriteRepository
         }
     }
 
-    private toDomain(raw: any): Education {
+    private toDomain(raw: PrismaEducationRow): Education {
         return new Education(
             raw.id,
             raw.degreeName,

@@ -5,7 +5,7 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import type { IJobWriteRepository } from '../../../../domain/repositories/job/IJobWriteRepository'
+import type { IJobWriteRepository, CreateJobInput } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { JobDTO } from '../../../dtos/JobDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -20,7 +20,7 @@ export class CreateJobCommand {
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: any): Promise<JobDTO> {
+    async execute(input: CreateJobInput): Promise<JobDTO> {
         const job = await this.repo.create(input)
 
         // Invalidate public job list cache

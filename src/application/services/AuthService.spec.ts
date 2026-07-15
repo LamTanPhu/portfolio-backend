@@ -52,6 +52,7 @@ import * as bcrypt from 'bcrypt'
 const mockJwtService = {
     signAsync:   jest.fn(),
     verifyAsync: jest.fn(),
+    decode:      jest.fn(),
 }
 
 const mockTokenRepo = {
@@ -70,6 +71,15 @@ const mockUserWriteRepo = {
 // Fakes the IAdminCredentialRepository.findCredentialByEmail response
 const mockCredentialRepo = {
     findCredentialByEmail: jest.fn(),
+}
+
+// Sentinel object standing in for Prisma's transactional client — we only
+// need to verify it's the exact object passed through to tokenRepo.revoke(),
+// not simulate real transaction semantics (no real DB in unit tests).
+const mockTx = { __isMockTx: true }
+
+const mockUow = {
+    transaction: jest.fn((fn: (tx: typeof mockTx) => Promise<unknown>) => fn(mockTx)),
 }
 
 // ConfigService mock — delegates to process.env so fingerprint tests can set
@@ -128,6 +138,7 @@ describe('AuthService', () => {
                 { provide: 'ICacheQueryService',          useValue: mockCacheQuery       },
                 { provide: 'IUserWriteRepository',        useValue: mockUserWriteRepo    },
                 { provide: 'IAdminCredentialRepository',  useValue: mockCredentialRepo   },
+                { provide: 'IUnitOfWork',                 useValue: mockUow              },
                 { provide: ConfigService,                  useValue: mockConfigService     },
             ],
         }).compile()
@@ -271,6 +282,19 @@ describe('AuthService', () => {
             expect(result).toEqual(payload)
         })
 
+        // FIX: issuer/audience are embedded at sign time but were never checked
+        // at verify time — purely decorative claims. Now enforced.
+        it('verifies the token with the expected issuer and audience', async () => {
+            mockJwtService.verifyAsync.mockResolvedValue(makeAccessPayload())
+
+            await service.verifyAccessToken('valid-token', 'test-fingerprint')
+
+            expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
+                'valid-token',
+                expect.objectContaining({ issuer: 'portfolio-api', audience: 'portfolio-admin' }),
+            )
+        })
+
         it('throws UnauthorizedError if token is revoked', async () => {
             mockJwtService.verifyAsync.mockResolvedValue(makeAccessPayload())
             mockCacheQuery.getOrSetWithProfile.mockResolvedValue(true)
@@ -367,6 +391,19 @@ describe('AuthService', () => {
             expect(mockJwtService.signAsync).toHaveBeenCalledTimes(2)
         })
 
+        it('verifies the refresh token with the expected issuer and audience', async () => {
+            mockJwtService.verifyAsync.mockResolvedValue({
+                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
+            })
+
+            await service.refresh('valid-refresh-token', 'fp')
+
+            expect(mockJwtService.verifyAsync).toHaveBeenCalledWith(
+                'valid-refresh-token',
+                expect.objectContaining({ issuer: 'portfolio-api', audience: 'portfolio-admin' }),
+            )
+        })
+
         it('revokes the consumed refresh token (rotation)', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
                 sub: 1, jti: 'old-refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
@@ -425,18 +462,20 @@ describe('AuthService', () => {
     // logout()
     // ===========================================================================
     describe('logout()', () => {
-        it('revokes the token via repository', async () => {
+        it('revokes the access token via repository, inside a transaction', async () => {
             mockTokenRepo.revoke.mockResolvedValue(undefined)
 
             await service.logout('some-jti')
 
+            expect(mockUow.transaction).toHaveBeenCalledTimes(1)
             expect(mockTokenRepo.revoke).toHaveBeenCalledWith(
                 'some-jti',
                 expect.any(Date),
+                mockTx,
             )
         })
 
-        it('sets expiry to 15 minutes from now', async () => {
+        it('sets access token expiry to 15 minutes from now', async () => {
             mockTokenRepo.revoke.mockResolvedValue(undefined)
             const before = Date.now()
 
@@ -446,6 +485,104 @@ describe('AuthService', () => {
             const expectedMs = 15 * 60 * 1000
             expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + expectedMs - 100)
             expect(expiresAt.getTime()).toBeLessThanOrEqual(before + expectedMs + 100)
+        })
+
+        // FIX: the tests above only ever call logout() with a single argument,
+        // so refreshToken is always undefined and the entire second-token
+        // revocation branch below (decode → check type → revoke jti) never ran.
+        // That branch is exactly what AuthController.logout() exercises in
+        // production (it always passes the refresh cookie), so it needs its
+        // own coverage rather than piggybacking on the single-arg tests.
+        it('also revokes the refresh token jti when a valid refresh token is passed', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+            mockJwtService.decode.mockReturnValue({ jti: 'refresh-jti-456', type: 'refresh' })
+
+            await service.logout('access-jti-123', 'some-refresh-cookie-value')
+
+            expect(mockJwtService.decode).toHaveBeenCalledWith('some-refresh-cookie-value')
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith('access-jti-123', expect.any(Date), mockTx)
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith('refresh-jti-456', expect.any(Date), mockTx)
+            expect(mockTokenRepo.revoke).toHaveBeenCalledTimes(2)
+        })
+
+        it('sets refresh token expiry using the refresh TTL, not the 15-minute access TTL', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+            mockJwtService.decode.mockReturnValue({ jti: 'refresh-jti-456', type: 'refresh' })
+            const before = Date.now()
+
+            await service.logout('access-jti-123', 'some-refresh-cookie-value')
+
+            const refreshCall = mockTokenRepo.revoke.mock.calls.find(
+                call => call[0] === 'refresh-jti-456',
+            )
+            const expiresAt: Date = refreshCall![1]
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
+            expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + sevenDaysMs - 100)
+        })
+
+        it('does not revoke a second token when decoded payload has no jti', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+            mockJwtService.decode.mockReturnValue({ type: 'refresh' }) // no jti
+
+            await service.logout('access-jti-123', 'malformed-cookie')
+
+            expect(mockTokenRepo.revoke).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not revoke a second token when decoded payload type is not refresh', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+            mockJwtService.decode.mockReturnValue({ jti: 'some-jti', type: 'access' })
+
+            await service.logout('access-jti-123', 'wrong-type-token')
+
+            expect(mockTokenRepo.revoke).toHaveBeenCalledTimes(1)
+        })
+
+        it('still revokes the access token when jwt.decode throws on a malformed cookie', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+            mockJwtService.decode.mockImplementation(() => {
+                throw new Error('malformed token')
+            })
+
+            await expect(
+                service.logout('access-jti-123', 'garbage-not-a-jwt')
+            ).resolves.not.toThrow()
+
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith('access-jti-123', expect.any(Date), mockTx)
+            expect(mockTokenRepo.revoke).toHaveBeenCalledTimes(1)
+        })
+
+        it('does not call jwt.decode when no refresh token is provided', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+
+            await service.logout('access-jti-123')
+
+            expect(mockJwtService.decode).not.toHaveBeenCalled()
+        })
+
+        // UnitOfWork-specific coverage
+        it('decodes the refresh cookie before opening the transaction, not inside it', async () => {
+            mockTokenRepo.revoke.mockResolvedValue(undefined)
+
+            const callOrder: string[] = []
+            mockJwtService.decode.mockImplementationOnce(() => {
+                callOrder.push('decode')
+                return { jti: 'refresh-jti-456', type: 'refresh' }
+            })
+            mockUow.transaction.mockImplementationOnce(async (fn: (tx: typeof mockTx) => Promise<unknown>) => {
+                callOrder.push('transaction-start')
+                return fn(mockTx)
+            })
+
+            await service.logout('access-jti-123', 'some-refresh-cookie-value')
+
+            expect(callOrder).toEqual(['decode', 'transaction-start'])
+        })
+
+        it('propagates an error if the transaction fails, without swallowing it', async () => {
+            mockUow.transaction.mockRejectedValueOnce(new Error('deadlock detected'))
+
+            await expect(service.logout('some-jti')).rejects.toThrow('deadlock detected')
         })
     })
 

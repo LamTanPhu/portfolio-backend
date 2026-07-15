@@ -3,7 +3,7 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import type { IEducationWriteRepository } from '../../../../domain/repositories/education/IEducationWriteRepository'
+import type { IEducationWriteRepository, CreateEducationInput } from '../../../../domain/repositories/education/IEducationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { EducationDTO } from '../../../dtos/education/EducationDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -18,7 +18,7 @@ export class CreateEducationCommand {
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: any): Promise<EducationDTO> {
+    async execute(input: CreateEducationInput): Promise<EducationDTO> {
         const education = await this.repo.create(input)
 
         await this.cacheService.invalidatePublicEducation()

@@ -6,7 +6,7 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import type { ICertificationWriteRepository } from '../../../../domain/repositories/certification/ICertificationWriteRepository'
+import type { ICertificationWriteRepository, CreateCertificationInput } from '../../../../domain/repositories/certification/ICertificationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { CertificationDTO } from '../../../dtos/certification/CertificationDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -21,7 +21,7 @@ export class CreateCertificationCommand {
         private readonly cacheService: ICacheInvalidationService,
     ) {}
 
-    async execute(input: any): Promise<CertificationDTO> {
+    async execute(input: CreateCertificationInput): Promise<CertificationDTO> {
         const certification = await this.repo.create(input)
 
         // Invalidate public list cache so new certification shows up immediately

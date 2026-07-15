@@ -4,6 +4,7 @@
 
 import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
+import type { Certification as PrismaCertificationRow } from '@prisma/client'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import { Certification } from '../../../../domain/entities/Certification'
 import type {
@@ -48,7 +49,7 @@ export class PrismaCertificationWriteRepository implements ICertificationWriteRe
         }
     }
 
-    private toDomain(raw: any): Certification {
+    private toDomain(raw: PrismaCertificationRow): Certification {
         return new Certification(
             raw.id,
             raw.name,

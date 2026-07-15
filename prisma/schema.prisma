@@ -70,7 +70,8 @@ model RevokedToken {
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([jti])
+  // Note: no explicit @@index([jti]) — @unique above already creates an
+  // index covering the same column; a second one would be pure duplication.
   @@index([expiresAt])
   @@map("revoked_tokens")
 }
@@ -201,7 +202,7 @@ model Project {
 
   @@index([userId])
   @@index([isPublished])
-  @@index([slug])
+  // Note: no explicit @@index([slug]) — @unique above already covers it.
   @@map("projects")
 }
 
@@ -256,7 +257,8 @@ model Blog {
   @@index([isPublished, publishedAt(desc)], map: "blog_published_desc_idx")        // Explicit descending
   @@index([createdAt(desc)], map: "blog_created_desc_idx")                         // Admin list
   @@index([userId], map: "blog_user_idx")
-  @@index([slug], map: "blog_slug_idx")
+  // Note: no explicit index on slug — @unique above already covers it
+  // (previously duplicated as blog_slug_idx; dropped, see migration).
 
   @@map("blogs")
 }
@@ -308,7 +310,7 @@ model PageView {
   count        Int      @default(0)
   lastViewedAt DateTime @updatedAt @map("last_viewed_at")
 
-  @@index([route])
+  // Note: no explicit @@index([route]) — @unique above already covers it.
   @@map("page_views")
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import type { ITokenRepository } from '../../../application/ports/ITokenRepository'
+import type { TransactionalClient } from '../../../application/ports/IUnitOfWork'
 
 // Batch size for expired token cleanup
 // Prevents single massive DELETE from locking the table
@@ -16,9 +17,14 @@ const CLEANUP_BATCH_SIZE = 1_000
 export class PrismaRevokedTokenRepository implements ITokenRepository {
     constructor(private readonly prisma: PrismaService) {}
 
+    // Returns the transactional client if provided, otherwise the global one.
+    private db(tx?: TransactionalClient) {
+        return tx ?? this.prisma.client
+    }
+
   // O(log n) — jti has unique index, Prisma uses index scan
-    async revoke(jti: string, expiresAt: Date): Promise<void> {
-        await this.prisma.client.revokedToken.create({
+    async revoke(jti: string, expiresAt: Date, tx?: TransactionalClient): Promise<void> {
+        await this.db(tx).revokedToken.create({
         data: { jti, expiresAt },
         })
     }

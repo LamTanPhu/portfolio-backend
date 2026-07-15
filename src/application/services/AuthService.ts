@@ -15,6 +15,7 @@ import type { IAdminCredentialRepository } from '../../domain/repositories/user/
 import type { IUserWriteRepository } from '../../domain/repositories/user/IUserWriteRepository'
 import type { ICacheQueryService } from '../ports/ICacheQueryService'
 import type { ITokenRepository } from '../ports/ITokenRepository'
+import type { IUnitOfWork } from '../ports/IUnitOfWork'
 import { CACHE_QUERY_SERVICE } from '../../application/ports/cache.tokens'
 
 export interface AccessTokenPayload {
@@ -41,6 +42,20 @@ export class AuthService implements OnModuleInit {
     private static readonly REFRESH_TOKEN_EXPIRY    = '7d'
     private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
 
+    // Public (not private) — auth.module.ts's JwtModule.registerAsync signOptions
+    // reads these too, so the values signed into every token and the values
+    // checked at verify time can never drift out of sync by editing one and
+    // forgetting the other.
+    //
+    // BUG FIX: previously these were hardcoded separately as string literals in
+    // both auth.module.ts (signOptions) and nowhere at verify time — issuer/
+    // audience were embedded into every token but verifyAsync() never checked
+    // them, so the claims were purely decorative. Not currently exploitable
+    // (the HMAC secret alone already scopes tokens to this app), but there's
+    // no reason to sign a claim and never check it.
+    static readonly ISSUER   = 'portfolio-api'
+    static readonly AUDIENCE = 'portfolio-admin'
+
     // bcrypt cost factor — 12 matches the seed script.
     // Never compare using timingSafeEqual on hashes; bcrypt.compare() handles that.
     private static readonly BCRYPT_WORK_FACTOR = 12
@@ -59,6 +74,9 @@ export class AuthService implements OnModuleInit {
 
         @Inject('IAdminCredentialRepository')
         private readonly credentialRepo: IAdminCredentialRepository,
+
+        @Inject('IUnitOfWork')
+        private readonly uow: IUnitOfWork,
 
         private readonly config: ConfigService,
     ) {}
@@ -135,7 +153,10 @@ export class AuthService implements OnModuleInit {
         let payload: RefreshTokenPayload
 
         try {
-            payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken)
+            payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken, {
+                issuer:   AuthService.ISSUER,
+                audience: AuthService.AUDIENCE,
+            })
         } catch {
             throw new UnauthorizedError('Invalid refresh token')
         }
@@ -189,6 +210,12 @@ export class AuthService implements OnModuleInit {
      * Revokes both the access token and the refresh token so neither can be
      * replayed after logout.
      *
+     * Both writes happen inside a single DB transaction (via IUnitOfWork) —
+     * without that, a partial failure (e.g. the access-token revoke succeeds
+     * but the refresh-token revoke fails on a transient DB error) would leave
+     * the refresh token still valid even though the client believes it has
+     * logged out, defeating the point of calling logout() at all.
+     *
      * @param accessJti   - JTI extracted from the verified access token (req.user.jti)
      * @param refreshToken - Raw refresh token string from the httpOnly cookie.
      *                       We decode it here (without re-verifying signature) to
@@ -202,25 +229,29 @@ export class AuthService implements OnModuleInit {
         const accessExpiresAt = new Date(Date.now() + 15 * 60 * 1000)
         const refreshExpiresAt = new Date(Date.now() + AuthService.REFRESH_TOKEN_EXPIRY_MS)
 
-        const revocations: Promise<void>[] = [
-            this.tokenRepo.revoke(accessJti, accessExpiresAt),
-        ]
-
+        // Decode is pure CPU work (no DB access, no signature verification) —
+        // do it before opening a transaction so we don't hold a pooled
+        // connection open any longer than necessary.
+        let refreshJti: string | undefined
         if (refreshToken) {
             try {
-                // decode() does NOT verify signature — we only need the jti field.
-                // The token came from our own httpOnly cookie so this is safe.
                 const refreshPayload = this.jwt.decode<RefreshTokenPayload>(refreshToken)
 
                 if (refreshPayload?.jti && refreshPayload.type === 'refresh') {
-                    revocations.push(this.tokenRepo.revoke(refreshPayload.jti, refreshExpiresAt))
+                    refreshJti = refreshPayload.jti
                 }
             } catch {
-                // Malformed cookie — still complete the access token revocation above.
+                // Malformed cookie — still complete the access token revocation below.
             }
         }
 
-        await Promise.all(revocations)
+        await this.uow.transaction(async (tx) => {
+            await this.tokenRepo.revoke(accessJti, accessExpiresAt, tx)
+
+            if (refreshJti) {
+                await this.tokenRepo.revoke(refreshJti, refreshExpiresAt, tx)
+            }
+        })
     }
 
     // ===========================================================================
@@ -230,7 +261,10 @@ export class AuthService implements OnModuleInit {
         let payload: AccessTokenPayload
 
         try {
-            payload = await this.jwt.verifyAsync<AccessTokenPayload>(token)
+            payload = await this.jwt.verifyAsync<AccessTokenPayload>(token, {
+                issuer:   AuthService.ISSUER,
+                audience: AuthService.AUDIENCE,
+            })
         } catch {
             throw new UnauthorizedError('Invalid or expired token')
         }

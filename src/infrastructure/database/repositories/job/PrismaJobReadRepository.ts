@@ -7,7 +7,7 @@ import { Injectable } from '@nestjs/common'
 import type { IJobReadRepository } from '../../../../domain/repositories/job/IJobReadRepository'
 import { PrismaService } from '../../prisma/prisma.service'
 import { PrismaJobMapper } from '../../mappers/PrismaJobMapper'
-import { Job } from '@prisma/client'
+import { Job } from '../../../../domain/entities/Job'
 import { JobDTO } from '../../../../application/dtos/JobDTO'
 
 @Injectable()

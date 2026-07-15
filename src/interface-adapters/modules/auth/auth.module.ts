@@ -2,16 +2,17 @@ import { Module } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { JwtModule, JwtService } from '@nestjs/jwt'
 
-import { AuthController } from './auth.controller'
 import { AuthService } from '../../../application/services/AuthService'
+import { AuthController } from './auth.controller'
 
 // Infrastructure
-import { PrismaRevokedTokenRepository } from '../../../infrastructure/database/repositories/PrismaRevokedTokenRepository'
-import { PrismaUserWriteRepository } from '../../../infrastructure/database/repositories/user/PrismaUserWriteRepository'
-import { PrismaAdminCredentialRepository } from '../../../infrastructure/database/repositories/user/PrismaAdminCredentialRepository'
-import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
 import { CACHE_QUERY_SERVICE } from '../../../application/ports/cache.tokens'
 import type { ICacheQueryService } from '../../../application/ports/ICacheQueryService'
+import type { IUnitOfWork } from '../../../application/ports/IUnitOfWork'
+import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+import { PrismaRevokedTokenRepository } from '../../../infrastructure/database/repositories/PrismaRevokedTokenRepository'
+import { PrismaAdminCredentialRepository } from '../../../infrastructure/database/repositories/user/PrismaAdminCredentialRepository'
+import { PrismaUserWriteRepository } from '../../../infrastructure/database/repositories/user/PrismaUserWriteRepository'
 
 @Module({
     imports: [
@@ -21,8 +22,8 @@ import type { ICacheQueryService } from '../../../application/ports/ICacheQueryS
                 secret: config.get<string>('JWT_SECRET'),
                 signOptions: {
                     expiresIn: '15m',
-                    issuer:    'portfolio-api',
-                    audience:  'portfolio-admin',
+                    issuer:    AuthService.ISSUER,
+                    audience:  AuthService.AUDIENCE,
                 },
             }),
         }),
@@ -42,7 +43,7 @@ import type { ICacheQueryService } from '../../../application/ports/ICacheQueryS
         { provide: 'IUserWriteRepository',       useExisting: PrismaUserWriteRepository       },
         { provide: 'IAdminCredentialRepository', useExisting: PrismaAdminCredentialRepository },
 
-        // AuthService with all 6 dependencies.
+        // AuthService with all 7 dependencies.
         // useFactory is required here because AuthService mixes @Inject() token
         // decorators with a plain ConfigService dependency — NestJS cannot resolve
         // that combination automatically via @Injectable() alone in this module.
@@ -54,6 +55,7 @@ import type { ICacheQueryService } from '../../../application/ports/ICacheQueryS
                 cacheQueryService:    ICacheQueryService,
                 userWriteRepository:  PrismaUserWriteRepository,
                 credentialRepository: PrismaAdminCredentialRepository,
+                unitOfWork:           IUnitOfWork,
                 configService:        ConfigService,
             ) => new AuthService(
                 jwtService,
@@ -61,6 +63,7 @@ import type { ICacheQueryService } from '../../../application/ports/ICacheQueryS
                 cacheQueryService,
                 userWriteRepository,
                 credentialRepository,
+                unitOfWork,
                 configService,
             ),
             inject: [
@@ -69,6 +72,7 @@ import type { ICacheQueryService } from '../../../application/ports/ICacheQueryS
                 CACHE_QUERY_SERVICE,
                 'IUserWriteRepository',
                 'IAdminCredentialRepository',
+                'IUnitOfWork',
                 ConfigService,
             ],
         },
