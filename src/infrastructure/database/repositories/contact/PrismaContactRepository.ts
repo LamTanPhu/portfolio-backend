@@ -87,6 +87,15 @@ export class PrismaContactRepository
         }
     }
 
+    // Single deleteMany — table stays tiny at a 7-day retention window,
+    // batching (see PrismaRevokedTokenRepository) would be needless complexity.
+    // Called on a schedule (daily, via DataRetentionTask) — not on hot path.
+    async deleteOlderThan(cutoff: Date): Promise<void> {
+        await this.prisma.client.contactMe.deleteMany({
+            where: { createdAt: { lt: cutoff } },
+        })
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // IContactReadRepository
     // ──────────────────────────────────────────────────────────────────────────

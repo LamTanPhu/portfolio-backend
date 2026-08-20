@@ -17,4 +17,7 @@ export interface IContactWriteRepository {
      * Caller decides whether to throw NotFoundError (DeleteContactMessageCommand does).
      */
     delete(id: number): Promise<boolean>
+
+    /** Deletes every row with createdAt older than `cutoff`. Used by DataRetentionTask. */
+    deleteOlderThan(cutoff: Date): Promise<void>
 }

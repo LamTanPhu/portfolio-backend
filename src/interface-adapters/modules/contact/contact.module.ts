@@ -51,5 +51,12 @@ import { NestLogger } from '../../../infrastructure/logging/NestLogger'
         GetContactMessagesQuery,
         DeleteContactMessageCommand,
     ],
+
+    // IContactWriteRepository exported for DataRetentionTask (root-level
+    // provider in AppModule) to inject — same pattern AuthModule uses for
+    // ITokenRepository → TokenCleanupTask.
+    exports: [
+        { provide: 'IContactWriteRepository', useExisting: PrismaContactRepository },
+    ],
 })
 export class ContactModule {}

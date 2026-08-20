@@ -325,3 +325,31 @@ model ResumeDownload {
   @@index([downloadedAt])
   @@map("resume_downloads")
 }
+
+// =============================================================================
+// AUDIT
+// =============================================================================
+
+// Recent-activity trail for admin write actions (create/update/delete).
+// Deliberately lightweight — no before/after diff payload — because retention
+// is short (47 days, purged by DataRetentionTask). This is a "what happened
+// recently" log, not a permanent accountability record; if that changes,
+// extend retention before adding diff storage, otherwise the diffs are
+// destroyed before they'd ever be useful.
+// No FK to User — single-admin app, and audit rows should outlive any future
+// user-table changes without cascade concerns.
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actorId    Int?     @map("actor_id")
+  method     String   @db.VarChar(10)
+  route      String   @db.VarChar(255)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.VarChar(50)
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  statusCode Int      @map("status_code")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}

@@ -17,6 +17,16 @@ CREATE TABLE "users" (
 );
 
 -- CreateTable
+CREATE TABLE "revoked_tokens" (
+    "id" SERIAL NOT NULL,
+    "jti" VARCHAR(255) NOT NULL,
+    "expires_at" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "revoked_tokens_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "educations" (
     "id" SERIAL NOT NULL,
     "degree_name" VARCHAR(255) NOT NULL,
@@ -112,7 +122,10 @@ CREATE TABLE "projects" (
 -- CreateTable
 CREATE TABLE "project_views" (
     "id" SERIAL NOT NULL,
-    "viewed_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "date" DATE NOT NULL,
+    "count" INTEGER NOT NULL DEFAULT 0,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
     "project_id" INTEGER NOT NULL,
 
     CONSTRAINT "project_views_pkey" PRIMARY KEY ("id")
@@ -177,8 +190,29 @@ CREATE TABLE "resume_downloads" (
     CONSTRAINT "resume_downloads_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "audit_logs" (
+    "id" SERIAL NOT NULL,
+    "actor_id" INTEGER,
+    "method" VARCHAR(10) NOT NULL,
+    "route" VARCHAR(255) NOT NULL,
+    "entity_type" VARCHAR(50) NOT NULL,
+    "entity_id" VARCHAR(50),
+    "ip_address" VARCHAR(45),
+    "status_code" INTEGER NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "audit_logs_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "revoked_tokens_jti_key" ON "revoked_tokens"("jti");
+
+-- CreateIndex
+CREATE INDEX "revoked_tokens_expires_at_idx" ON "revoked_tokens"("expires_at");
 
 -- CreateIndex
 CREATE INDEX "educations_user_id_idx" ON "educations"("user_id");
@@ -217,28 +251,28 @@ CREATE INDEX "projects_user_id_idx" ON "projects"("user_id");
 CREATE INDEX "projects_is_published_idx" ON "projects"("is_published");
 
 -- CreateIndex
-CREATE INDEX "projects_slug_idx" ON "projects"("slug");
-
--- CreateIndex
 CREATE INDEX "project_views_project_id_idx" ON "project_views"("project_id");
 
 -- CreateIndex
-CREATE INDEX "project_views_viewed_at_idx" ON "project_views"("viewed_at");
+CREATE INDEX "project_views_date_idx" ON "project_views"("date");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "project_views_project_id_date_key" ON "project_views"("project_id", "date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "blogs_slug_key" ON "blogs"("slug");
 
 -- CreateIndex
-CREATE INDEX "blogs_user_id_idx" ON "blogs"("user_id");
+CREATE INDEX "blog_published_idx" ON "blogs"("is_published", "published_at");
 
 -- CreateIndex
-CREATE INDEX "blogs_is_published_idx" ON "blogs"("is_published");
+CREATE INDEX "blog_published_desc_idx" ON "blogs"("is_published", "published_at");
 
 -- CreateIndex
-CREATE INDEX "blogs_published_at_idx" ON "blogs"("published_at");
+CREATE INDEX "blog_created_desc_idx" ON "blogs"("created_at");
 
 -- CreateIndex
-CREATE INDEX "blogs_slug_idx" ON "blogs"("slug");
+CREATE INDEX "blog_user_idx" ON "blogs"("user_id");
 
 -- CreateIndex
 CREATE INDEX "blog_tags_blog_id_idx" ON "blog_tags"("blog_id");
@@ -253,10 +287,13 @@ CREATE INDEX "contact_me_created_at_idx" ON "contact_me"("created_at");
 CREATE UNIQUE INDEX "page_views_route_key" ON "page_views"("route");
 
 -- CreateIndex
-CREATE INDEX "page_views_route_idx" ON "page_views"("route");
+CREATE INDEX "resume_downloads_downloaded_at_idx" ON "resume_downloads"("downloaded_at");
 
 -- CreateIndex
-CREATE INDEX "resume_downloads_downloaded_at_idx" ON "resume_downloads"("downloaded_at");
+CREATE INDEX "audit_logs_created_at_idx" ON "audit_logs"("created_at");
+
+-- CreateIndex
+CREATE INDEX "audit_logs_entity_type_entity_id_idx" ON "audit_logs"("entity_type", "entity_id");
 
 -- AddForeignKey
 ALTER TABLE "educations" ADD CONSTRAINT "educations_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;

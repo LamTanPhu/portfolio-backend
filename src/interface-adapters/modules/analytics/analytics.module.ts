@@ -54,5 +54,12 @@ import { PrismaResumeDownloadRepository } from '../../../infrastructure/database
             inject: [PrismaProjectViewRepository],
         },
     ],
+
+    // IResumeDownloadRepository exported for DataRetentionTask (root-level
+    // provider in AppModule) to inject — same pattern AuthModule uses for
+    // ITokenRepository → TokenCleanupTask.
+    exports: [
+        { provide: 'IResumeDownloadRepository', useExisting: PrismaResumeDownloadRepository },
+    ],
 })
 export class AnalyticsModule {}

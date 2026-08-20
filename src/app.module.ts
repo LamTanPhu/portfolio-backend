@@ -9,7 +9,7 @@
 import { CacheModule } from '@nestjs/cache-manager'
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
-import { APP_FILTER, APP_GUARD } from '@nestjs/core'
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
@@ -21,6 +21,7 @@ import { PrismaModule } from './infrastructure/database/prisma/prisma.module'
 import { EventEmitterModule } from '@nestjs/event-emitter'
 import { AboutModule } from './interface-adapters/modules/about/about.module'
 import { AnalyticsModule } from './interface-adapters/modules/analytics/analytics.module'
+import { AuditModule } from './interface-adapters/modules/audit/audit.module'
 import { AuthModule } from './interface-adapters/modules/auth/auth.module'
 import { BlogModule } from './interface-adapters/modules/blog/blog.module'
 import { CertificationModule } from './interface-adapters/modules/certification/certification.module'
@@ -36,7 +37,9 @@ import { UserModule } from './interface-adapters/modules/user/user.module'
 // Global Providers
 import { ConfigValidationService } from './infrastructure/config/config-validation.service'
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
+import { AuditLogInterceptor } from './interface-adapters/interceptors/AuditLogInterceptor'
 import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
+import { DataRetentionTask } from './infrastructure/database/tasks/DataRetentionTask'
 
 @Module({
     imports: [
@@ -99,6 +102,7 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
         EducationModule,
         JobModule,
         CertificationModule,
+        AuditModule,
 
         // ─── Event Modules ────────────────────────────────────────────────
         EventEmitterModule.forRoot(),
@@ -107,8 +111,10 @@ import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTa
     providers: [
         ConfigValidationService,
         TokenCleanupTask,
-        { provide: APP_GUARD,  useClass: ThrottlerGuard        },
-        { provide: APP_FILTER, useClass: DomainExceptionFilter },
+        DataRetentionTask,
+        { provide: APP_GUARD,       useClass: ThrottlerGuard        },
+        { provide: APP_FILTER,      useClass: DomainExceptionFilter },
+        { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor   },
     ],
 })
 export class AppModule {

@@ -35,4 +35,13 @@ export class PrismaResumeDownloadRepository implements IResumeDownloadRepository
             (r) => new ResumeDownload(r.id, r.ipAddress, r.browserInfo, r.downloadedAt),
         )
     }
+
+    // Single deleteMany — table stays tiny at a 14-day retention window,
+    // batching (see PrismaRevokedTokenRepository) would be needless complexity.
+    // Called on a schedule (daily, via DataRetentionTask) — not on hot path.
+    async deleteOlderThan(cutoff: Date): Promise<void> {
+        await this.prisma.client.resumeDownload.deleteMany({
+            where: { downloadedAt: { lt: cutoff } },
+        })
+    }
 }
