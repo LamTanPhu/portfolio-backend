@@ -8,12 +8,13 @@
 
 import { CacheModule } from '@nestjs/cache-manager'
 import { Module } from '@nestjs/common'
-import { ConfigModule } from '@nestjs/config'
+import { ConfigModule, ConfigService } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 
 // Infrastructure
+import { buildCacheStores } from './infrastructure/cache/cache-store.factory'
 import { CacheInfrastructureModule } from './infrastructure/cache/cache.module'
 import { PrismaModule } from './infrastructure/database/prisma/prisma.module'
 
@@ -56,25 +57,24 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
             ],
         }),
 
-        // ─── In-Memory Cache ─────────────────────────────────────────────────
-        // Uses cache-manager's built-in Keyv memory store — no Redis required.
+        // ─── Cache (in-memory, or Redis-primary + in-memory-fallback) ─────────
+        // REDIS_URL unset → pure in-memory Keyv, identical to before.
+        // REDIS_URL set   → Redis primary, in-memory fallback. cache-manager
+        //   v7's native multi-store already isolates one store's failure from
+        //   the other (verified against this exact installed version — see
+        //   cache-store.factory.ts for the full reasoning and the error-
+        //   listener requirement that makes that isolation actually reach the
+        //   process level, not just the library's internal call graph).
         //
-        // Why this is fine for a portfolio backend:
-        //   - All TTLs are short (10 s – 24 h). A process restart clears the
-        //     cache, costing one cold DB hit per key — not data loss.
-        //   - Single-instance deployment: no need for a shared cache layer.
-        //   - Zero infrastructure cost and zero operational overhead.
-        //
-        // CacheQueryService implements Stale-While-Revalidate on top of this,
-        // so the in-memory store still gets all the SWR benefits.
-        //
-        // To restore Redis later (multi-instance deploy, persistent cache):
-        //   1. npm install cache-manager-redis-yet redis
-        //   2. Swap this block for CacheModule.registerAsync + redisStore
-        //      (see git history for the exact previous config).
-        CacheModule.register({
+        // CacheQueryService implements Stale-While-Revalidate on top of
+        // whichever store(s) are active, so SWR benefits apply either way.
+        CacheModule.registerAsync({
             isGlobal: true,
-            ttl: 300, // 5 min default — overridden per-call by CacheQueryService profiles
+            inject: [ConfigService],
+            useFactory: (configService: ConfigService) => ({
+                ttl: 300, // 5 min default — overridden per-call by CacheQueryService profiles
+                ...buildCacheStores(configService),
+            }),
         }),
 
         // Note: JWT is configured inside AuthModule (its own JwtModule.registerAsync),

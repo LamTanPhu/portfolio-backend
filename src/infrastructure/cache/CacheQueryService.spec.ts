@@ -14,6 +14,7 @@
 
 import { Test, TestingModule } from '@nestjs/testing'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
+import { Keyv } from 'keyv'
 import { CacheQueryService } from './CacheQueryService'
 
 // =============================================================================
@@ -244,21 +245,28 @@ describe('CacheQueryService', () => {
     })
 
     describe('deletePattern()', () => {
-        it('deletes all keys matching pattern', async () => {
-            const mockStore = {
-                keys: jest.fn().mockResolvedValue([
-                    'portfolio:v1:blog:1',
-                    'portfolio:v1:blog:2',
-                ]),
-            }
+        it('deletes all keys matching pattern from a real in-memory store', async () => {
+            // Real Keyv instance — the previous version of this test mocked
+            // `{ store: { keys } }`, a shape that matched cache-manager v5, not
+            // the v7 actually installed here (real shape: `.stores`, an array).
+            // That mismatch let deletePattern() silently do nothing in production
+            // while this test still passed. See CacheInvalidationService.spec.ts
+            // for the full story — same bug, same fix, applied here too.
+            const keyv = new Keyv()
+            await keyv.set('portfolio:v1:blog:1', 'A')
+            await keyv.set('portfolio:v1:blog:2', 'B')
+            await keyv.set('portfolio:v1:project:1', 'C') // must survive
+
             ;(service as any).cache = {
                 ...mockCacheManager,
-                store: mockStore,
+                stores: [keyv],
             }
 
             await service.deletePattern('blog:*')
 
-            expect(mockCacheManager.del).toHaveBeenCalledTimes(2)
+            expect(await keyv.get('portfolio:v1:blog:1')).toBeUndefined()
+            expect(await keyv.get('portfolio:v1:blog:2')).toBeUndefined()
+            expect(await keyv.get('portfolio:v1:project:1')).toBe('C')
         })
     })
 

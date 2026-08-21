@@ -18,6 +18,7 @@ import type { Cache } from 'cache-manager'
 import type { ICacheQueryService, GetOrSetOptions } from '../../application/ports/ICacheQueryService'
 import { CACHE_TTL } from './cache.constants'
 import type { CacheProfile } from '../../application/ports/ICacheQueryService'
+import { deleteKeysMatchingPattern } from './cache-store-scan'
 
 interface CacheEnvelope<T> {
     data: T
@@ -154,19 +155,20 @@ export class CacheQueryService implements ICacheQueryService {
 
     async deletePattern(pattern: string): Promise<void> {
         const namespacedPattern = this.getNamespacedKey(pattern)
+
         try {
-        const store = (this.cache as any).store
-        if (store?.keys) {
-            const keys = await store.keys(namespacedPattern)
-            if (keys?.length) {
-            await Promise.all(keys.map((k: string) => this.cache.del(k)))
+            const stores = (this.cache as unknown as { stores?: unknown[] }).stores ?? []
+            const totalDeleted = await deleteKeysMatchingPattern(stores, namespacedPattern, this.logger)
+
+            // No configured store could enumerate keys at all (not just "zero
+            // matched") — last-resort attempt at an exact-match delete, in case
+            // the caller actually passed a literal key rather than a pattern.
+            if (totalDeleted === 0 && stores.length === 0) {
+                await this.delete(pattern)
             }
-        } else {
-            await this.delete(pattern)
-        }
         } catch (error) {
-        this.logger.warn(`Pattern deletion failed for ${pattern}`, error)
-        await this.delete(pattern)
+            this.logger.warn(`Pattern deletion failed for ${pattern}`, error)
+            await this.delete(pattern)
         }
     }
 

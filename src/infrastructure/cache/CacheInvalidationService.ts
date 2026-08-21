@@ -9,12 +9,19 @@
  * - Safe pattern-based invalidation with graceful degradation
  * - Comprehensive logging for observability
  *
- * Current store: in-memory Keyv (cache-manager built-in).
- * deletePattern() uses the store's keys() method for pattern matching.
- *
- * If Redis is ever restored, deletePattern() will automatically prefer the
- * Redis SCAN path (non-blocking, cursor-based) over KEYS (blocking O(N) scan).
- * The fallback branches below handle both cases without changes.
+ * Store shape (cache-manager v7 — verified directly against the installed
+ * version, not assumed from older docs):
+ *   The injected Cache has `.stores: Keyv[]`, NOT the `.store` (singular)
+ *   property older cache-manager versions exposed. Each Keyv's `.store`
+ *   is either the default in-memory adapter or, when REDIS_URL is set
+ *   (see cache-store.factory.ts), a `@keyv/redis` KeyvRedis instance.
+ *   With Redis primary + memory fallback both active, a normal set()
+ *   writes to both, so invalidation must clear both or a stale value can
+ *   resurface from the fallback tier during a brief Redis hiccup right
+ *   after a write. The per-store enumeration and deletion logic (Redis
+ *   SCAN vs in-memory key filtering) lives in cache-store-scan.ts — see
+ *   that file for the node-redis calling convention details and the
+ *   reasoning behind each store's deletion strategy.
  */
 
 import { Injectable, Inject, Logger } from '@nestjs/common'
@@ -22,11 +29,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import type { Cache } from 'cache-manager'
 
 import type { ICacheInvalidationService } from '../../application/ports/ICacheInvalidationService'
-
-// How many keys Redis returns per SCAN cursor iteration.
-// 100 is a safe default — large enough to be efficient, small enough not to
-// block the event loop on any single iteration.
-const SCAN_COUNT = 100
+import { deleteKeysMatchingPattern } from './cache-store-scan'
 
 @Injectable()
 export class CacheInvalidationService implements ICacheInvalidationService {
@@ -64,84 +67,32 @@ export class CacheInvalidationService implements ICacheInvalidationService {
     }
 
     /**
-     * Deletes all keys matching a glob pattern using Redis SCAN.
+     * Deletes all keys matching a glob pattern, across every configured
+     * cache store (in-memory only, or Redis + in-memory when REDIS_URL is
+     * set — see cache-store.factory.ts).
      *
-     * Why SCAN instead of KEYS:
-     *   KEYS '*pattern*' is a single O(N) blocking call that halts the Redis
-     *   event loop until it completes. SCAN iterates in cursor-based batches
-     *   of ~SCAN_COUNT keys, yielding control between each batch so other
-     *   Redis commands are never starved.
-     *
-     * Falls back gracefully if the underlying store does not expose a Redis
-     * client (e.g. in-memory cache during tests).
+     * Delegates the actual store traversal to deleteKeysMatchingPattern —
+     * see cache-store-scan.ts for the per-store enumeration strategy and
+     * why this needed fixing in the first place (cache-manager v5 vs v7
+     * shape mismatch).
      */
     private async deletePattern(pattern: string): Promise<void> {
         const namespacedPattern = this.getNamespacedKey(pattern)
+        const stores = (this.cacheManager as unknown as { stores?: unknown[] }).stores ?? []
 
-        try {
-            const store = (this.cacheManager as any).store
-
-            // Prefer SCAN via the raw ioredis client
-            const redisClient = store?.client ?? store?.getClient?.()
-
-            if (redisClient?.scan) {
-                let cursor = '0'
-                let totalDeleted = 0
-
-                do {
-                    // SCAN returns [nextCursor, matchedKeys]
-                    const [nextCursor, keys]: [string, string[]] = await redisClient.scan(
-                        cursor,
-                        'MATCH', namespacedPattern,
-                        'COUNT', SCAN_COUNT,
-                    )
-
-                    cursor = nextCursor
-
-                    if (keys.length > 0) {
-                        // DEL accepts multiple keys in one call — one round-trip per batch
-                        await redisClient.del(...keys)
-                        totalDeleted += keys.length
-                    }
-                } while (cursor !== '0')
-
-                if (totalDeleted > 0) {
-                    this.logger.log(
-                        `SCAN invalidated ${totalDeleted} keys with pattern: ${pattern}`,
-                    )
-                }
-
-            } else if (store?.keys) {
-                // Fallback: in-memory store (e.g. cache-manager MemoryStore in tests)
-                // does not have a Redis client — use its own keys() method instead.
-                const keys: string[] = await store.keys(namespacedPattern)
-                if (keys.length > 0) {
-                    await Promise.all(keys.map((key: string) => this.cacheManager.del(key)))
-                    this.logger.log(
-                        `[fallback] Invalidated ${keys.length} keys with pattern: ${pattern}`,
-                    )
-                }
-
-            } else {
-                // Neither Redis SCAN nor in-memory keys() is available.
-                // This is a misconfiguration — the cache store is unknown.
-                // Log as ERROR (not warn) so it surfaces in monitoring.
-                // Callers will silently serve stale data until the process restarts.
-                this.logger.error(
-                    `Pattern invalidation FAILED — store exposes neither SCAN nor keys(). ` +
-                    `Stale cache entries will persist until TTL expiry or process restart. ` +
-                    `Pattern: ${pattern}`,
-                )
-            }
-
-        } catch (error) {
-            // Log as ERROR — a caught failure here means cache entries were NOT
-            // cleared. This is not a safe degradation; callers will serve stale data.
+        if (stores.length === 0) {
             this.logger.error(
-                `Pattern invalidation FAILED for pattern: ${pattern}. ` +
-                `Stale cache entries may persist.`,
-                error,
+                `Pattern invalidation FAILED — cache manager exposes no stores. ` +
+                `Stale cache entries will persist until TTL expiry or process restart. ` +
+                `Pattern: ${pattern}`,
             )
+            return
+        }
+
+        const totalDeleted = await deleteKeysMatchingPattern(stores, namespacedPattern, this.logger)
+
+        if (totalDeleted > 0) {
+            this.logger.log(`Invalidated ${totalDeleted} keys with pattern: ${pattern}`)
         }
     }
 

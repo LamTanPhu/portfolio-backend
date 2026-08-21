@@ -27,9 +27,11 @@ export class ConfigValidationService {
         // ─── Database ───────────────────────────────────────────────────
         this.validateRequired('DATABASE_URL', errors)
 
-        // ─── Redis Cache (optional — comment back in when wiring Redis) ────
-        // this.validateRequired('REDIS_HOST', errors)
-        // this.validateRequired('REDIS_PORT', errors)
+        // ─── Cache ──────────────────────────────────────────────────────
+        // REDIS_URL is genuinely optional, not "not wired up yet" — unset is
+        // a fully supported mode (in-memory only), not a degraded one, so
+        // this doesn't even warrant a startup warning the way FRONTEND_URL
+        // below does. See cache-store.factory.ts for the fallback behavior.
 
         // ─── Anti-Bot (Turnstile) ───────────────────────────────────────
         this.validateRequired('TURNSTILE_SECRET_KEY', errors)
