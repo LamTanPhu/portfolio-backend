@@ -52,13 +52,13 @@ export class PrismaBlogWriteRepository implements IBlogWriteRepository {
         try {
             const row = await this.db(tx).blog.create({
                 data: {
-                    title:       data.title,
-                    slug:        data.slug,
-                    content:     data.content,
-                    excerpt:     data.excerpt,
+                    title: data.title,
+                    slug: data.slug,
+                    content: data.content,
+                    excerpt: data.excerpt,
                     isPublished: data.isPublished,
                     publishedAt: data.publishedAt,
-                    userId:      data.userId,
+                    userId: data.userId,
                     tags: {
                         create: data.tags.map((name) => ({ name })),
                     },
@@ -66,12 +66,9 @@ export class PrismaBlogWriteRepository implements IBlogWriteRepository {
                 include: { tags: true },
             })
 
-            return PrismaBlogMapper.toDomain(row as BlogWithTags)
+            return PrismaBlogMapper.toDomain(row)
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2002'
-            ) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 throw new ConflictError(`A blog with slug "${data.slug}" already exists`)
             }
             throw error
@@ -96,12 +93,9 @@ export class PrismaBlogWriteRepository implements IBlogWriteRepository {
                 include: { tags: true },
             })
 
-            return PrismaBlogMapper.toDomain(row as BlogWithTags)
+            return PrismaBlogMapper.toDomain(row)
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 throw new NotFoundError(`Blog not found: ${id}`)
             }
             throw error
@@ -112,10 +106,7 @@ export class PrismaBlogWriteRepository implements IBlogWriteRepository {
         try {
             await this.db(tx).blog.delete({ where: { id } })
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 throw new NotFoundError(`Blog not found: ${id}`)
             }
             throw error

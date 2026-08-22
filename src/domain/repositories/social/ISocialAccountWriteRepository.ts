@@ -4,19 +4,19 @@ import type { SocialAccount } from '../../entities/SocialAccount'
 // CreateSocialAccountInput
 // =============================================================================
 export interface CreateSocialAccountInput {
-    name:     string
-    url:      string
+    name: string
+    url: string
     imageUrl: string | null
     isPublic: boolean
-    userId:   number
+    userId: number
 }
 
 // =============================================================================
 // UpdateSocialAccountInput
 // =============================================================================
 export interface UpdateSocialAccountInput {
-    name?:     string
-    url?:      string
+    name?: string
+    url?: string
     imageUrl?: string | null
     isPublic?: boolean
 }

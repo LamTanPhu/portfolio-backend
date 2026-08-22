@@ -32,7 +32,7 @@ const mockWriteRepo = {
 
 const mockCacheService = {
     invalidatePublicBlogs: jest.fn(),
-    invalidateBlogBySlug:  jest.fn(),
+    invalidateBlogBySlug: jest.fn(),
 }
 
 // =============================================================================
@@ -40,41 +40,41 @@ const mockCacheService = {
 // =============================================================================
 
 interface BlogOverrides {
-    id?:          number
-    title?:       string
-    slug?:        string
-    content?:     string
-    excerpt?:     string | null
-    tags?:        any[]
+    id?: number
+    title?: string
+    slug?: string
+    content?: string
+    excerpt?: string | null
+    tags?: any[]
     isPublished?: boolean
     publishedAt?: Date | null
-    userId?:      number
-    createdAt?:   Date
-    updatedAt?:   Date
+    userId?: number
+    createdAt?: Date
+    updatedAt?: Date
 }
 
 interface InputOverrides {
-    id?:          number
-    title?:       string
-    content?:     string
+    id?: number
+    title?: string
+    content?: string
     isPublished?: boolean
     publishedAt?: Date | null
-    excerpt?:     string | null
-    tags?:        string[]
+    excerpt?: string | null
+    tags?: string[]
 }
 
 const makeExistingBlog = (overrides: BlogOverrides = {}) => ({
-    id:          1,
-    title:       'Original Title',
-    slug:        'original-title',
-    content:     'Original content',
-    excerpt:     null,
-    tags:        [],
+    id: 1,
+    title: 'Original Title',
+    slug: 'original-title',
+    content: 'Original content',
+    excerpt: null,
+    tags: [],
     isPublished: false,
     publishedAt: null,
-    userId:      1,
-    createdAt:   new Date(),
-    updatedAt:   new Date(),
+    userId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
 })
 
@@ -84,9 +84,9 @@ const makeUpdatedBlog = (overrides: BlogOverrides = {}) => ({
 })
 
 const makeInput = (overrides: InputOverrides = {}) => ({
-    id:          1,
-    title:       'Updated Title',
-    content:     'Updated content',
+    id: 1,
+    title: 'Updated Title',
+    content: 'Updated content',
     isPublished: false,
     ...overrides,
 })
@@ -109,8 +109,8 @@ describe('UpdateBlogCommand', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UpdateBlogCommand,
-                { provide: 'IBlogReadRepository',      useValue: mockReadRepo     },
-                { provide: 'IBlogWriteRepository',     useValue: mockWriteRepo    },
+                { provide: 'IBlogReadRepository', useValue: mockReadRepo },
+                { provide: 'IBlogWriteRepository', useValue: mockWriteRepo },
                 { provide: CACHE_INVALIDATION_SERVICE, useValue: mockCacheService },
             ],
         }).compile()
@@ -118,15 +118,14 @@ describe('UpdateBlogCommand', () => {
         command = module.get<UpdateBlogCommand>(UpdateBlogCommand)
     })
 
-  // ===========================================================================
-  // Not found
-  // ===========================================================================
+    // ===========================================================================
+    // Not found
+    // ===========================================================================
     describe('execute() — not found', () => {
         it('throws NotFoundError when blog does not exist', async () => {
             mockReadRepo.findById.mockResolvedValue(null)
 
-            await expect(command.execute(makeInput({ id: 999 })))
-                .rejects.toThrow(NotFoundError)
+            await expect(command.execute(makeInput({ id: 999 }))).rejects.toThrow(NotFoundError)
         })
 
         it('does not call writeRepo when blog does not exist', async () => {
@@ -145,9 +144,9 @@ describe('UpdateBlogCommand', () => {
         })
     })
 
-  // ===========================================================================
-  // Cache invalidation — slug unchanged
-  // ===========================================================================
+    // ===========================================================================
+    // Cache invalidation — slug unchanged
+    // ===========================================================================
     describe('execute() — cache invalidation, slug unchanged', () => {
         it('always invalidates public blog list', async () => {
             await command.execute(makeInput())
@@ -158,35 +157,32 @@ describe('UpdateBlogCommand', () => {
         it('invalidates existing slug', async () => {
             await command.execute(makeInput())
 
-            expect(mockCacheService.invalidateBlogBySlug)
-                .toHaveBeenCalledWith('original-title')
-            })
+            expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledWith('original-title')
+        })
 
-            it('does not double-invalidate when slug is unchanged', async () => {
+        it('does not double-invalidate when slug is unchanged', async () => {
             await command.execute(makeInput())
 
             expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledTimes(1)
         })
     })
 
-  // ===========================================================================
-  // Cache invalidation — slug is immutable
-  //
-  // FIX: removed a "slug changed" test that mocked writeRepo.update() to
-  // return a different slug than the one passed in. That can't happen for
-  // real — UpdateBlogInput has no `slug` field (see IBlogWriteRepository.ts),
-  // so the command has no way to change it. This test was covering a branch
-  // in UpdateBlogCommand that has since been removed as unreachable dead code.
-  // ===========================================================================
+    // ===========================================================================
+    // Cache invalidation — slug is immutable
+    //
+    // FIX: removed a "slug changed" test that mocked writeRepo.update() to
+    // return a different slug than the one passed in. That can't happen for
+    // real — UpdateBlogInput has no `slug` field (see IBlogWriteRepository.ts),
+    // so the command has no way to change it. This test was covering a branch
+    // in UpdateBlogCommand that has since been removed as unreachable dead code.
+    // ===========================================================================
 
-  // ===========================================================================
-  // publishedAt handling
-  // ===========================================================================
+    // ===========================================================================
+    // publishedAt handling
+    // ===========================================================================
     describe('execute() — publishedAt handling', () => {
         it('auto-sets publishedAt when publishing for first time', async () => {
-            mockWriteRepo.update.mockResolvedValue(
-                makeUpdatedBlog({ isPublished: true, publishedAt: new Date() })
-            )
+            mockWriteRepo.update.mockResolvedValue(makeUpdatedBlog({ isPublished: true, publishedAt: new Date() }))
 
             await command.execute(makeInput({ isPublished: true, publishedAt: undefined }))
 
@@ -201,10 +197,7 @@ describe('UpdateBlogCommand', () => {
 
             await command.execute(makeInput({ isPublished: true, publishedAt: existingDate }))
 
-            expect(mockWriteRepo.update).toHaveBeenCalledWith(
-                1,
-                expect.objectContaining({ publishedAt: existingDate }),
-            )
+            expect(mockWriteRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ publishedAt: existingDate }))
         })
 
         it('does not set publishedAt when keeping as draft', async () => {
@@ -215,9 +208,9 @@ describe('UpdateBlogCommand', () => {
         })
     })
 
-  // ===========================================================================
-  // Input immutability
-  // ===========================================================================
+    // ===========================================================================
+    // Input immutability
+    // ===========================================================================
     describe('execute() — input immutability', () => {
         it('does not mutate the caller input object', async () => {
             const input = makeInput({ isPublished: true, publishedAt: undefined })

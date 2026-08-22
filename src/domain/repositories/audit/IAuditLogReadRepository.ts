@@ -4,12 +4,12 @@
 // Mirrors IContactReadRepository's cursor pagination shape for consistency.
 // =============================================================================
 
-import { AuditLog } from "../../entities/AuditLog"
+import { AuditLog } from '../../entities/AuditLog'
 
 export interface AuditLogPage {
-    items:      AuditLog[]
+    items: AuditLog[]
     nextCursor: number | null
-    total:      number
+    total: number
 }
 
 export interface IAuditLogReadRepository {

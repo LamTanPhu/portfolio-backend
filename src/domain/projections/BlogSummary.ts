@@ -12,12 +12,12 @@
 // - not tied to HTTP/API serialization
 // =============================================================================
 export interface BlogSummary {
-    id:          number
-    title:       string
-    slug:        string
-    excerpt:     string | null
-    tags:        string[]
+    id: number
+    title: string
+    slug: string
+    excerpt: string | null
+    tags: string[]
     isPublished: boolean
     publishedAt: Date | null
-    createdAt:   Date
+    createdAt: Date
 }

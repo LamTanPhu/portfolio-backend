@@ -28,22 +28,19 @@ import { PrismaService } from '../prisma/prisma.service'
 // =============================================================================
 @Injectable()
 export class PrismaUnitOfWork implements IUnitOfWork {
-  constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly prisma: PrismaService) {}
 
-  // Intentional no-ops — Prisma $transaction handles the full lifecycle
-  async begin(): Promise<void>    {}
-  async commit(): Promise<void>   {}
-  async rollback(): Promise<void> {}
+    // Intentional no-ops — Prisma $transaction handles the full lifecycle
+    async begin(): Promise<void> {}
+    async commit(): Promise<void> {}
+    async rollback(): Promise<void> {}
 
-  async transaction<T>(fn: (tx: TransactionalClient) => Promise<T>): Promise<T> {
-    return this.prisma.client.$transaction(
-      (tx) => fn(tx),
-      {
-        // Max time Prisma waits to acquire a connection from the pool
-        maxWait: 5000,
-        // Max time the entire transaction block is allowed to run
-        timeout: 10000,
-      },
-    )
-  }
+    async transaction<T>(fn: (tx: TransactionalClient) => Promise<T>): Promise<T> {
+        return this.prisma.client.$transaction((tx) => fn(tx), {
+            // Max time Prisma waits to acquire a connection from the pool
+            maxWait: 5000,
+            // Max time the entire transaction block is allowed to run
+            timeout: 10000,
+        })
+    }
 }

@@ -17,13 +17,13 @@ import { PrismaUserWriteRepository } from '../../../infrastructure/database/repo
 @Module({
     imports: [
         JwtModule.registerAsync({
-            inject:     [ConfigService],
+            inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
                 secret: config.get<string>('JWT_SECRET'),
                 signOptions: {
                     expiresIn: '15m',
-                    issuer:    AuthService.ISSUER,
-                    audience:  AuthService.AUDIENCE,
+                    issuer: AuthService.ISSUER,
+                    audience: AuthService.AUDIENCE,
                 },
             }),
         }),
@@ -39,8 +39,8 @@ import { PrismaUserWriteRepository } from '../../../infrastructure/database/repo
         PrismaUserWriteRepository,
         PrismaAdminCredentialRepository,
 
-        { provide: 'ITokenRepository',          useExisting: PrismaRevokedTokenRepository    },
-        { provide: 'IUserWriteRepository',       useExisting: PrismaUserWriteRepository       },
+        { provide: 'ITokenRepository', useExisting: PrismaRevokedTokenRepository },
+        { provide: 'IUserWriteRepository', useExisting: PrismaUserWriteRepository },
         { provide: 'IAdminCredentialRepository', useExisting: PrismaAdminCredentialRepository },
 
         // AuthService with all 7 dependencies.
@@ -50,22 +50,23 @@ import { PrismaUserWriteRepository } from '../../../infrastructure/database/repo
         {
             provide: AuthService,
             useFactory: (
-                jwtService:           JwtService,
-                tokenRepository:      PrismaRevokedTokenRepository,
-                cacheQueryService:    ICacheQueryService,
-                userWriteRepository:  PrismaUserWriteRepository,
+                jwtService: JwtService,
+                tokenRepository: PrismaRevokedTokenRepository,
+                cacheQueryService: ICacheQueryService,
+                userWriteRepository: PrismaUserWriteRepository,
                 credentialRepository: PrismaAdminCredentialRepository,
-                unitOfWork:           IUnitOfWork,
-                configService:        ConfigService,
-            ) => new AuthService(
-                jwtService,
-                tokenRepository,
-                cacheQueryService,
-                userWriteRepository,
-                credentialRepository,
-                unitOfWork,
-                configService,
-            ),
+                unitOfWork: IUnitOfWork,
+                configService: ConfigService,
+            ) =>
+                new AuthService(
+                    jwtService,
+                    tokenRepository,
+                    cacheQueryService,
+                    userWriteRepository,
+                    credentialRepository,
+                    unitOfWork,
+                    configService,
+                ),
             inject: [
                 JwtService,
                 'ITokenRepository',

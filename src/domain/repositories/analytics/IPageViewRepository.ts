@@ -8,7 +8,7 @@ import type { PageView } from '../../entities/PageView'
 // findAll used by admin analytics endpoint — ordered by count desc.
 // =============================================================================
 export interface IPageViewRepository {
-  increment(route: string): Promise<void>
-  findByRoute(route: string): Promise<PageView | null>
-  findAll(): Promise<PageView[]>
+    increment(route: string): Promise<void>
+    findByRoute(route: string): Promise<PageView | null>
+    findAll(): Promise<PageView[]>
 }

@@ -13,25 +13,26 @@ import { Injectable } from '@nestjs/common'
 import { Prisma } from '@prisma/client'
 import { ContactMe } from '../../../../domain/entities/ContactMe'
 import type { IContactWriteRepository } from '../../../../domain/repositories/contact/IContactWriteRepository'
-import type { IContactReadRepository, ContactPage } from '../../../../domain/repositories/contact/IContactReadRepository'
+import type {
+    IContactReadRepository,
+    ContactPage,
+} from '../../../../domain/repositories/contact/IContactReadRepository'
 import { PrismaService } from '../../prisma/prisma.service'
 
 const CONTACT_SELECT = {
-    id:          true,
-    name:        true,
-    email:       true,
-    message:     true,
-    ipAddress:   true,
+    id: true,
+    name: true,
+    email: true,
+    message: true,
+    ipAddress: true,
     browserInfo: true,
-    createdAt:   true,
+    createdAt: true,
 } as const
 
 type ContactRow = Prisma.ContactMeGetPayload<{ select: typeof CONTACT_SELECT }>
 
 @Injectable()
-export class PrismaContactRepository
-    implements IContactWriteRepository, IContactReadRepository
-{
+export class PrismaContactRepository implements IContactWriteRepository, IContactReadRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -39,15 +40,7 @@ export class PrismaContactRepository
     // ──────────────────────────────────────────────────────────────────────────
 
     private static toDomain(row: ContactRow): ContactMe {
-        return new ContactMe(
-            row.id,
-            row.name,
-            row.email,
-            row.message,
-            row.ipAddress,
-            row.browserInfo,
-            row.createdAt,
-        )
+        return new ContactMe(row.id, row.name, row.email, row.message, row.ipAddress, row.browserInfo, row.createdAt)
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -58,10 +51,10 @@ export class PrismaContactRepository
     async save(data: Omit<ContactMe, 'id'>): Promise<ContactMe> {
         const row = await this.prisma.client.contactMe.create({
             data: {
-                name:        data.name,
-                email:       data.email,
-                message:     data.message,
-                ipAddress:   data.ipAddress,
+                name: data.name,
+                email: data.email,
+                message: data.message,
+                ipAddress: data.ipAddress,
                 browserInfo: data.browserInfo,
                 // createdAt set by DB default — never trust client-provided timestamps
             },
@@ -77,10 +70,7 @@ export class PrismaContactRepository
             await this.prisma.client.contactMe.delete({ where: { id } })
             return true
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2025'
-            ) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
                 return false
             }
             throw error
@@ -108,15 +98,15 @@ export class PrismaContactRepository
 
         const [rows, total] = await Promise.all([
             this.prisma.client.contactMe.findMany({
-                select:  CONTACT_SELECT,
-                where:   cursor ? { id: { lt: cursor } } : undefined,
+                select: CONTACT_SELECT,
+                where: cursor ? { id: { lt: cursor } } : undefined,
                 orderBy: { id: 'desc' }, // PK desc = newest first, uses PK index
                 take,
             }),
             this.prisma.client.contactMe.count(),
         ])
 
-        const items      = rows.map(PrismaContactRepository.toDomain)
+        const items = rows.map(PrismaContactRepository.toDomain)
         const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
 
         return { items, nextCursor, total }
@@ -125,7 +115,7 @@ export class PrismaContactRepository
     // O(1) — PK lookup
     async findById(id: number): Promise<ContactMe | null> {
         const row = await this.prisma.client.contactMe.findUnique({
-            where:  { id },
+            where: { id },
             select: CONTACT_SELECT,
         })
         return row ? PrismaContactRepository.toDomain(row) : null

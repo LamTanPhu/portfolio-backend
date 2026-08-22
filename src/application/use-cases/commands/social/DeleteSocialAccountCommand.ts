@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteSocialAccountCommand
- * 
+ *
  * Deletes a social account and invalidates the public cache.
  */
 

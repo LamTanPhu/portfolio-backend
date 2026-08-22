@@ -23,7 +23,7 @@ import { PrismaService } from '../../prisma/prisma.service'
 // This is the ONLY select in the codebase that includes hashPassword.
 // If you ever need to add fields here, think very carefully.
 const CREDENTIAL_SELECT = {
-    id:           true,
+    id: true,
     hashPassword: true,
 } as const
 
@@ -34,14 +34,14 @@ export class PrismaAdminCredentialRepository implements IAdminCredentialReposito
     // O(1) — email has @unique index
     async findCredentialByEmail(email: string): Promise<AdminCredential | null> {
         const row = await this.prisma.client.user.findUnique({
-            where:  { email },
+            where: { email },
             select: CREDENTIAL_SELECT,
         })
 
         if (!row) return null
 
         return {
-            id:           row.id,
+            id: row.id,
             hashPassword: row.hashPassword,
         }
     }

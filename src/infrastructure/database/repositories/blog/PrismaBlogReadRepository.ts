@@ -15,16 +15,16 @@ type BlogWithTags = Prisma.BlogGetPayload<{
 }>
 
 const LIST_SELECT = {
-    id:          true,
-    title:       true,
-    slug:        true,
-    excerpt:     true,
+    id: true,
+    title: true,
+    slug: true,
+    excerpt: true,
     isPublished: true,
     publishedAt: true,
-    createdAt:   true,
-    updatedAt:   true,
-    userId:      true,
-    tags:        { select: { name: true } },
+    createdAt: true,
+    updatedAt: true,
+    userId: true,
+    tags: { select: { name: true } },
 } as const
 
 type BlogSummaryWithTags = Prisma.BlogGetPayload<{
@@ -44,14 +44,14 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
     // ===========================================================================
     private static toBlogSummary(raw: BlogSummaryWithTags): BlogSummary {
         return {
-            id:          raw.id,
-            title:       raw.title,
-            slug:        raw.slug,
-            excerpt:     raw.excerpt,
-            tags:        raw.tags.map(t => t.name),
+            id: raw.id,
+            title: raw.title,
+            slug: raw.slug,
+            excerpt: raw.excerpt,
+            tags: raw.tags.map((t) => t.name),
             isPublished: raw.isPublished,
             publishedAt: raw.publishedAt,
-            createdAt:   raw.createdAt,
+            createdAt: raw.createdAt,
         }
     }
 
@@ -61,8 +61,8 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
 
     async findPublished(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
-            where:   { isPublished: true },
-            select:  LIST_SELECT,
+            where: { isPublished: true },
+            select: LIST_SELECT,
             orderBy: { publishedAt: 'desc' },
         })
 
@@ -71,7 +71,7 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
 
     async findAll(): Promise<BlogSummary[]> {
         const rows = await this.prisma.client.blog.findMany({
-            select:  LIST_SELECT,
+            select: LIST_SELECT,
             orderBy: { createdAt: 'desc' },
         })
 
@@ -80,7 +80,7 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
 
     async findById(id: number): Promise<Blog | null> {
         const row = await this.prisma.client.blog.findUnique({
-            where:   { id },
+            where: { id },
             include: { tags: true },
         })
         return row ? PrismaBlogMapper.toDomain(row) : null
@@ -88,7 +88,7 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
 
     async findBySlug(slug: string): Promise<Blog | null> {
         const row = await this.prisma.client.blog.findUnique({
-            where:   { slug },
+            where: { slug },
             include: { tags: true },
         })
         return row ? PrismaBlogMapper.toDomain(row) : null

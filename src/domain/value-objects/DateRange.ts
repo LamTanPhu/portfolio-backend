@@ -8,22 +8,22 @@ import { ValidationError } from '../errors/ValidationError'
 // Used by Education, Job, Certification aggregates.
 // =============================================================================
 export class DateRange {
-  constructor(
-    public readonly start: Date,
-    public readonly end:   Date | null,
-  ) {
-    if (end !== null && end < start) {
-      throw new ValidationError('End date cannot be before start date')
+    constructor(
+        public readonly start: Date,
+        public readonly end: Date | null,
+    ) {
+        if (end !== null && end < start) {
+            throw new ValidationError('End date cannot be before start date')
+        }
     }
-  }
 
-  // True when the activity is still ongoing — end date not yet set
-  get isOngoing(): boolean {
-    return this.end === null
-  }
+    // True when the activity is still ongoing — end date not yet set
+    get isOngoing(): boolean {
+        return this.end === null
+    }
 
-  // Duration in milliseconds — null if ongoing
-  get durationMs(): number | null {
-    return this.end !== null ? this.end.getTime() - this.start.getTime() : null
-  }
+    // Duration in milliseconds — null if ongoing
+    get durationMs(): number | null {
+        return this.end !== null ? this.end.getTime() - this.start.getTime() : null
+    }
 }

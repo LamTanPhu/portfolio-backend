@@ -31,9 +31,9 @@ import { CheckSystemHealthQuery } from '../../../application/use-cases/queries/h
 @Controller('health')
 export class HealthController {
     constructor(
-        private readonly health:                  HealthCheckService,
-        private readonly healthIndicatorService:   HealthIndicatorService,
-        private readonly checkSystemHealthQuery:   CheckSystemHealthQuery,
+        private readonly health: HealthCheckService,
+        private readonly healthIndicatorService: HealthIndicatorService,
+        private readonly checkSystemHealthQuery: CheckSystemHealthQuery,
     ) {}
 
     @Get()

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { ResumeDownload } from '../../../domain/entities/ResumeDownload'
-import { IResumeDownloadRepository } from '../../../domain/repositories/resume/IResumeDownloadRepository';
+import { IResumeDownloadRepository } from '../../../domain/repositories/resume/IResumeDownloadRepository'
 
 // =============================================================================
 // PrismaResumeDownloadRepository
@@ -15,11 +15,11 @@ export class PrismaResumeDownloadRepository implements IResumeDownloadRepository
 
     async save(data: { ipAddress: string; browserInfo: string | null }): Promise<void> {
         await this.prisma.client.resumeDownload.create({
-        data: {
-            ipAddress:   data.ipAddress,
-            browserInfo: data.browserInfo,
-            // downloadedAt set by DB default — never trust client-provided timestamps
-        },
+            data: {
+                ipAddress: data.ipAddress,
+                browserInfo: data.browserInfo,
+                // downloadedAt set by DB default — never trust client-provided timestamps
+            },
         })
     }
 
@@ -31,9 +31,7 @@ export class PrismaResumeDownloadRepository implements IResumeDownloadRepository
             orderBy: { downloadedAt: 'desc' },
             take: 500,
         })
-        return rows.map(
-            (r) => new ResumeDownload(r.id, r.ipAddress, r.browserInfo, r.downloadedAt),
-        )
+        return rows.map((r) => new ResumeDownload(r.id, r.ipAddress, r.browserInfo, r.downloadedAt))
     }
 
     // Single deleteMany — table stays tiny at a 14-day retention window,

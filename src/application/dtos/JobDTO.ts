@@ -5,10 +5,10 @@
 // endedAt null = currently employed at this company.
 // =============================================================================
 export interface JobDTO {
-    id:          number
+    id: number
     companyName: string
-    role:        string
-    startedAt:   string
-    endedAt:     string | null
-    isEnded:     boolean
+    role: string
+    startedAt: string
+    endedAt: string | null
+    isEnded: boolean
 }

@@ -22,8 +22,8 @@ import { deleteKeysMatchingPattern } from './cache-store-scan'
 
 interface CacheEnvelope<T> {
     data: T
-    expiresAt: number      // Timestamp when data becomes stale
-    staleUntil: number     // Timestamp when data is considered expired
+    expiresAt: number // Timestamp when data becomes stale
+    staleUntil: number // Timestamp when data is considered expired
 }
 
 @Injectable()
@@ -33,7 +33,7 @@ export class CacheQueryService implements ICacheQueryService {
     /** In-memory map to deduplicate simultaneous background refreshes */
     private readonly refreshing = new Map<string, Promise<any>>()
 
-  /** Global cache key prefix for this application */
+    /** Global cache key prefix for this application */
     private readonly CACHE_PREFIX = 'portfolio:v1:'
 
     constructor(
@@ -42,62 +42,53 @@ export class CacheQueryService implements ICacheQueryService {
     ) {}
 
     /**
-   * Adds namespace prefix to prevent key collisions across services/environments.
-   */
+     * Adds namespace prefix to prevent key collisions across services/environments.
+     */
     private getNamespacedKey(key: string): string {
         return this.CACHE_PREFIX + key
     }
 
-  // ===================================================================
-  // PUBLIC API
-  // ===================================================================
+    // ===================================================================
+    // PUBLIC API
+    // ===================================================================
 
-    async getOrSet<T>(
-        key: string,
-        ttl: number,
-        factory: () => Promise<T>,
-        options: GetOrSetOptions = {},
-    ): Promise<T> {
+    async getOrSet<T>(key: string, ttl: number, factory: () => Promise<T>, options: GetOrSetOptions = {}): Promise<T> {
         const namespacedKey = this.getNamespacedKey(key)
         const now = Date.now()
         const staleTtl = options.staleTtl ?? ttl
         const forceRefresh = options.forceRefresh ?? false
 
         if (forceRefresh) {
-        return this.refreshAndStore(namespacedKey, ttl, staleTtl, factory, options.retries)
+            return this.refreshAndStore(namespacedKey, ttl, staleTtl, factory, options.retries)
         }
 
         const cached = await this.cache.get<CacheEnvelope<T>>(namespacedKey)
 
         if (cached) {
-        // Fresh cache hit - fastest path
-        if (now < cached.expiresAt) {
-            return cached.data
-        }
+            // Fresh cache hit - fastest path
+            if (now < cached.expiresAt) {
+                return cached.data
+            }
 
-        // Stale-While-Revalidate: serve stale data + refresh in background
-        if (now < cached.staleUntil) {
-            void this.refreshInBackground(namespacedKey, ttl, staleTtl, factory)
-            return cached.data
-        }
+            // Stale-While-Revalidate: serve stale data + refresh in background
+            if (now < cached.staleUntil) {
+                void this.refreshInBackground(namespacedKey, ttl, staleTtl, factory)
+                return cached.data
+            }
         }
 
         // Cache miss or fully expired
         return this.refreshAndStore(namespacedKey, ttl, staleTtl, factory, options.retries)
     }
 
-    async getOrSetWithProfile<T>(
-        key: string,
-        profile: CacheProfile,
-        factory: () => Promise<T>,
-    ): Promise<T> {
+    async getOrSetWithProfile<T>(key: string, profile: CacheProfile, factory: () => Promise<T>): Promise<T> {
         const config = CACHE_TTL[profile]
         return this.getOrSet(key, config.fresh, factory, { staleTtl: config.stale })
     }
 
-  // ===================================================================
-  // CORE REFRESH LOGIC
-  // ===================================================================
+    // ===================================================================
+    // CORE REFRESH LOGIC
+    // ===================================================================
 
     private async refreshAndStore<T>(
         key: string,
@@ -121,8 +112,8 @@ export class CacheQueryService implements ICacheQueryService {
     }
 
     /**
-   * Background refresh with guaranteed cleanup to prevent memory leaks.
-   */
+     * Background refresh with guaranteed cleanup to prevent memory leaks.
+     */
     private async refreshInBackground<T>(
         key: string,
         ttl: number,
@@ -144,9 +135,9 @@ export class CacheQueryService implements ICacheQueryService {
         this.refreshing.set(key, promise)
     }
 
-  // ===================================================================
-  // DELETION METHODS
-  // ===================================================================
+    // ===================================================================
+    // DELETION METHODS
+    // ===================================================================
 
     async delete(key: string): Promise<void> {
         const namespacedKey = this.getNamespacedKey(key)
@@ -177,27 +168,23 @@ export class CacheQueryService implements ICacheQueryService {
         this.logger.warn('Cache cleared entirely')
     }
 
-  // ===================================================================
-  // UTILITIES
-  // ===================================================================
+    // ===================================================================
+    // UTILITIES
+    // ===================================================================
 
-    private async executeWithRetry<T>(
-        fn: () => Promise<T>,
-        retries: number,
-        baseDelay = 300,
-    ): Promise<T> {
+    private async executeWithRetry<T>(fn: () => Promise<T>, retries: number, baseDelay = 300): Promise<T> {
         let lastError: unknown
 
         for (let attempt = 1; attempt <= retries + 1; attempt++) {
-        try {
-            return await fn()
-        } catch (error) {
-            lastError = error
-            if (attempt > retries) break
+            try {
+                return await fn()
+            } catch (error) {
+                lastError = error
+                if (attempt > retries) break
 
-            const delay = baseDelay * attempt
-            await new Promise(resolve => setTimeout(resolve, delay))
-        }
+                const delay = baseDelay * attempt
+                await new Promise((resolve) => setTimeout(resolve, delay))
+            }
         }
 
         throw lastError

@@ -19,10 +19,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type { IBlogReadRepository } from '../../../../domain/repositories/blog/IBlogReadRepository'
-import type {
-    IBlogWriteRepository,
-    UpdateBlogInput,
-} from '../../../../domain/repositories/blog/IBlogWriteRepository'
+import type { IBlogWriteRepository, UpdateBlogInput } from '../../../../domain/repositories/blog/IBlogWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { BlogMapper } from '../../../mappers/BlogMapper'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -55,9 +52,8 @@ export class UpdateBlogCommand {
 
         // Auto-set publishedAt when publishing for the first time.
         // Spread into new object — avoids mutating the caller's input.
-        const payload: UpdateBlogInput = data.isPublished === true && !data.publishedAt
-            ? { ...data, publishedAt: new Date() }
-            : { ...data }
+        const payload: UpdateBlogInput =
+            data.isPublished === true && !data.publishedAt ? { ...data, publishedAt: new Date() } : { ...data }
 
         const updatedBlog = await this.writeRepo.update(id, payload)
 

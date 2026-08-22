@@ -5,7 +5,7 @@
 // Infrastructure layer (NestLogger) implements this — swappable without code changes.
 // =============================================================================
 export interface ILogger {
-  log(message: string, context?: string): void
-  warn(message: string, context?: string): void
-  error(message: string, trace?: string, context?: string): void
+    log(message: string, context?: string): void
+    warn(message: string, context?: string): void
+    error(message: string, trace?: string, context?: string): void
 }

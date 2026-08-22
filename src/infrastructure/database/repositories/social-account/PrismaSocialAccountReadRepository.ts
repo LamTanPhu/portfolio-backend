@@ -16,21 +16,21 @@ export class PrismaSocialAccountReadRepository implements ISocialAccountReadRepo
 
     async findPublic(): Promise<SocialAccountDTO[]> {
         const rows = await this.prisma.client.socialAccount.findMany({
-        where:   { isPublic: true },
-        orderBy: { name: 'asc' },
+            where: { isPublic: true },
+            orderBy: { name: 'asc' },
             select: {
-                id:       true,
-                name:     true,
-                url:      true,
+                id: true,
+                name: true,
+                url: true,
                 imageUrl: true,
                 isPublic: true,
             },
         })
 
-        return rows.map(row => ({
-            id:       row.id,
-            name:     row.name,
-            url:      row.url,
+        return rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            url: row.url,
             imageUrl: row.imageUrl,
             isPublic: row.isPublic,
         }))

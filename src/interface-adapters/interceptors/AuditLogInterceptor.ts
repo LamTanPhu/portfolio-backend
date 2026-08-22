@@ -21,13 +21,7 @@
  * a failure of the admin action itself. Logged via ILogger, swallowed.
  */
 
-import {
-    CallHandler,
-    ExecutionContext,
-    Inject,
-    Injectable,
-    NestInterceptor,
-} from '@nestjs/common'
+import { CallHandler, ExecutionContext, Inject, Injectable, NestInterceptor } from '@nestjs/common'
 import type { Request, Response } from 'express'
 import type { Observable } from 'rxjs'
 import { tap } from 'rxjs/operators'
@@ -81,19 +75,15 @@ export class AuditLogInterceptor implements NestInterceptor {
         )
     }
 
-    private async write(
-        req: AuthenticatedRequest,
-        entityType: string,
-        statusCode: number,
-    ): Promise<void> {
+    private async write(req: AuthenticatedRequest, entityType: string, statusCode: number): Promise<void> {
         try {
             await this.auditLogRepo.save({
-                actorId:    req.user.sub,
-                method:     req.method,
-                route:      req.originalUrl.split('?')[0],
+                actorId: req.user.sub,
+                method: req.method,
+                route: req.originalUrl.split('?')[0],
                 entityType,
-                entityId:   (req.params?.id ?? req.params?.slug ?? null) as string | null,
-                ipAddress:  req.ip ?? null,
+                entityId: (req.params?.id ?? req.params?.slug ?? null) as string | null,
+                ipAddress: req.ip ?? null,
                 statusCode,
             })
         } catch (error) {

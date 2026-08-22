@@ -18,33 +18,35 @@
 import { DomainExceptionFilter } from './DomainExceptionFilter'
 import { ArgumentsHost, Logger } from '@nestjs/common'
 import type { ConfigService } from '@nestjs/config'
-import { ValidationError }     from '../../domain/errors/ValidationError'
-import { UnauthorizedError }   from '../../domain/errors/UnauthorizedError'
-import { ForbiddenError }      from '../../domain/errors/ForbiddenError'
-import { NotFoundError }       from '../../domain/errors/NotFoundError'
-import { ConflictError }       from '../../domain/errors/ConflictError'
-import { BusinessRuleError }   from '../../domain/errors/BusinessRuleError'
-import { RateLimitError }      from '../../domain/errors/RateLimitError'
+import { ValidationError } from '../../domain/errors/ValidationError'
+import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
+import { ForbiddenError } from '../../domain/errors/ForbiddenError'
+import { NotFoundError } from '../../domain/errors/NotFoundError'
+import { ConflictError } from '../../domain/errors/ConflictError'
+import { BusinessRuleError } from '../../domain/errors/BusinessRuleError'
+import { RateLimitError } from '../../domain/errors/RateLimitError'
 import { InternalServerError } from '../../domain/errors/InternalServerError'
 
 // =============================================================================
 // Mock ArgumentsHost Factory
 // =============================================================================
 
-const mockJson   = jest.fn()
+const mockJson = jest.fn()
 const mockStatus = jest.fn().mockReturnValue({ json: mockJson })
 
-function makeMockHost(requestOverrides: Partial<{ method: string; url: string; ip: string | undefined }> = {}): ArgumentsHost {
+function makeMockHost(
+    requestOverrides: Partial<{ method: string; url: string; ip: string | undefined }> = {},
+): ArgumentsHost {
     const mockRequest = {
         method: 'POST',
-        url:    '/api/contact',
-        ip:     '127.0.0.1',
+        url: '/api/contact',
+        ip: '127.0.0.1',
         ...requestOverrides,
     }
     return {
         switchToHttp: () => ({
             getResponse: () => ({ status: mockStatus }),
-            getRequest:  () => mockRequest,
+            getRequest: () => mockRequest,
         }),
     } as unknown as ArgumentsHost
 }
@@ -70,15 +72,15 @@ function makeFilter(): DomainExceptionFilter {
 // =============================================================================
 
 describe('DomainExceptionFilter', () => {
-    let filter:   DomainExceptionFilter
-    let warnSpy:  jest.SpyInstance
+    let filter: DomainExceptionFilter
+    let warnSpy: jest.SpyInstance
     let errorSpy: jest.SpyInstance
 
     beforeEach(() => {
         jest.clearAllMocks()
-        warnSpy  = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
+        warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => {})
         errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
-        filter   = makeFilter()
+        filter = makeFilter()
     })
 
     afterEach(() => {
@@ -91,14 +93,14 @@ describe('DomainExceptionFilter', () => {
     // ===========================================================================
     describe('HTTP status code mapping', () => {
         const cases = [
-            ['ValidationError',     new ValidationError('bad input'),         400],
-            ['UnauthorizedError',   new UnauthorizedError('no auth'),         401],
-            ['ForbiddenError',      new ForbiddenError('no access'),          403],
-            ['NotFoundError',       new NotFoundError('not found'),           404],
-            ['ConflictError',       new ConflictError('duplicate'),           409],
-            ['BusinessRuleError',   new BusinessRuleError('rule violated'),   422],
-            ['RateLimitError',      new RateLimitError('slow down'),          429],
-            ['InternalServerError', new InternalServerError('boom'),          500],
+            ['ValidationError', new ValidationError('bad input'), 400],
+            ['UnauthorizedError', new UnauthorizedError('no auth'), 401],
+            ['ForbiddenError', new ForbiddenError('no access'), 403],
+            ['NotFoundError', new NotFoundError('not found'), 404],
+            ['ConflictError', new ConflictError('duplicate'), 409],
+            ['BusinessRuleError', new BusinessRuleError('rule violated'), 422],
+            ['RateLimitError', new RateLimitError('slow down'), 429],
+            ['InternalServerError', new InternalServerError('boom'), 500],
         ] as const
 
         it.each(cases)('%s maps to HTTP %i', (_, exception, expectedStatus) => {
@@ -114,68 +116,50 @@ describe('DomainExceptionFilter', () => {
         it('logs warn for 401 containing message and IP', () => {
             filter.catch(new UnauthorizedError('no auth'), mockHost)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('no auth'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('no auth'))
         })
 
         it('logs warn for 401 containing the IP address', () => {
             filter.catch(new UnauthorizedError('no auth'), mockHost)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('127.0.0.1'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('127.0.0.1'))
         })
 
         it('falls back to unknown when request has no IP', () => {
             const hostNoIp = makeMockHost({ ip: undefined })
             filter.catch(new UnauthorizedError('no auth'), hostNoIp)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('unknown'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('unknown'))
         })
 
         it('logs warn for 403 with IP', () => {
             filter.catch(new ForbiddenError('no access'), mockHost)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('no access'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('no access'))
         })
 
         it('logs warn for 429 rate limit containing Rate limit hit', () => {
             filter.catch(new RateLimitError('slow down'), mockHost)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('Rate limit hit'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Rate limit hit'))
         })
 
         it('logs warn for 429 containing the IP address', () => {
             filter.catch(new RateLimitError('slow down'), mockHost)
 
-            expect(warnSpy).toHaveBeenCalledWith(
-                expect.stringContaining('127.0.0.1'),
-            )
+            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('127.0.0.1'))
         })
 
         it('logs error for 500 containing the message', () => {
             filter.catch(new InternalServerError('boom'), mockHost)
 
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('boom'),
-                expect.anything(),
-            )
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('boom'), expect.anything())
         })
 
         it('logs error for 500 containing method and url', () => {
             filter.catch(new InternalServerError('server down'), mockHost)
 
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('/api/contact'),
-                expect.anything(),
-            )
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('/api/contact'), expect.anything())
         })
 
         it('passes stack to error logger for 5xx', () => {
@@ -231,9 +215,7 @@ describe('DomainExceptionFilter', () => {
         it('redacts 5xx message in production', () => {
             filter.catch(new InternalServerError('Secret DB connection string'), mockHost)
 
-            expect(mockJson).toHaveBeenCalledWith(
-                expect.objectContaining({ message: 'Internal server error' }),
-            )
+            expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ message: 'Internal server error' }))
         })
 
         it('does not include stack in production response', () => {
@@ -253,9 +235,7 @@ describe('DomainExceptionFilter', () => {
         it('still returns real message for 4xx errors in production', () => {
             filter.catch(new ValidationError('Name is too long'), mockHost)
 
-            expect(mockJson).toHaveBeenCalledWith(
-                expect.objectContaining({ message: 'Name is too long' }),
-            )
+            expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ message: 'Name is too long' }))
         })
     })
 
@@ -286,9 +266,7 @@ describe('DomainExceptionFilter', () => {
         it('returns real 5xx message in development', () => {
             filter.catch(new InternalServerError('DB connection failed'), mockHost)
 
-            expect(mockJson).toHaveBeenCalledWith(
-                expect.objectContaining({ message: 'DB connection failed' }),
-            )
+            expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ message: 'DB connection failed' }))
         })
     })
 
@@ -304,9 +282,9 @@ describe('DomainExceptionFilter', () => {
             expect(mockJson).toHaveBeenCalledWith(
                 expect.objectContaining({
                     statusCode: 404,
-                    error:      'NotFoundError',
-                    message:    'not found',
-                    timestamp:  expect.any(String),
+                    error: 'NotFoundError',
+                    message: 'not found',
+                    timestamp: expect.any(String),
                 }),
             )
         })

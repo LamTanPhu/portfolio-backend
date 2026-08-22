@@ -4,9 +4,9 @@
 // imageUrl null when platform has no custom icon configured.
 // =============================================================================
 export interface SocialAccountDTO {
-    id:       number
-    name:     string
-    url:      string
+    id: number
+    name: string
+    url: string
     imageUrl: string | null
     isPublic: boolean
 }

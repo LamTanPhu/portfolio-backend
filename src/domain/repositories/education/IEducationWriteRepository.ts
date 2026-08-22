@@ -5,13 +5,13 @@ import type { Education } from '../../entities/Education'
 // userId from verified JWT payload — never accepted from client.
 // =============================================================================
 export interface CreateEducationInput {
-    degreeName:    string
+    degreeName: string
     instituteName: string
-    instituteUrl:  string | null
-    startedAt:     Date
-    endedAt:       Date | null
-    isCompleted:   boolean
-    userId:        number
+    instituteUrl: string | null
+    startedAt: Date
+    endedAt: Date | null
+    isCompleted: boolean
+    userId: number
 }
 
 // =============================================================================
@@ -19,12 +19,12 @@ export interface CreateEducationInput {
 // All fields optional — PATCH semantics.
 // =============================================================================
 export interface UpdateEducationInput {
-    degreeName?:    string
+    degreeName?: string
     instituteName?: string
-    instituteUrl?:  string | null
-    startedAt?:     Date
-    endedAt?:       Date | null
-    isCompleted?:   boolean
+    instituteUrl?: string | null
+    startedAt?: Date
+    endedAt?: Date | null
+    isCompleted?: boolean
 }
 
 // =============================================================================

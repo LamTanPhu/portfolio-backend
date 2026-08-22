@@ -26,27 +26,27 @@ export class PrismaJobWriteRepository implements IJobWriteRepository {
 
     async update(id: number, data: UpdateJobInput): Promise<Job> {
         try {
-        const row = await this.prisma.client.job.update({
-            where: { id },
-            data,
-        })
-        return PrismaJobMapper.toDomain(row)
+            const row = await this.prisma.client.job.update({
+                where: { id },
+                data,
+            })
+            return PrismaJobMapper.toDomain(row)
         } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError(`Job not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Job not found: ${id}`)
+            }
+            throw error
         }
     }
 
     async delete(id: number): Promise<void> {
         try {
-        await this.prisma.client.job.delete({ where: { id } })
+            await this.prisma.client.job.delete({ where: { id } })
         } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError(`Job not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Job not found: ${id}`)
+            }
+            throw error
         }
     }
 }

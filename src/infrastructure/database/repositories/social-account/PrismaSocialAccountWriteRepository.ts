@@ -26,33 +26,27 @@ export class PrismaSocialAccountWriteRepository implements ISocialAccountWriteRe
 
     async update(id: number, data: UpdateSocialAccountInput): Promise<SocialAccount> {
         try {
-        const row = await this.prisma.client.socialAccount.update({
-            where: { id },
-            data,
-        })
-        return PrismaSocialAccountMapper.toDomain(row)
+            const row = await this.prisma.client.socialAccount.update({
+                where: { id },
+                data,
+            })
+            return PrismaSocialAccountMapper.toDomain(row)
         } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2025'
-        ) {
-            throw new NotFoundError(`Social account not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Social account not found: ${id}`)
+            }
+            throw error
         }
     }
 
     async delete(id: number): Promise<void> {
         try {
-        await this.prisma.client.socialAccount.delete({ where: { id } })
+            await this.prisma.client.socialAccount.delete({ where: { id } })
         } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2025'
-        ) {
-            throw new NotFoundError(`Social account not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Social account not found: ${id}`)
+            }
+            throw error
         }
     }
 }

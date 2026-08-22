@@ -26,7 +26,7 @@ export class AuditController {
     @ApiResponse({ status: 200, description: 'Paginated audit log entries' })
     async findAll(
         @Query('cursor', new ParseIntPipe({ optional: true })) cursor?: number,
-        @Query('limit',  new ParseIntPipe({ optional: true })) limit?: number,
+        @Query('limit', new ParseIntPipe({ optional: true })) limit?: number,
     ): Promise<AuditLogPageDTO> {
         return this.getAuditLogs.execute(cursor, limit)
     }

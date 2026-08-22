@@ -6,6 +6,6 @@ import { DomainError } from './DomainError'
  */
 export class BusinessRuleError extends DomainError {
     constructor(message: string) {
-        super(message, 422)   // Unprocessable Entity — very common for business rules
+        super(message, 422) // Unprocessable Entity — very common for business rules
     }
 }

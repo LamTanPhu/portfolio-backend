@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteSkillCommand
- * 
+ *
  * Deletes a skill record and invalidates the public skills cache.
  */
 

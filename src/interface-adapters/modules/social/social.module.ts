@@ -1,6 +1,6 @@
 /**
  * @fileoverview SocialModule
- * 
+ *
  * Manages social accounts (public display + admin CRUD).
  * Uses split Read/Write repositories and caching support.
  */
@@ -20,12 +20,8 @@ import { DeleteSocialAccountCommand } from '../../../application/use-cases/comma
 import { PrismaSocialAccountReadRepository } from '../../../infrastructure/database/repositories/social-account/PrismaSocialAccountReadRepository'
 import { PrismaSocialAccountWriteRepository } from '../../../infrastructure/database/repositories/social-account/PrismaSocialAccountWriteRepository'
 
-
 @Module({
-    imports: [
-        AuthModule,
-        CacheInfrastructureModule,
-    ],
+    imports: [AuthModule, CacheInfrastructureModule],
 
     controllers: [SocialController],
 

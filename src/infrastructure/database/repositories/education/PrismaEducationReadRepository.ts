@@ -14,26 +14,26 @@ export class PrismaEducationReadRepository implements IEducationReadRepository {
 
     async findAll(): Promise<EducationDTO[]> {
         const rows = await this.prisma.client.education.findMany({
-        orderBy: { startedAt: 'desc' },
-        select: {
-            id:            true,
-            degreeName:    true,
-            instituteName: true,
-            instituteUrl:  true,
-            startedAt:     true,
-            endedAt:       true,
-            isCompleted:   true,
-        },
+            orderBy: { startedAt: 'desc' },
+            select: {
+                id: true,
+                degreeName: true,
+                instituteName: true,
+                instituteUrl: true,
+                startedAt: true,
+                endedAt: true,
+                isCompleted: true,
+            },
         })
 
-        return rows.map(row => ({
-        id:            row.id,
-        degreeName:    row.degreeName,
-        instituteName: row.instituteName,
-        instituteUrl:  row.instituteUrl,
-        startedAt:     row.startedAt.toISOString(),
-        endedAt:       row.endedAt?.toISOString() ?? null,
-        isCompleted:   row.isCompleted,
+        return rows.map((row) => ({
+            id: row.id,
+            degreeName: row.degreeName,
+            instituteName: row.instituteName,
+            instituteUrl: row.instituteUrl,
+            startedAt: row.startedAt.toISOString(),
+            endedAt: row.endedAt?.toISOString() ?? null,
+            isCompleted: row.isCompleted,
         }))
     }
 }

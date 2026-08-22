@@ -16,15 +16,15 @@ export class BlogMapper {
     // =========================================================================
     static toDetailDTO(blog: Blog): BlogDetailDTO {
         return {
-            id:          blog.id,
-            title:       blog.title,
-            slug:        blog.slug,
-            content:     blog.content,
-            excerpt:     blog.excerpt,
-            tags:        blog.tags.map(t => t.name),
+            id: blog.id,
+            title: blog.title,
+            slug: blog.slug,
+            content: blog.content,
+            excerpt: blog.excerpt,
+            tags: blog.tags.map((t) => t.name),
             isPublished: blog.isPublished,
             publishedAt: blog.publishedAt?.toISOString() ?? null,
-            createdAt:   blog.createdAt.toISOString(),
+            createdAt: blog.createdAt.toISOString(),
         }
     }
 
@@ -33,14 +33,14 @@ export class BlogMapper {
     // =========================================================================
     static toSummaryDTO(summary: BlogSummary): BlogSummaryDTO {
         return {
-            id:          summary.id,
-            title:       summary.title,
-            slug:        summary.slug,
-            excerpt:     summary.excerpt,
-            tags:        summary.tags,
+            id: summary.id,
+            title: summary.title,
+            slug: summary.slug,
+            excerpt: summary.excerpt,
+            tags: summary.tags,
             isPublished: summary.isPublished,
             publishedAt: summary.publishedAt?.toISOString() ?? null,
-            createdAt:   summary.createdAt.toISOString(),
+            createdAt: summary.createdAt.toISOString(),
         }
     }
 

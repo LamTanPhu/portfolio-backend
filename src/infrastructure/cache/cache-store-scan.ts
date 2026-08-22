@@ -66,7 +66,7 @@ export async function deleteKeysMatchingPattern(
         } catch (error) {
             logger.error(
                 `Pattern invalidation failed for one store (pattern base: ${prefix}*). ` +
-                `Other configured stores were still attempted.`,
+                    `Other configured stores were still attempted.`,
                 error instanceof Error ? error.stack : undefined,
             )
         }
@@ -96,17 +96,14 @@ async function deleteFromSingleStore(
     // This is a misconfiguration — the cache store is unknown.
     logger.error(
         `Pattern invalidation FAILED for one store — it exposes neither SCAN nor keys(). ` +
-        `Stale entries in that store will persist until TTL expiry or process restart.`,
+            `Stale entries in that store will persist until TTL expiry or process restart.`,
     )
     return 0
 }
 
 // Redis path — node-redis's async-iterator SCAN, server-side MATCH.
 // Non-blocking: yields in COUNT-sized batches instead of one O(N) call.
-async function deleteViaRedisScan(
-    client: RedisScanClient,
-    namespacedPattern: string,
-): Promise<number> {
+async function deleteViaRedisScan(client: RedisScanClient, namespacedPattern: string): Promise<number> {
     const keysToDelete: string[] = []
     for await (const key of client.scanIterator({ MATCH: namespacedPattern, COUNT: SCAN_COUNT })) {
         keysToDelete.push(key)
@@ -131,10 +128,7 @@ async function deleteViaRedisScan(
 // of our app prefix — match by substring rather than assuming a fixed
 // prefix, and delete via the raw store (not the outer Keyv wrapper, which
 // would re-add a prefix the raw key already has).
-async function deleteViaInMemoryScan(
-    store: Required<KeyEnumerableStore>,
-    prefix: string,
-): Promise<number> {
+async function deleteViaInMemoryScan(store: Required<KeyEnumerableStore>, prefix: string): Promise<number> {
     const allKeys: string[] = []
     for await (const key of await store.keys()) {
         allKeys.push(key)

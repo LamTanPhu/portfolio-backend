@@ -50,13 +50,13 @@ import * as bcrypt from 'bcrypt'
 // =============================================================================
 
 const mockJwtService = {
-    signAsync:   jest.fn(),
+    signAsync: jest.fn(),
     verifyAsync: jest.fn(),
-    decode:      jest.fn(),
+    decode: jest.fn(),
 }
 
 const mockTokenRepo = {
-    revoke:    jest.fn(),
+    revoke: jest.fn(),
     isRevoked: jest.fn(),
 }
 
@@ -92,8 +92,8 @@ const mockConfigService = {
 // Constants shared across login() tests
 // =============================================================================
 
-const ADMIN_EMAIL    = 'admin@example.com'
-const CORRECT_HASH   = '$2b$12$validhashabcdefghijklmnopqrstuvwxyz0123456' // fake hash, bcrypt is mocked
+const ADMIN_EMAIL = 'admin@example.com'
+const CORRECT_HASH = '$2b$12$validhashabcdefghijklmnopqrstuvwxyz0123456' // fake hash, bcrypt is mocked
 const FAKE_CREDENTIAL = { id: 1, hashPassword: CORRECT_HASH }
 
 // =============================================================================
@@ -101,12 +101,12 @@ const FAKE_CREDENTIAL = { id: 1, hashPassword: CORRECT_HASH }
 // =============================================================================
 
 const makeAccessPayload = (overrides = {}) => ({
-    sub:         1,
-    role:        'admin' as const,
-    jti:         'test-jti',
+    sub: 1,
+    role: 'admin' as const,
+    jti: 'test-jti',
     fingerprint: 'test-fingerprint',
-    iss:         'portfolio-api',
-    aud:         'portfolio-admin',
+    iss: 'portfolio-api',
+    aud: 'portfolio-admin',
     ...overrides,
 })
 
@@ -133,13 +133,13 @@ describe('AuthService', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 AuthService,
-                { provide: JwtService,                    useValue: mockJwtService      },
-                { provide: 'ITokenRepository',            useValue: mockTokenRepo        },
-                { provide: 'ICacheQueryService',          useValue: mockCacheQuery       },
-                { provide: 'IUserWriteRepository',        useValue: mockUserWriteRepo    },
-                { provide: 'IAdminCredentialRepository',  useValue: mockCredentialRepo   },
-                { provide: 'IUnitOfWork',                 useValue: mockUow              },
-                { provide: ConfigService,                  useValue: mockConfigService     },
+                { provide: JwtService, useValue: mockJwtService },
+                { provide: 'ITokenRepository', useValue: mockTokenRepo },
+                { provide: 'ICacheQueryService', useValue: mockCacheQuery },
+                { provide: 'IUserWriteRepository', useValue: mockUserWriteRepo },
+                { provide: 'IAdminCredentialRepository', useValue: mockCredentialRepo },
+                { provide: 'IUnitOfWork', useValue: mockUow },
+                { provide: ConfigService, useValue: mockConfigService },
             ],
         }).compile()
 
@@ -214,17 +214,13 @@ describe('AuthService', () => {
         it('throws UnauthorizedError when bcrypt.compare returns false', async () => {
             ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
 
-            await expect(
-                service.login('wrong-password', 'fp', ADMIN_EMAIL)
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.login('wrong-password', 'fp', ADMIN_EMAIL)).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError when email is not found in DB', async () => {
             mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
 
-            await expect(
-                service.login('any-password', 'fp', 'nobody@example.com')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.login('any-password', 'fp', 'nobody@example.com')).rejects.toThrow(UnauthorizedError)
         })
 
         it('does not call signAsync when password is wrong', async () => {
@@ -237,9 +233,7 @@ describe('AuthService', () => {
         it('does not call signAsync when email is not found', async () => {
             mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
 
-            await expect(
-                service.login('any-password', 'fp', 'nobody@example.com')
-            ).rejects.toThrow()
+            await expect(service.login('any-password', 'fp', 'nobody@example.com')).rejects.toThrow()
             expect(mockJwtService.signAsync).not.toHaveBeenCalled()
         })
 
@@ -249,9 +243,7 @@ describe('AuthService', () => {
             mockCredentialRepo.findCredentialByEmail.mockResolvedValue(null)
             ;(bcrypt.compare as jest.Mock).mockResolvedValue(false)
 
-            await expect(
-                service.login('any-password', 'fp', 'nobody@example.com')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.login('any-password', 'fp', 'nobody@example.com')).rejects.toThrow(UnauthorizedError)
 
             expect(bcrypt.compare).toHaveBeenCalledTimes(1)
         })
@@ -260,7 +252,7 @@ describe('AuthService', () => {
             await service.login('correct-password', 'fp', ADMIN_EMAIL)
 
             // Allow the fire-and-forget void promise to settle
-            await new Promise(resolve => setImmediate(resolve))
+            await new Promise((resolve) => setImmediate(resolve))
 
             expect(mockUserWriteRepo.update).toHaveBeenCalledWith(
                 FAKE_CREDENTIAL.id,
@@ -299,28 +291,22 @@ describe('AuthService', () => {
             mockJwtService.verifyAsync.mockResolvedValue(makeAccessPayload())
             mockCacheQuery.getOrSetWithProfile.mockResolvedValue(true)
 
-            await expect(
-                service.verifyAccessToken('revoked-token', 'test-fingerprint')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.verifyAccessToken('revoked-token', 'test-fingerprint')).rejects.toThrow(
+                UnauthorizedError,
+            )
         })
 
         it('throws UnauthorizedError if JWT verification fails', async () => {
             mockJwtService.verifyAsync.mockRejectedValue(new Error('jwt expired'))
 
-            await expect(
-                service.verifyAccessToken('expired-token', 'fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.verifyAccessToken('expired-token', 'fp')).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError on fingerprint mismatch when strict mode is on', async () => {
             process.env.FINGERPRINT_STRICT = 'true'
-            mockJwtService.verifyAsync.mockResolvedValue(
-                makeAccessPayload({ fingerprint: 'original-fp' })
-            )
+            mockJwtService.verifyAsync.mockResolvedValue(makeAccessPayload({ fingerprint: 'original-fp' }))
 
-            await expect(
-                service.verifyAccessToken('valid-token', 'different-fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.verifyAccessToken('valid-token', 'different-fp')).rejects.toThrow(UnauthorizedError)
         })
 
         it('does not enforce fingerprint when FINGERPRINT_STRICT is false', async () => {
@@ -371,7 +357,11 @@ describe('AuthService', () => {
         // UnauthorizedError before reaching the behavior under test.
         it('returns both a new access token and a new refresh token', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'refresh-jti',
+                type: 'refresh',
+                fingerprint: 'fp',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             const result = await service.refresh('valid-refresh-token', 'fp')
@@ -382,7 +372,11 @@ describe('AuthService', () => {
 
         it('issues both tokens in parallel — two signAsync calls on valid refresh', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'refresh-jti',
+                type: 'refresh',
+                fingerprint: 'fp',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             await service.refresh('valid-refresh-token', 'fp')
@@ -393,7 +387,11 @@ describe('AuthService', () => {
 
         it('verifies the refresh token with the expected issuer and audience', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'refresh-jti',
+                type: 'refresh',
+                fingerprint: 'fp',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
             await service.refresh('valid-refresh-token', 'fp')
@@ -406,55 +404,58 @@ describe('AuthService', () => {
 
         it('revokes the consumed refresh token (rotation)', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'old-refresh-jti', type: 'refresh', fingerprint: 'fp', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'old-refresh-jti',
+                type: 'refresh',
+                fingerprint: 'fp',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
             mockTokenRepo.revoke.mockResolvedValue(undefined)
 
             await service.refresh('valid-refresh-token', 'fp')
 
-            expect(mockTokenRepo.revoke).toHaveBeenCalledWith(
-                'old-refresh-jti',
-                expect.any(Date),
-            )
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith('old-refresh-jti', expect.any(Date))
         })
 
         it('throws UnauthorizedError on refresh fingerprint mismatch', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', fingerprint: 'original-fp', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'refresh-jti',
+                type: 'refresh',
+                fingerprint: 'original-fp',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
 
-            await expect(
-                service.refresh('valid-refresh-token', 'different-fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.refresh('valid-refresh-token', 'different-fp')).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError if refresh token is revoked', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'refresh-jti', type: 'refresh', exp: Math.floor(Date.now() / 1000) + 3600,
+                sub: 1,
+                jti: 'refresh-jti',
+                type: 'refresh',
+                exp: Math.floor(Date.now() / 1000) + 3600,
             })
             mockCacheQuery.getOrSetWithProfile.mockResolvedValue(true)
 
-            await expect(
-                service.refresh('revoked-refresh-token', 'fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.refresh('revoked-refresh-token', 'fp')).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError if token type is not refresh', async () => {
             mockJwtService.verifyAsync.mockResolvedValue({
-                sub: 1, jti: 'some-jti', type: 'access', exp: Math.floor(Date.now() / 1000) + 900,
+                sub: 1,
+                jti: 'some-jti',
+                type: 'access',
+                exp: Math.floor(Date.now() / 1000) + 900,
             })
 
-            await expect(
-                service.refresh('access-token-used-as-refresh', 'fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.refresh('access-token-used-as-refresh', 'fp')).rejects.toThrow(UnauthorizedError)
         })
 
         it('throws UnauthorizedError if JWT verification fails', async () => {
             mockJwtService.verifyAsync.mockRejectedValue(new Error('invalid signature'))
 
-            await expect(
-                service.refresh('garbage-token', 'fp')
-            ).rejects.toThrow(UnauthorizedError)
+            await expect(service.refresh('garbage-token', 'fp')).rejects.toThrow(UnauthorizedError)
         })
     })
 
@@ -468,11 +469,7 @@ describe('AuthService', () => {
             await service.logout('some-jti')
 
             expect(mockUow.transaction).toHaveBeenCalledTimes(1)
-            expect(mockTokenRepo.revoke).toHaveBeenCalledWith(
-                'some-jti',
-                expect.any(Date),
-                mockTx,
-            )
+            expect(mockTokenRepo.revoke).toHaveBeenCalledWith('some-jti', expect.any(Date), mockTx)
         })
 
         it('sets access token expiry to 15 minutes from now', async () => {
@@ -512,9 +509,7 @@ describe('AuthService', () => {
 
             await service.logout('access-jti-123', 'some-refresh-cookie-value')
 
-            const refreshCall = mockTokenRepo.revoke.mock.calls.find(
-                call => call[0] === 'refresh-jti-456',
-            )
+            const refreshCall = mockTokenRepo.revoke.mock.calls.find((call) => call[0] === 'refresh-jti-456')
             const expiresAt: Date = refreshCall![1]
             const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
             expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + sevenDaysMs - 100)
@@ -544,9 +539,7 @@ describe('AuthService', () => {
                 throw new Error('malformed token')
             })
 
-            await expect(
-                service.logout('access-jti-123', 'garbage-not-a-jwt')
-            ).resolves.not.toThrow()
+            await expect(service.logout('access-jti-123', 'garbage-not-a-jwt')).resolves.not.toThrow()
 
             expect(mockTokenRepo.revoke).toHaveBeenCalledWith('access-jti-123', expect.any(Date), mockTx)
             expect(mockTokenRepo.revoke).toHaveBeenCalledTimes(1)

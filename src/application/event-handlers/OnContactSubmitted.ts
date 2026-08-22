@@ -1,9 +1,9 @@
 /**
  * @fileoverview OnContactSubmitted
- * 
+ *
  * Event handler for ContactSubmittedEvent.
  * Sends admin notification email with useful context for spam review.
- * 
+ *
  * Triggered automatically by EventEmitter2 when 'contact.submitted' is emitted.
  * Runs asynchronously — does not block the HTTP response.
  */
@@ -17,43 +17,40 @@ import type { ContactSubmittedEvent } from '../../domain/events/ContactSubmitted
 
 @Injectable()
 export class OnContactSubmitted {
-  constructor(
-    @Inject('IMailService')
-    private readonly mail: IMailService,
+    constructor(
+        @Inject('IMailService')
+        private readonly mail: IMailService,
 
-    @Inject('ILogger')
-    private readonly logger: ILogger,
+        @Inject('ILogger')
+        private readonly logger: ILogger,
 
-    private readonly configService: ConfigService,
-  ) {}
+        private readonly configService: ConfigService,
+    ) {}
 
-  // Bound to 'contact.submitted' event — dispatched by SubmitContactCommand
-  @OnEvent('contact.submitted')
-  async handle(event: ContactSubmittedEvent): Promise<void> {
-    try {
-      const emailBody = this.buildEmailBody(event)
+    // Bound to 'contact.submitted' event — dispatched by SubmitContactCommand
+    @OnEvent('contact.submitted')
+    async handle(event: ContactSubmittedEvent): Promise<void> {
+        try {
+            const emailBody = this.buildEmailBody(event)
 
-      await this.mail.send(
-        this.configService.get<string>('ADMIN_EMAIL') ?? 'your@email.com',
-        `New Contact Message from ${event.name}`,
-        emailBody,
-      )
+            await this.mail.send(
+                this.configService.get<string>('ADMIN_EMAIL') ?? 'your@email.com',
+                `New Contact Message from ${event.name}`,
+                emailBody,
+            )
 
-      this.logger.log(
-        `Contact notification sent | From: ${event.name} <${event.email}>`,
-        OnContactSubmitted.name,
-      )
-    } catch (error) {
-      this.logger.error(
-        `Failed to send contact notification | From: ${event.name}`,
-        (error as Error).stack,
-        OnContactSubmitted.name,
-      )
+            this.logger.log(`Contact notification sent | From: ${event.name} <${event.email}>`, OnContactSubmitted.name)
+        } catch (error) {
+            this.logger.error(
+                `Failed to send contact notification | From: ${event.name}`,
+                (error as Error).stack,
+                OnContactSubmitted.name,
+            )
+        }
     }
-  }
 
-  private buildEmailBody(event: ContactSubmittedEvent): string {
-    return `
+    private buildEmailBody(event: ContactSubmittedEvent): string {
+        return `
       <h3>New Contact Form Submission</h3>
       <p><strong>Name:</strong> ${this.escapeHtml(event.name)}</p>
       <p><strong>Email:</strong> ${this.escapeHtml(event.email)}</p>
@@ -66,14 +63,14 @@ export class OnContactSubmitted {
       <h4>Message:</h4>
       <p style="white-space: pre-wrap;">${this.escapeHtml(event.message)}</p>
     `.trim()
-  }
+    }
 
-  private escapeHtml(unsafe: string): string {
-    return unsafe
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-  }
+    private escapeHtml(unsafe: string): string {
+        return unsafe
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
+    }
 }

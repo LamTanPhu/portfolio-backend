@@ -3,7 +3,10 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import type { IEducationWriteRepository, CreateEducationInput } from '../../../../domain/repositories/education/IEducationWriteRepository'
+import type {
+    IEducationWriteRepository,
+    CreateEducationInput,
+} from '../../../../domain/repositories/education/IEducationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { EducationDTO } from '../../../dtos/education/EducationDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'

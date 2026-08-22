@@ -13,9 +13,9 @@ import type { IAuditLogReadRepository } from '../../../../domain/repositories/au
 import type { AuditLogDTO } from '../../../dtos/audit/AuditLogDTO'
 
 export interface AuditLogPageDTO {
-    items:      AuditLogDTO[]
+    items: AuditLogDTO[]
     nextCursor: number | null
-    total:      number
+    total: number
 }
 
 @Injectable()
@@ -30,18 +30,18 @@ export class GetAuditLogsQuery {
 
         return {
             items: page.items.map((entry) => ({
-                id:         entry.id,
-                actorId:    entry.actorId,
-                method:     entry.method,
-                route:      entry.route,
+                id: entry.id,
+                actorId: entry.actorId,
+                method: entry.method,
+                route: entry.route,
                 entityType: entry.entityType,
-                entityId:   entry.entityId,
-                ipAddress:  entry.ipAddress,
+                entityId: entry.entityId,
+                ipAddress: entry.ipAddress,
                 statusCode: entry.statusCode,
-                createdAt:  entry.createdAt.toISOString(),
+                createdAt: entry.createdAt.toISOString(),
             })),
             nextCursor: page.nextCursor,
-            total:      page.total,
+            total: page.total,
         }
     }
 }

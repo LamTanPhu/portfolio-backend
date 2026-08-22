@@ -1,6 +1,6 @@
 /**
  * @fileoverview CreateProjectCommand
- * 
+ *
  * Creates a new project record.
  * Slug is auto-generated from name using Slug value object.
  * userId comes from verified JWT payload.
@@ -14,60 +14,60 @@ import type { ProjectDTO } from '../../../dtos/ProjectDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
 
 interface Input {
-  name:         string
-  description:  string
-  techStack:    string[]
-  repoUrl:      string | null
-  liveUrl:      string | null
-  thumbnailUrl: string | null
-  isOpenSource: boolean
-  isPublished:  boolean
-  userId:       number
+    name: string
+    description: string
+    techStack: string[]
+    repoUrl: string | null
+    liveUrl: string | null
+    thumbnailUrl: string | null
+    isOpenSource: boolean
+    isPublished: boolean
+    userId: number
 }
 
 @Injectable()
 export class CreateProjectCommand {
-  constructor(
-    @Inject('IProjectWriteRepository')
-    private readonly repo: IProjectWriteRepository,
+    constructor(
+        @Inject('IProjectWriteRepository')
+        private readonly repo: IProjectWriteRepository,
 
-    @Inject(CACHE_INVALIDATION_SERVICE)
-    private readonly cacheService: ICacheInvalidationService,
-  ) {}
+        @Inject(CACHE_INVALIDATION_SERVICE)
+        private readonly cacheService: ICacheInvalidationService,
+    ) {}
 
-  async execute(input: Input): Promise<ProjectDTO> {
-    const slug = Slug.from(input.name)
+    async execute(input: Input): Promise<ProjectDTO> {
+        const slug = Slug.from(input.name)
 
-    const project = await this.repo.create({
-      name:         input.name,
-      description:  input.description,
-      slug:         slug.toString(),
-      techStack:    input.techStack,
-      repoUrl:      input.repoUrl,
-      liveUrl:      input.liveUrl,
-      thumbnailUrl: input.thumbnailUrl,
-      isPublished:  input.isPublished,
-      isOpenSource: input.isOpenSource,
-      userId:       input.userId,
-    })
+        const project = await this.repo.create({
+            name: input.name,
+            description: input.description,
+            slug: slug.toString(),
+            techStack: input.techStack,
+            repoUrl: input.repoUrl,
+            liveUrl: input.liveUrl,
+            thumbnailUrl: input.thumbnailUrl,
+            isPublished: input.isPublished,
+            isOpenSource: input.isOpenSource,
+            userId: input.userId,
+        })
 
-    // Invalidate caches
-    await this.cacheService.invalidatePublicProjects()
-    await this.cacheService.invalidateProjectBySlug(slug.toString())
+        // Invalidate caches
+        await this.cacheService.invalidatePublicProjects()
+        await this.cacheService.invalidateProjectBySlug(slug.toString())
 
-    return {
-      id:           project.id,
-      name:         project.name,
-      description:  project.description,
-      slug:         project.slug,
-      techStack:    project.techStack,
-      repoUrl:      project.repoUrl,
-      liveUrl:      project.liveUrl,
-      thumbnailUrl: project.thumbnailUrl,
-      isPublished:  project.isPublished,
-      isOpenSource: project.isOpenSource,
-      createdAt:    project.createdAt.toISOString(),
-      updatedAt:    project.updatedAt.toISOString(),
+        return {
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            slug: project.slug,
+            techStack: project.techStack,
+            repoUrl: project.repoUrl,
+            liveUrl: project.liveUrl,
+            thumbnailUrl: project.thumbnailUrl,
+            isPublished: project.isPublished,
+            isOpenSource: project.isOpenSource,
+            createdAt: project.createdAt.toISOString(),
+            updatedAt: project.updatedAt.toISOString(),
+        }
     }
-  }
 }

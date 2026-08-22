@@ -21,13 +21,13 @@ import type { PrismaClient } from '@prisma/client'
 // transactions manage the lifecycle internally via $transaction().
 // =============================================================================
 export type TransactionalClient = Omit<
-  PrismaClient,
-  '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
 >
 
 export interface IUnitOfWork {
-  begin(): Promise<void>
-  commit(): Promise<void>
-  rollback(): Promise<void>
-  transaction<T>(fn: (tx: TransactionalClient) => Promise<T>): Promise<T>
+    begin(): Promise<void>
+    commit(): Promise<void>
+    rollback(): Promise<void>
+    transaction<T>(fn: (tx: TransactionalClient) => Promise<T>): Promise<T>
 }

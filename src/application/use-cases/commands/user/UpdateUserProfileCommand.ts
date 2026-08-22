@@ -1,6 +1,6 @@
 /**
  * @fileoverview UpdateUserProfileCommand
- * 
+ *
  * Updates the portfolio owner's profile and invalidates the cache.
  */
 
@@ -12,26 +12,26 @@ import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.
 
 @Injectable()
 export class UpdateUserProfileCommand {
-  constructor(
-    @Inject('IUserWriteRepository')
-    private readonly repo: IUserWriteRepository,
+    constructor(
+        @Inject('IUserWriteRepository')
+        private readonly repo: IUserWriteRepository,
 
-    @Inject(CACHE_INVALIDATION_SERVICE)
-    private readonly cacheService: ICacheInvalidationService,
-  ) {}
+        @Inject(CACHE_INVALIDATION_SERVICE)
+        private readonly cacheService: ICacheInvalidationService,
+    ) {}
 
-  async execute(userId: number, data: UpdateUserInput): Promise<UserProfileDTO> {
-    const user = await this.repo.update(userId, data)
+    async execute(userId: number, data: UpdateUserInput): Promise<UserProfileDTO> {
+        const user = await this.repo.update(userId, data)
 
-    await this.cacheService.invalidateUserProfile(userId)
+        await this.cacheService.invalidateUserProfile(userId)
 
-    return {
-      id:        user.id,
-      firstname: user.firstname,
-      lastname:  user.lastname,
-      email:     user.email,
-      aboutme:   user.aboutme,
-      lastLogin: user.lastLogin?.toISOString() ?? null,
+        return {
+            id: user.id,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            email: user.email,
+            aboutme: user.aboutme,
+            lastLogin: user.lastLogin?.toISOString() ?? null,
+        }
     }
-  }
 }

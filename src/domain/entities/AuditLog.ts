@@ -8,14 +8,14 @@
 // =============================================================================
 export class AuditLog {
     constructor(
-        public readonly id:         number,
-        public readonly actorId:    number | null,
-        public readonly method:     string,
-        public readonly route:      string,
+        public readonly id: number,
+        public readonly actorId: number | null,
+        public readonly method: string,
+        public readonly route: string,
         public readonly entityType: string,
-        public readonly entityId:   string | null,
-        public readonly ipAddress:  string | null,
+        public readonly entityId: string | null,
+        public readonly ipAddress: string | null,
         public readonly statusCode: number,
-        public readonly createdAt:  Date,
+        public readonly createdAt: Date,
     ) {}
 }

@@ -13,19 +13,19 @@
 // =============================================================================
 
 export interface ProjectSummaryDTO {
-  id:           number
-  name:         string
-  slug:         string
-  techStack:    string[]
-  repoUrl:      string | null
-  liveUrl:      string | null
-  thumbnailUrl: string | null
-  isPublished:  boolean
-  isOpenSource: boolean
-  createdAt:    string
-  updatedAt:    string
+    id: number
+    name: string
+    slug: string
+    techStack: string[]
+    repoUrl: string | null
+    liveUrl: string | null
+    thumbnailUrl: string | null
+    isPublished: boolean
+    isOpenSource: boolean
+    createdAt: string
+    updatedAt: string
 }
 
 export interface ProjectDTO extends ProjectSummaryDTO {
-  description: string
+    description: string
 }

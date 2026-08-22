@@ -1,6 +1,6 @@
 /**
  * @fileoverview SocialController
- * 
+ *
  * Handles social account links for the public portfolio and admin management.
  */
 
@@ -18,13 +18,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common'
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
@@ -62,16 +56,13 @@ export class SocialController {
     @ApiOperation({ summary: 'Create social account — admin only' })
     @ApiResponse({ status: 201, description: 'Social account created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    async create(
-        @Body() dto: CreateSocialAccountDto,
-        @Req() req: AuthenticatedRequest,
-    ): Promise<SocialAccountDTO> {
+    async create(@Body() dto: CreateSocialAccountDto, @Req() req: AuthenticatedRequest): Promise<SocialAccountDTO> {
         return this.createCommand.execute({
-        name:     dto.name,
-        url:      dto.url,
-        imageUrl: dto.imageUrl ?? null,
-        isPublic: dto.isPublic ?? true,
-        userId:   req.user.sub,
+            name: dto.name,
+            url: dto.url,
+            imageUrl: dto.imageUrl ?? null,
+            isPublic: dto.isPublic ?? true,
+            userId: req.user.sub,
         })
     }
 
@@ -88,11 +79,11 @@ export class SocialController {
         @Body() dto: UpdateSocialAccountDto,
     ): Promise<SocialAccountDTO> {
         return this.updateCommand.execute({
-        id,
-        name:     dto.name,
-        url:      dto.url,
-        imageUrl: dto.imageUrl,
-        isPublic: dto.isPublic,
+            id,
+            name: dto.name,
+            url: dto.url,
+            imageUrl: dto.imageUrl,
+            isPublic: dto.isPublic,
         })
     }
 

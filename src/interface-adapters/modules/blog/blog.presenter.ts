@@ -1,8 +1,8 @@
 /**
  * @fileoverview BlogPresenter
- * 
+ *
  * Responsible for transforming Application-layer DTOs into HTTP response shapes.
- * 
+ *
  * Benefits of having a Presenter:
  * - Single place to control response format
  * - Easy to add computed fields, hide sensitive data, format dates, etc.
@@ -21,8 +21,8 @@ export class BlogPresenter {
     static toDetailResponse(dto: BlogDetailDTO): BlogDetailDTO {
         return {
             ...dto,
-        // Example of future transformation:
-        // publishedAt: dto.publishedAt ? dto.publishedAt.toISOString() : null,
+            // Example of future transformation:
+            // publishedAt: dto.publishedAt ? dto.publishedAt.toISOString() : null,
         }
     }
 

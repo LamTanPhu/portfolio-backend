@@ -1,6 +1,6 @@
 /**
  * @fileoverview PrismaSocialAccountMapper
- * 
+ *
  * Centralized mapper for SocialAccount aggregate to avoid duplication.
  */
 

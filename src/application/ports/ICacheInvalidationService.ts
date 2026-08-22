@@ -1,6 +1,6 @@
 /**
  * @fileoverview ICacheInvalidationService - Application Port
- * 
+ *
  * Defines the contract for cache invalidation operations.
  * Follows Dependency Inversion Principle: Application use cases depend
  * on this abstraction, not on concrete cache implementations.

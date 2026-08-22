@@ -6,12 +6,12 @@
 // Separated from IAuditLogReadRepository per Interface Segregation Principle.
 // =============================================================================
 export interface AuditLogEntry {
-    actorId:    number | null
-    method:     string
-    route:      string
+    actorId: number | null
+    method: string
+    route: string
     entityType: string
-    entityId:   string | null
-    ipAddress:  string | null
+    entityId: string | null
+    ipAddress: string | null
     statusCode: number
 }
 

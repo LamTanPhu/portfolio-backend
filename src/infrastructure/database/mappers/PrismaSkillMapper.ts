@@ -1,6 +1,6 @@
 /**
  * @fileoverview PrismaSkillMapper
- * 
+ *
  * Centralized mapper for Skill aggregate to avoid duplication.
  */
 
@@ -13,14 +13,14 @@ type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>
 export class PrismaSkillMapper {
     static toDomain(raw: PrismaSkill): Skill {
         return new Skill(
-        raw.id,
-        raw.name,
-        raw.imageUrl,
-        raw.category as SkillCategory,
-        raw.isPublic,
-        raw.userId,
-        raw.createdAt,
-        raw.updatedAt,
+            raw.id,
+            raw.name,
+            raw.imageUrl,
+            raw.category,
+            raw.isPublic,
+            raw.userId,
+            raw.createdAt,
+            raw.updatedAt,
         )
     }
 }

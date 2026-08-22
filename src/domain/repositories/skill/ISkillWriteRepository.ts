@@ -4,18 +4,18 @@ import type { Skill, SkillCategory } from '../../entities/Skill'
 // CreateSkillInput
 // =============================================================================
 export interface CreateSkillInput {
-    name:      string
-    imageUrl:  string | null
-    category:  SkillCategory
-    isPublic:  boolean
-    userId:    number
+    name: string
+    imageUrl: string | null
+    category: SkillCategory
+    isPublic: boolean
+    userId: number
 }
 
 // =============================================================================
 // UpdateSkillInput
 // =============================================================================
 export interface UpdateSkillInput {
-    name?:     string
+    name?: string
     imageUrl?: string | null
     category?: SkillCategory
     isPublic?: boolean

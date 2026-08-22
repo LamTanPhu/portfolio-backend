@@ -7,11 +7,11 @@ import type { Job } from '../../entities/Job'
 // =============================================================================
 export interface CreateJobInput {
     companyName: string
-    role:        string
-    startedAt:   Date
-    endedAt:     Date | null
-    isEnded:     boolean
-    userId:      number
+    role: string
+    startedAt: Date
+    endedAt: Date | null
+    isEnded: boolean
+    userId: number
 }
 
 // =============================================================================
@@ -20,10 +20,10 @@ export interface CreateJobInput {
 // =============================================================================
 export interface UpdateJobInput {
     companyName?: string
-    role?:        string
-    startedAt?:   Date
-    endedAt?:     Date | null
-    isEnded?:     boolean
+    role?: string
+    startedAt?: Date
+    endedAt?: Date | null
+    isEnded?: boolean
 }
 
 // =============================================================================

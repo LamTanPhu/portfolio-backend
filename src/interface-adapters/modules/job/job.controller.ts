@@ -1,8 +1,8 @@
 /**
  * @fileoverview JobController
- * 
+ *
  * Handles work experience records for the public portfolio and admin management.
- * 
+ *
  * - Public GET: Returns all job records (no authentication required)
  * - Admin POST/PATCH/DELETE: Requires valid JWT
  * - userId is extracted from JWT payload — never trusted from client input
@@ -22,13 +22,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common'
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
@@ -72,17 +66,14 @@ export class JobController {
     @ApiOperation({ summary: 'Create new work experience record — admin only' })
     @ApiResponse({ status: 201, description: 'Job record created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    async create(
-        @Body() dto: CreateJobDto,
-        @Req() req: AuthenticatedRequest,
-    ): Promise<JobDTO> {
+    async create(@Body() dto: CreateJobDto, @Req() req: AuthenticatedRequest): Promise<JobDTO> {
         return this.createCommand.execute({
-        companyName: dto.companyName,
-        role: dto.role,
-        startedAt: new Date(dto.startedAt),
-        endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
-        isEnded: dto.isEnded ?? false,
-        userId: req.user.sub,
+            companyName: dto.companyName,
+            role: dto.role,
+            startedAt: new Date(dto.startedAt),
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
+            isEnded: dto.isEnded ?? false,
+            userId: req.user.sub,
         })
     }
 
@@ -94,17 +85,14 @@ export class JobController {
     @ApiResponse({ status: 200, description: 'Job record updated' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 404, description: 'Job record not found' })
-    async update(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateJobDto,
-    ): Promise<JobDTO> {
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateJobDto): Promise<JobDTO> {
         return this.updateCommand.execute({
-        id,
-        companyName: dto.companyName,
-        role: dto.role,
-        startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-        endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
-        isEnded: dto.isEnded,
+            id,
+            companyName: dto.companyName,
+            role: dto.role,
+            startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+            isEnded: dto.isEnded,
         })
     }
 

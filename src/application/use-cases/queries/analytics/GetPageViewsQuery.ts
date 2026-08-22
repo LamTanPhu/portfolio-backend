@@ -18,8 +18,8 @@ export class GetPageViewsQuery {
     async execute(): Promise<PageViewDTO[]> {
         const views = await this.repo.findAll()
         return views.map((v) => ({
-            route:        v.route,
-            count:        v.count,
+            route: v.route,
+            count: v.count,
             lastViewedAt: v.lastViewedAt.toISOString(),
         }))
     }

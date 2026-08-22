@@ -35,7 +35,7 @@ import { CacheInvalidationService } from './CacheInvalidationService'
 /** Builds a fake Redis-shaped store: { store: { client: { scanIterator, unlink, del } } }. */
 function makeFakeRedisKeyv(keysInStore: string[]) {
     const unlink = jest.fn().mockResolvedValue(undefined)
-    const del    = jest.fn().mockResolvedValue(undefined)
+    const del = jest.fn().mockResolvedValue(undefined)
 
     const scanIterator = jest.fn(function* (opts: { MATCH: string }) {
         // Real node-redis's MATCH is a glob; tests only ever use trailing '*',
@@ -143,9 +143,9 @@ describe('CacheInvalidationService', () => {
     describe('deletePattern — real in-memory store', () => {
         it('deletes only keys matching the pattern, preserves the rest', async () => {
             const keyv = await makeRealMemoryKeyv({
-                'portfolio:v1:blog:post-1':       'A',
-                'portfolio:v1:blog:post-2':       'B',
-                'portfolio:v1:blog:list:public':  'C',
+                'portfolio:v1:blog:post-1': 'A',
+                'portfolio:v1:blog:post-2': 'B',
+                'portfolio:v1:blog:list:public': 'C',
                 'portfolio:v1:project:list:public': 'D', // must survive
             })
 
@@ -208,10 +208,7 @@ describe('CacheInvalidationService', () => {
             expect(fake.scanIterator).toHaveBeenCalledWith(
                 expect.objectContaining({ MATCH: 'portfolio:v1:blog:*', COUNT: 100 }),
             )
-            expect(fake.unlink).toHaveBeenCalledWith([
-                'portfolio:v1:blog:post-1',
-                'portfolio:v1:blog:post-2',
-            ])
+            expect(fake.unlink).toHaveBeenCalledWith(['portfolio:v1:blog:post-1', 'portfolio:v1:blog:post-2'])
             expect(fake.del).not.toHaveBeenCalled() // unlink preferred over del
         })
 

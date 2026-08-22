@@ -1,6 +1,6 @@
 /**
  * @fileoverview EducationModule
- * 
+ *
  * Manages education records (public view + admin CRUD).
  * Uses split Read/Write repositories and proper caching.
  */
@@ -24,7 +24,7 @@ import { PrismaEducationWriteRepository } from '../../../infrastructure/database
 @Module({
     imports: [
         AuthModule,
-        CacheInfrastructureModule,   // Required for caching
+        CacheInfrastructureModule, // Required for caching
     ],
 
     controllers: [EducationController],
@@ -35,13 +35,13 @@ import { PrismaEducationWriteRepository } from '../../../infrastructure/database
         PrismaEducationWriteRepository,
 
         // Ports
-        { 
+        {
             provide: 'IEducationReadRepository',
-            useExisting: PrismaEducationReadRepository
+            useExisting: PrismaEducationReadRepository,
         },
-        { 
+        {
             provide: 'IEducationWriteRepository',
-            useExisting: PrismaEducationWriteRepository
+            useExisting: PrismaEducationWriteRepository,
         },
 
         // Use Cases

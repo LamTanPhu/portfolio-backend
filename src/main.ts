@@ -21,12 +21,12 @@ async function bootstrap(): Promise<void> {
     let httpsOptions: { key: Buffer; cert: Buffer } | undefined
 
     if (process.env.USE_HTTPS === 'true') {
-        const keyPath  = process.env.CERT_KEY_PATH  ?? './certificates/key.pem'
+        const keyPath = process.env.CERT_KEY_PATH ?? './certificates/key.pem'
         const certPath = process.env.CERT_CERT_PATH ?? './certificates/cert.pem'
 
         try {
             httpsOptions = {
-                key:  readFileSync(keyPath),
+                key: readFileSync(keyPath),
                 cert: readFileSync(certPath),
             }
             logger.log(`HTTPS enabled — certs loaded from ${keyPath} / ${certPath}`)
@@ -59,12 +59,14 @@ async function bootstrap(): Promise<void> {
     // ─── Middleware ─────────────────────────────────────────────────────
     app.use(compression({ threshold: 1024, level: 6 }))
 
-    app.use(helmet({
-        // Keep Helmet's default CORP of 'same-origin'.
-        // 'cross-origin' would allow any site to embed responses from this API,
-        // which is unnecessary for a JSON-only backend with no embeddable assets.
-        // CORS (configured below) already handles legitimate cross-origin API calls.
-    }))
+    app.use(
+        helmet({
+            // Keep Helmet's default CORP of 'same-origin'.
+            // 'cross-origin' would allow any site to embed responses from this API,
+            // which is unnecessary for a JSON-only backend with no embeddable assets.
+            // CORS (configured below) already handles legitimate cross-origin API calls.
+        }),
+    )
 
     // BUG FIX: this was '10kb'. CreateBlogDto.content allows up to 50,000
     // characters and CreateProjectDto.description up to 10,000 — both are
@@ -81,7 +83,7 @@ async function bootstrap(): Promise<void> {
     // ─── CORS ───────────────────────────────────────────────────────────
     const allowedOrigins = (process.env.FRONTEND_URL ?? 'https://localhost:3000')
         .split(',')
-        .map(origin => origin.trim())
+        .map((origin) => origin.trim())
 
     app.enableCors({
         origin: allowedOrigins,
@@ -99,37 +101,37 @@ async function bootstrap(): Promise<void> {
 
     app.useGlobalPipes(
         new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        forbidUnknownValues: true,
-        transform: true,
-        transformOptions: { enableImplicitConversion: true },
-        stopAtFirstError: true,
-        validationError: { target: false, value: false },
-        exceptionFactory: (errors) => {
-            const messages = errors.map(err => 
-            `${err.property}: ${Object.values(err.constraints || {}).join(', ')}`
-            )
-            return new ValidationError(messages.join('; '))
-        },
+            whitelist: true,
+            forbidNonWhitelisted: true,
+            forbidUnknownValues: true,
+            transform: true,
+            transformOptions: { enableImplicitConversion: true },
+            stopAtFirstError: true,
+            validationError: { target: false, value: false },
+            exceptionFactory: (errors) => {
+                const messages = errors.map(
+                    (err) => `${err.property}: ${Object.values(err.constraints || {}).join(', ')}`,
+                )
+                return new ValidationError(messages.join('; '))
+            },
         }),
     )
 
     // ─── Swagger (Dev Only) ─────────────────────────────────────────────
     if (isDev) {
         const config = new DocumentBuilder()
-        .setTitle('Portfolio API')
-        .setDescription('Lâm Tấn Phú — Portfolio Backend API')
-        .setVersion('1.0')
-        .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
-        .build()
+            .setTitle('Portfolio API')
+            .setDescription('Lâm Tấn Phú — Portfolio Backend API')
+            .setVersion('1.0')
+            .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
+            .build()
 
         const document = SwaggerModule.createDocument(app, config)
         SwaggerModule.setup('api/docs', app, document)
     }
 
     // ─── Start Server ───────────────────────────────────────────────────
-    const port     = parseInt(process.env.PORT ?? '3001', 10)
+    const port = parseInt(process.env.PORT ?? '3001', 10)
     const protocol = httpsOptions ? 'https' : 'http'
     await app.listen(port)
 

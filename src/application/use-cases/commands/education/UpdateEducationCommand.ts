@@ -1,6 +1,6 @@
 /**
  * @fileoverview UpdateEducationCommand
- * 
+ *
  * Updates an education record and invalidates the public cache.
  */
 

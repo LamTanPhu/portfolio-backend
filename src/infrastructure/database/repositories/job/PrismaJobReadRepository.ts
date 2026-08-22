@@ -16,24 +16,24 @@ export class PrismaJobReadRepository implements IJobReadRepository {
 
     async findAll(): Promise<JobDTO[]> {
         const rows = await this.prisma.client.job.findMany({
-        orderBy: { startedAt: 'desc' },
-        select: {
-            id:          true,
-            companyName: true,
-            role:        true,
-            startedAt:   true,
-            endedAt:     true,
-            isEnded:     true,
-        },
+            orderBy: { startedAt: 'desc' },
+            select: {
+                id: true,
+                companyName: true,
+                role: true,
+                startedAt: true,
+                endedAt: true,
+                isEnded: true,
+            },
         })
 
-        return rows.map(row => ({
-        id:          row.id,
-        companyName: row.companyName,
-        role:        row.role,
-        startedAt:   row.startedAt.toISOString(),
-        endedAt:     row.endedAt?.toISOString() ?? null,
-        isEnded:     row.isEnded,
+        return rows.map((row) => ({
+            id: row.id,
+            companyName: row.companyName,
+            role: row.role,
+            startedAt: row.startedAt.toISOString(),
+            endedAt: row.endedAt?.toISOString() ?? null,
+            isEnded: row.isEnded,
         }))
     }
 

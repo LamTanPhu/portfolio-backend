@@ -1,6 +1,6 @@
 /**
  * @fileoverview UserModule
- * 
+ *
  * Manages admin user profile (view + update).
  * Uses split Read/Write repositories for better separation of concerns.
  */
@@ -19,22 +19,22 @@ import { PrismaUserReadRepository } from '../../../infrastructure/database/repos
 import { PrismaUserWriteRepository } from '../../../infrastructure/database/repositories/user/PrismaUserWriteRepository'
 
 @Module({
-  imports: [AuthModule],
+    imports: [AuthModule],
 
-  controllers: [UserController],
+    controllers: [UserController],
 
-  providers: [
-    // Repositories
-    PrismaUserReadRepository,
-    PrismaUserWriteRepository,
+    providers: [
+        // Repositories
+        PrismaUserReadRepository,
+        PrismaUserWriteRepository,
 
-    // Ports
-    { provide: 'IUserReadRepository', useExisting: PrismaUserReadRepository },
-    { provide: 'IUserWriteRepository', useExisting: PrismaUserWriteRepository },
+        // Ports
+        { provide: 'IUserReadRepository', useExisting: PrismaUserReadRepository },
+        { provide: 'IUserWriteRepository', useExisting: PrismaUserWriteRepository },
 
-    // Use Cases
-    GetUserProfileQuery,
-    UpdateUserProfileCommand,
-  ],
+        // Use Cases
+        GetUserProfileQuery,
+        UpdateUserProfileCommand,
+    ],
 })
 export class UserModule {}

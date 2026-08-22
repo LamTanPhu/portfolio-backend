@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetCertificationsQuery
- * 
+ *
  * Public query returning all published certifications with caching.
  * Uses LONG cache profile for optimal performance + freshness.
  */
@@ -22,13 +22,9 @@ export class GetCertificationsQuery {
     ) {}
 
     async execute(): Promise<CertificationDTO[]> {
-        return this.cacheQuery.getOrSetWithProfile(
-            'certification:list:public',
-            'LONG',
-            async () => {
-                const certifications = await this.repo.findPublished()
-                return certifications
-            },
-        )
+        return this.cacheQuery.getOrSetWithProfile('certification:list:public', 'LONG', async () => {
+            const certifications = await this.repo.findPublished()
+            return certifications
+        })
     }
 }

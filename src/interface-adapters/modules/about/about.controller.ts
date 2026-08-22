@@ -23,9 +23,9 @@ import { GetPublicSocialAccountsQuery } from '../../../application/use-cases/que
 @Controller('about')
 export class AboutController {
     constructor(
-        private readonly getSkills:         GetPublishedSkillsQuery,
-        private readonly getEducation:      GetEducationQuery,
-        private readonly getJobs:           GetJobsQuery,
+        private readonly getSkills: GetPublishedSkillsQuery,
+        private readonly getEducation: GetEducationQuery,
+        private readonly getJobs: GetJobsQuery,
         private readonly getCertifications: GetCertificationsQuery,
         private readonly getSocialAccounts: GetPublicSocialAccountsQuery,
     ) {}

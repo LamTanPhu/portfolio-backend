@@ -4,11 +4,11 @@
 // Never exposed on public endpoints.
 // =============================================================================
 export interface ContactMessageDTO {
-    id:          number
-    name:        string
-    email:       string
-    message:     string
-    ipAddress:   string
+    id: number
+    name: string
+    email: string
+    message: string
+    ipAddress: string
     browserInfo: string | null
-    createdAt:   string
+    createdAt: string
 }

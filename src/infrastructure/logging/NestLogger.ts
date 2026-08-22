@@ -9,17 +9,17 @@ import type { ILogger } from '../../application/ports/ILogger'
 // =============================================================================
 @Injectable()
 export class NestLogger implements ILogger {
-  private readonly logger = new Logger()
+    private readonly logger = new Logger()
 
-  log(message: string, context?: string): void {
-    this.logger.log(message, context)
-  }
+    log(message: string, context?: string): void {
+        this.logger.log(message, context)
+    }
 
-  warn(message: string, context?: string): void {
-    this.logger.warn(message, context)
-  }
+    warn(message: string, context?: string): void {
+        this.logger.warn(message, context)
+    }
 
-  error(message: string, trace?: string, context?: string): void {
-    this.logger.error(message, trace, context)
-  }
+    error(message: string, trace?: string, context?: string): void {
+        this.logger.error(message, trace, context)
+    }
 }

@@ -1,6 +1,6 @@
 /**
  * @fileoverview Domain Errors Barrel Export
- * 
+ *
  * Central export point for all domain errors.
  * Allows clean imports like: `import { NotFoundError, ValidationError } from '../../domain/errors'`
  */

@@ -83,8 +83,8 @@ export class CacheInvalidationService implements ICacheInvalidationService {
         if (stores.length === 0) {
             this.logger.error(
                 `Pattern invalidation FAILED — cache manager exposes no stores. ` +
-                `Stale cache entries will persist until TTL expiry or process restart. ` +
-                `Pattern: ${pattern}`,
+                    `Stale cache entries will persist until TTL expiry or process restart. ` +
+                    `Pattern: ${pattern}`,
             )
             return
         }

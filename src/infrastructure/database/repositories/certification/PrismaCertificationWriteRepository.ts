@@ -40,12 +40,12 @@ export class PrismaCertificationWriteRepository implements ICertificationWriteRe
 
     async delete(id: number): Promise<void> {
         try {
-        await this.prisma.client.certification.delete({ where: { id } })
+            await this.prisma.client.certification.delete({ where: { id } })
         } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
-            throw new NotFoundError(`Certification not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Certification not found: ${id}`)
+            }
+            throw error
         }
     }
 

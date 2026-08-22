@@ -13,15 +13,15 @@ type PrismaJob = Prisma.JobGetPayload<Record<string, never>>
 export class PrismaJobMapper {
     static toDomain(raw: PrismaJob): Job {
         return new Job(
-        raw.id,
-        raw.companyName,
-        raw.role,
-        raw.startedAt,
-        raw.endedAt,
-        raw.isEnded,
-        raw.userId,
-        raw.createdAt,
-        raw.updatedAt,
+            raw.id,
+            raw.companyName,
+            raw.role,
+            raw.startedAt,
+            raw.endedAt,
+            raw.isEnded,
+            raw.userId,
+            raw.createdAt,
+            raw.updatedAt,
         )
     }
 }

@@ -19,11 +19,11 @@ const mockHealthCheckService = {
     check: jest.fn(),
 }
 
-const mockUpResult    = { database: { status: 'up' } }
-const mockDownResult  = { database: { status: 'down' } }
+const mockUpResult = { database: { status: 'up' } }
+const mockDownResult = { database: { status: 'down' } }
 
 const mockIndicatorSession = {
-    up:   jest.fn().mockReturnValue(mockUpResult),
+    up: jest.fn().mockReturnValue(mockUpResult),
     down: jest.fn().mockReturnValue(mockDownResult),
 }
 
@@ -45,9 +45,9 @@ describe('HealthController', () => {
         const module: TestingModule = await Test.createTestingModule({
             controllers: [HealthController],
             providers: [
-                { provide: HealthCheckService,       useValue: mockHealthCheckService       },
-                { provide: HealthIndicatorService,   useValue: mockHealthIndicatorService   },
-                { provide: CheckSystemHealthQuery,   useValue: mockCheckSystemHealthQuery   },
+                { provide: HealthCheckService, useValue: mockHealthCheckService },
+                { provide: HealthIndicatorService, useValue: mockHealthIndicatorService },
+                { provide: CheckSystemHealthQuery, useValue: mockCheckSystemHealthQuery },
             ],
         }).compile()
 
@@ -66,7 +66,7 @@ describe('HealthController', () => {
     it('reports the indicator as up when CheckSystemHealthQuery says the database is healthy', async () => {
         mockCheckSystemHealthQuery.execute.mockResolvedValue({ isDatabaseHealthy: true })
         mockHealthCheckService.check.mockImplementation(async (indicators: Array<() => unknown>) => {
-            const results = await Promise.all(indicators.map(fn => fn()))
+            const results = await Promise.all(indicators.map((fn) => fn()))
             return { status: 'ok', info: results[0], error: {}, details: results[0] }
         })
 
@@ -81,7 +81,7 @@ describe('HealthController', () => {
     it('reports the indicator as down when CheckSystemHealthQuery says the database is unreachable', async () => {
         mockCheckSystemHealthQuery.execute.mockResolvedValue({ isDatabaseHealthy: false })
         mockHealthCheckService.check.mockImplementation(async (indicators: Array<() => unknown>) => {
-            const results = await Promise.all(indicators.map(fn => fn()))
+            const results = await Promise.all(indicators.map((fn) => fn()))
             return { status: 'error', info: {}, error: results[0], details: results[0] }
         })
 
@@ -95,7 +95,7 @@ describe('HealthController', () => {
     it('propagates an error if CheckSystemHealthQuery itself throws', async () => {
         mockCheckSystemHealthQuery.execute.mockRejectedValue(new Error('unexpected failure'))
         mockHealthCheckService.check.mockImplementation(async (indicators: Array<() => unknown>) => {
-            await Promise.all(indicators.map(fn => fn()))
+            await Promise.all(indicators.map((fn) => fn()))
         })
 
         await expect(controller.check()).rejects.toThrow('unexpected failure')

@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteEducationCommand
- * 
+ *
  * Deletes an education record and invalidates the public cache
  * so the frontend reflects the change immediately.
  */

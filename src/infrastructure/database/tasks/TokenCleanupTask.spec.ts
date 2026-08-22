@@ -19,8 +19,8 @@ import { TokenCleanupTask } from './TokenCleanupTask'
 // =============================================================================
 
 const mockTokenRepo = {
-    revoke:        jest.fn(),
-    isRevoked:     jest.fn(),
+    revoke: jest.fn(),
+    isRevoked: jest.fn(),
     deleteExpired: jest.fn(),
 }
 
@@ -30,21 +30,18 @@ const mockTokenRepo = {
 
 describe('TokenCleanupTask', () => {
     let task: TokenCleanupTask
-    let logSpy:   jest.SpyInstance
+    let logSpy: jest.SpyInstance
     let errorSpy: jest.SpyInstance
 
     beforeEach(async () => {
         jest.clearAllMocks()
         mockTokenRepo.deleteExpired.mockResolvedValue(undefined)
 
-        logSpy   = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
+        logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
         errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                TokenCleanupTask,
-                { provide: 'ITokenRepository', useValue: mockTokenRepo },
-            ],
+            providers: [TokenCleanupTask, { provide: 'ITokenRepository', useValue: mockTokenRepo }],
         }).compile()
 
         task = module.get<TokenCleanupTask>(TokenCleanupTask)
@@ -92,24 +89,17 @@ describe('TokenCleanupTask', () => {
     // ===========================================================================
     describe('handleTokenCleanup() — error handling', () => {
         it('does not throw when deleteExpired() fails', async () => {
-            mockTokenRepo.deleteExpired.mockRejectedValue(
-                new Error('DB connection lost')
-            )
+            mockTokenRepo.deleteExpired.mockRejectedValue(new Error('DB connection lost'))
 
             await expect(task.handleTokenCleanup()).resolves.not.toThrow()
         })
 
         it('logs error message containing the error detail', async () => {
-            mockTokenRepo.deleteExpired.mockRejectedValue(
-                new Error('DB connection lost')
-            )
+            mockTokenRepo.deleteExpired.mockRejectedValue(new Error('DB connection lost'))
 
             await task.handleTokenCleanup()
 
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('DB connection lost'),
-                expect.anything(),
-            )
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('DB connection lost'), expect.anything())
         })
 
         it('does not log success message on failure', async () => {

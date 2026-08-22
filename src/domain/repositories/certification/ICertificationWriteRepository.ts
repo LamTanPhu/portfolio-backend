@@ -6,12 +6,12 @@ import type { Certification } from '../../entities/Certification'
 // endDate null = no expiry / lifetime certification.
 // =============================================================================
 export interface CreateCertificationInput {
-    name:        string
-    url:         string
+    name: string
+    url: string
     isPublished: boolean
-    startDate:   Date
-    endDate:     Date | null
-    userId:      number
+    startDate: Date
+    endDate: Date | null
+    userId: number
 }
 
 // =============================================================================
@@ -19,11 +19,11 @@ export interface CreateCertificationInput {
 // All fields optional — PATCH semantics.
 // =============================================================================
 export interface UpdateCertificationInput {
-    name?:        string
-    url?:         string
+    name?: string
+    url?: string
     isPublished?: boolean
-    startDate?:   Date
-    endDate?:     Date | null
+    startDate?: Date
+    endDate?: Date | null
 }
 
 // =============================================================================

@@ -1,6 +1,6 @@
 /**
  * @fileoverview CertificationModule
- * 
+ *
  * Organizes all Certification-related concerns following Clean Architecture.
  * - Separated Read and Write repositories (as requested)
  * - Proper cache integration
@@ -26,7 +26,7 @@ import { PrismaCertificationWriteRepository } from '../../../infrastructure/data
 @Module({
     imports: [
         AuthModule,
-        CacheInfrastructureModule,        // Provides ICacheQueryService & ICacheInvalidationService
+        CacheInfrastructureModule, // Provides ICacheQueryService & ICacheInvalidationService
     ],
 
     controllers: [CertificationController],
@@ -38,12 +38,12 @@ import { PrismaCertificationWriteRepository } from '../../../infrastructure/data
 
         // Ports (Abstractions)
         {
-        provide: 'ICertificationReadRepository',
-        useExisting: PrismaCertificationReadRepository,
+            provide: 'ICertificationReadRepository',
+            useExisting: PrismaCertificationReadRepository,
         },
         {
-        provide: 'ICertificationWriteRepository',
-        useExisting: PrismaCertificationWriteRepository,
+            provide: 'ICertificationWriteRepository',
+            useExisting: PrismaCertificationWriteRepository,
         },
 
         // Application Use Cases

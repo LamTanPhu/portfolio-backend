@@ -25,7 +25,7 @@ const makeEnvelope = <T>(data: T, options: { fresh?: boolean; stale?: boolean } 
     const now = Date.now()
     return {
         data,
-        expiresAt:  options.fresh !== false ? now + 60_000 : now - 1_000,
+        expiresAt: options.fresh !== false ? now + 60_000 : now - 1_000,
         staleUntil: options.stale !== false ? now + 120_000 : now - 1_000,
     }
 }
@@ -52,10 +52,7 @@ describe('CacheQueryService', () => {
         mockCacheManager.set.mockResolvedValue(undefined)
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                CacheQueryService,
-                { provide: CACHE_MANAGER, useValue: mockCacheManager },
-            ],
+            providers: [CacheQueryService, { provide: CACHE_MANAGER, useValue: mockCacheManager }],
         }).compile()
 
         service = module.get<CacheQueryService>(CacheQueryService)
@@ -77,14 +74,12 @@ describe('CacheQueryService', () => {
 
         it('returns stale data and triggers background refresh on stale hit', async () => {
             const factory = jest.fn().mockResolvedValue('fresh-value')
-            mockCacheManager.get.mockResolvedValue(
-                makeEnvelope('stale-value', { fresh: false, stale: true })
-            )
+            mockCacheManager.get.mockResolvedValue(makeEnvelope('stale-value', { fresh: false, stale: true }))
 
             const result = await service.getOrSet('my-key', 60, factory)
 
             expect(result).toBe('stale-value')
-            await new Promise(resolve => setTimeout(resolve, 50))
+            await new Promise((resolve) => setTimeout(resolve, 50))
             expect(factory).toHaveBeenCalledTimes(1)
         })
     })
@@ -106,9 +101,7 @@ describe('CacheQueryService', () => {
 
         it('calls factory and stores result when cache is fully expired', async () => {
             const factory = jest.fn().mockResolvedValue('new-data')
-            mockCacheManager.get.mockResolvedValue(
-                makeEnvelope('old-data', { fresh: false, stale: false })
-            )
+            mockCacheManager.get.mockResolvedValue(makeEnvelope('old-data', { fresh: false, stale: false }))
 
             const result = await service.getOrSet('my-key', 60, factory)
 
@@ -170,7 +163,8 @@ describe('CacheQueryService', () => {
         it('retries factory on failure and succeeds on second attempt', async () => {
             mockCacheManager.get.mockResolvedValue(null)
 
-            const factory = jest.fn()
+            const factory = jest
+                .fn()
                 .mockRejectedValueOnce(new Error('DB timeout'))
                 .mockResolvedValueOnce('recovered-data')
 
@@ -185,9 +179,7 @@ describe('CacheQueryService', () => {
 
             const factory = jest.fn().mockRejectedValue(new Error('Persistent failure'))
 
-            await expect(
-                service.getOrSet('my-key', 60, factory, { retries: 1 })
-            ).rejects.toThrow('Persistent failure')
+            await expect(service.getOrSet('my-key', 60, factory, { retries: 1 })).rejects.toThrow('Persistent failure')
 
             expect(factory).toHaveBeenCalledTimes(2)
         })
@@ -256,7 +248,6 @@ describe('CacheQueryService', () => {
             await keyv.set('portfolio:v1:blog:1', 'A')
             await keyv.set('portfolio:v1:blog:2', 'B')
             await keyv.set('portfolio:v1:project:1', 'C') // must survive
-
             ;(service as any).cache = {
                 ...mockCacheManager,
                 stores: [keyv],

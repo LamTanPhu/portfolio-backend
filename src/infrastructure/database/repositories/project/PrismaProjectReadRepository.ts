@@ -16,17 +16,17 @@ import { ProjectDTO, ProjectSummaryDTO } from '../../../../application/dtos/Proj
 
 // Shared select for list queries — description intentionally excluded
 const LIST_SELECT = {
-    id:           true,
-    name:         true,
-    slug:         true,
-    techStack:    true,
-    repoUrl:      true,
-    liveUrl:      true,
+    id: true,
+    name: true,
+    slug: true,
+    techStack: true,
+    repoUrl: true,
+    liveUrl: true,
     thumbnailUrl: true,
-    isPublished:  true,
+    isPublished: true,
     isOpenSource: true,
-    createdAt:    true,
-    updatedAt:    true,
+    createdAt: true,
+    updatedAt: true,
 } as const
 
 @Injectable()
@@ -35,8 +35,8 @@ export class PrismaProjectReadRepository implements IProjectReadRepository {
 
     async findPublished(): Promise<ProjectSummaryDTO[]> {
         const rows = await this.prisma.client.project.findMany({
-            where:   { isPublished: true },
-            select:  LIST_SELECT,
+            where: { isPublished: true },
+            select: LIST_SELECT,
             orderBy: { createdAt: 'desc' },
         })
 
@@ -45,7 +45,7 @@ export class PrismaProjectReadRepository implements IProjectReadRepository {
 
     async findAll(): Promise<ProjectSummaryDTO[]> {
         const rows = await this.prisma.client.project.findMany({
-            select:  LIST_SELECT,
+            select: LIST_SELECT,
             orderBy: { createdAt: 'desc' },
         })
 
@@ -65,23 +65,30 @@ export class PrismaProjectReadRepository implements IProjectReadRepository {
     // ─── Private Mappers ─────────────────────────────────────────────────────
 
     private static toSummary(row: {
-        id: number; name: string; slug: string; techStack: unknown;
-        repoUrl: string | null; liveUrl: string | null; thumbnailUrl: string | null;
-        isPublished: boolean; isOpenSource: boolean;
-        createdAt: Date; updatedAt: Date;
+        id: number
+        name: string
+        slug: string
+        techStack: unknown
+        repoUrl: string | null
+        liveUrl: string | null
+        thumbnailUrl: string | null
+        isPublished: boolean
+        isOpenSource: boolean
+        createdAt: Date
+        updatedAt: Date
     }): ProjectSummaryDTO {
         return {
-            id:           row.id,
-            name:         row.name,
-            slug:         row.slug,
-            techStack:    row.techStack as string[],
-            repoUrl:      row.repoUrl,
-            liveUrl:      row.liveUrl,
+            id: row.id,
+            name: row.name,
+            slug: row.slug,
+            techStack: row.techStack as string[],
+            repoUrl: row.repoUrl,
+            liveUrl: row.liveUrl,
             thumbnailUrl: row.thumbnailUrl,
-            isPublished:  row.isPublished,
+            isPublished: row.isPublished,
             isOpenSource: row.isOpenSource,
-            createdAt:    row.createdAt.toISOString(),
-            updatedAt:    row.updatedAt.toISOString(),
+            createdAt: row.createdAt.toISOString(),
+            updatedAt: row.updatedAt.toISOString(),
         }
     }
 }

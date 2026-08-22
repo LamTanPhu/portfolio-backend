@@ -39,8 +39,8 @@ export const CACHE_TTL = {
     },
 
     STATIC: {
-        fresh: 86400,   // 24 hours
-        stale: 259200,  // 3 days
+        fresh: 86400, // 24 hours
+        stale: 259200, // 3 days
     },
 } as const
 

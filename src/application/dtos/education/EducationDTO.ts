@@ -5,11 +5,11 @@
 // endedAt null = currently enrolled.
 // =============================================================================
 export interface EducationDTO {
-    id:            number
-    degreeName:    string
+    id: number
+    degreeName: string
     instituteName: string
-    instituteUrl:  string | null
-    startedAt:     string
-    endedAt:       string | null
-    isCompleted:   boolean
+    instituteUrl: string | null
+    startedAt: string
+    endedAt: string | null
+    isCompleted: boolean
 }

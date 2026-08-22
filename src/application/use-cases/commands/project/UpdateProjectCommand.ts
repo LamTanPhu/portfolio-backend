@@ -1,6 +1,6 @@
 /**
  * @fileoverview UpdateProjectCommand
- * 
+ *
  * Updates a project and performs comprehensive cache invalidation.
  */
 
@@ -36,22 +36,22 @@ export class UpdateProjectCommand {
         await this.cacheService.invalidatePublicProjects()
 
         if (data.slug) {
-        await this.cacheService.invalidateProjectBySlug(data.slug)
+            await this.cacheService.invalidateProjectBySlug(data.slug)
         }
 
         return {
-        id:           updated.id,
-        name:         updated.name,
-        description:  updated.description,
-        slug:         updated.slug,
-        techStack:    updated.techStack,
-        repoUrl:      updated.repoUrl,
-        liveUrl:      updated.liveUrl,
-        thumbnailUrl: updated.thumbnailUrl,
-        isPublished:  updated.isPublished,
-        isOpenSource: updated.isOpenSource,
-        createdAt:    updated.createdAt.toISOString(),
-        updatedAt:    updated.updatedAt.toISOString(),
+            id: updated.id,
+            name: updated.name,
+            description: updated.description,
+            slug: updated.slug,
+            techStack: updated.techStack,
+            repoUrl: updated.repoUrl,
+            liveUrl: updated.liveUrl,
+            thumbnailUrl: updated.thumbnailUrl,
+            isPublished: updated.isPublished,
+            isOpenSource: updated.isOpenSource,
+            createdAt: updated.createdAt.toISOString(),
+            updatedAt: updated.updatedAt.toISOString(),
         }
     }
 }

@@ -49,15 +49,11 @@ describe('TurnstileGuard', () => {
         })
 
         it('throws BadRequestException when turnstileToken is an empty string', async () => {
-            await expect(
-                guard.canActivate(makeCtx({ turnstileToken: '   ' }))
-            ).rejects.toThrow(BadRequestException)
+            await expect(guard.canActivate(makeCtx({ turnstileToken: '   ' }))).rejects.toThrow(BadRequestException)
         })
 
         it('throws BadRequestException when turnstileToken is not a string', async () => {
-            await expect(
-                guard.canActivate(makeCtx({ turnstileToken: 42 }))
-            ).rejects.toThrow(BadRequestException)
+            await expect(guard.canActivate(makeCtx({ turnstileToken: 42 }))).rejects.toThrow(BadRequestException)
         })
     })
 

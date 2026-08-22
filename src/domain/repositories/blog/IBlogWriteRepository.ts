@@ -7,14 +7,14 @@ import type { Blog } from '../../entities/Blog'
 // userId from verified JWT payload — never accepted from client.
 // =============================================================================
 export interface CreateBlogInput {
-  title:       string
-  slug:        string
-  content:     string
-  excerpt:     string | null
-  tags:        string[]
-  isPublished: boolean
-  publishedAt: Date | null
-  userId:      number
+    title: string
+    slug: string
+    content: string
+    excerpt: string | null
+    tags: string[]
+    isPublished: boolean
+    publishedAt: Date | null
+    userId: number
 }
 
 // =============================================================================
@@ -29,12 +29,12 @@ export interface CreateBlogInput {
 // explicit uniqueness checking. No current use case requires this.
 // =============================================================================
 export interface UpdateBlogInput {
-  title?:       string
-  content?:     string
-  excerpt?:     string | null
-  tags?:        string[]
-  isPublished?: boolean
-  publishedAt?: Date | null
+    title?: string
+    content?: string
+    excerpt?: string | null
+    tags?: string[]
+    isPublished?: boolean
+    publishedAt?: Date | null
 }
 
 // =============================================================================
@@ -43,7 +43,7 @@ export interface UpdateBlogInput {
 // delete cascades BlogTags automatically via onDelete: Cascade in schema.
 // =============================================================================
 export interface IBlogWriteRepository {
-  create(data: CreateBlogInput): Promise<Blog>
-  update(id: number, data: UpdateBlogInput): Promise<Blog>
-  delete(id: number): Promise<void>
+    create(data: CreateBlogInput): Promise<Blog>
+    update(id: number, data: UpdateBlogInput): Promise<Blog>
+    delete(id: number): Promise<void>
 }

@@ -6,10 +6,10 @@
 // =============================================================================
 export class ProjectView {
     constructor(
-        public readonly id:        number,
+        public readonly id: number,
         public readonly projectId: number,
-        public readonly date:      Date,
-        public readonly count:     number,
+        public readonly date: Date,
+        public readonly count: number,
         public readonly createdAt: Date,
         public readonly updatedAt: Date,
     ) {}

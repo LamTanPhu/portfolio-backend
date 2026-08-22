@@ -17,14 +17,7 @@ export class PrismaProjectViewRepository implements IProjectViewRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     private static toDomain(raw: PrismaProjectView): ProjectView {
-        return new ProjectView(
-        raw.id,
-        raw.projectId,
-        raw.date,
-        raw.count,
-        raw.createdAt,
-        raw.updatedAt,
-        )
+        return new ProjectView(raw.id, raw.projectId, raw.date, raw.count, raw.createdAt, raw.updatedAt)
     }
 
     // O(1) — upsert on composite unique index [projectId, date]
@@ -35,17 +28,17 @@ export class PrismaProjectViewRepository implements IProjectViewRepository {
         today.setUTCHours(0, 0, 0, 0)
 
         await this.prisma.client.projectView.upsert({
-        where:  { projectId_date: { projectId, date: today } },
-        update: { count: { increment: 1 } },
-        create: { projectId, date: today, count: 1 },
+            where: { projectId_date: { projectId, date: today } },
+            update: { count: { increment: 1 } },
+            create: { projectId, date: today, count: 1 },
         })
     }
 
     // Single aggregate query — never fetch all rows to sum in application
     async getTotalViews(projectId: number): Promise<number> {
         const result = await this.prisma.client.projectView.aggregate({
-        where: { projectId },
-        _sum:  { count: true },
+            where: { projectId },
+            _sum: { count: true },
         })
         return result._sum.count ?? 0
     }
@@ -53,8 +46,8 @@ export class PrismaProjectViewRepository implements IProjectViewRepository {
     // Returns all daily records — frontend can chart views over time
     async findByProject(projectId: number): Promise<ProjectView[]> {
         const rows = await this.prisma.client.projectView.findMany({
-        where:   { projectId },
-        orderBy: { date: 'desc' },
+            where: { projectId },
+            orderBy: { date: 'desc' },
         })
         return rows.map(PrismaProjectViewRepository.toDomain)
     }

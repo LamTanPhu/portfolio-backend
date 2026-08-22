@@ -1,8 +1,8 @@
 /**
  * @fileoverview EducationController
- * 
+ *
  * Handles education records for the public portfolio and admin management.
- * 
+ *
  * - Public GET: Returns all education records (no authentication required)
  * - Admin POST/PATCH/DELETE: Requires valid JWT
  * - userId is extracted from JWT payload — never trusted from client input
@@ -22,13 +22,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common'
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
@@ -72,18 +66,15 @@ export class EducationController {
     @ApiOperation({ summary: 'Create new education record — admin only' })
     @ApiResponse({ status: 201, description: 'Education record created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    async create(
-        @Body() dto: CreateEducationDto,
-        @Req() req: AuthenticatedRequest,
-    ): Promise<EducationDTO> {
+    async create(@Body() dto: CreateEducationDto, @Req() req: AuthenticatedRequest): Promise<EducationDTO> {
         return this.createCommand.execute({
-        degreeName: dto.degreeName,
-        instituteName: dto.instituteName,
-        instituteUrl: dto.instituteUrl ?? null,
-        startedAt: new Date(dto.startedAt),
-        endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
-        isCompleted: dto.isCompleted ?? false,
-        userId: req.user.sub,
+            degreeName: dto.degreeName,
+            instituteName: dto.instituteName,
+            instituteUrl: dto.instituteUrl ?? null,
+            startedAt: new Date(dto.startedAt),
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
+            isCompleted: dto.isCompleted ?? false,
+            userId: req.user.sub,
         })
     }
 
@@ -95,18 +86,15 @@ export class EducationController {
     @ApiResponse({ status: 200, description: 'Education record updated' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     @ApiResponse({ status: 404, description: 'Education record not found' })
-    async update(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() dto: UpdateEducationDto,
-    ): Promise<EducationDTO> {
+    async update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateEducationDto): Promise<EducationDTO> {
         return this.updateCommand.execute({
-        id,
-        degreeName: dto.degreeName,
-        instituteName: dto.instituteName,
-        instituteUrl: dto.instituteUrl,
-        startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-        endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
-        isCompleted: dto.isCompleted,
+            id,
+            degreeName: dto.degreeName,
+            instituteName: dto.instituteName,
+            instituteUrl: dto.instituteUrl,
+            startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+            isCompleted: dto.isCompleted,
         })
     }
 

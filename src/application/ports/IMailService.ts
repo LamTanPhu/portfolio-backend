@@ -5,5 +5,5 @@
 // Infrastructure layer (MailService) implements this — swappable without code changes.
 // =============================================================================
 export interface IMailService {
-  send(to: string, subject: string, body: string): Promise<void>
+    send(to: string, subject: string, body: string): Promise<void>
 }

@@ -20,19 +20,19 @@ import { DataRetentionTask } from './DataRetentionTask'
 // =============================================================================
 
 const mockContactRepo = {
-    save:            jest.fn(),
-    delete:          jest.fn(),
+    save: jest.fn(),
+    delete: jest.fn(),
     deleteOlderThan: jest.fn(),
 }
 
 const mockResumeRepo = {
-    save:            jest.fn(),
-    findAll:         jest.fn(),
+    save: jest.fn(),
+    findAll: jest.fn(),
     deleteOlderThan: jest.fn(),
 }
 
 const mockAuditLogRepo = {
-    save:            jest.fn(),
+    save: jest.fn(),
     deleteOlderThan: jest.fn(),
 }
 
@@ -42,7 +42,7 @@ const mockAuditLogRepo = {
 
 describe('DataRetentionTask', () => {
     let task: DataRetentionTask
-    let logSpy:   jest.SpyInstance
+    let logSpy: jest.SpyInstance
     let errorSpy: jest.SpyInstance
 
     beforeEach(async () => {
@@ -51,15 +51,15 @@ describe('DataRetentionTask', () => {
         mockResumeRepo.deleteOlderThan.mockResolvedValue(undefined)
         mockAuditLogRepo.deleteOlderThan.mockResolvedValue(undefined)
 
-        logSpy   = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
+        logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => {})
         errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation(() => {})
 
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 DataRetentionTask,
-                { provide: 'IContactWriteRepository',  useValue: mockContactRepo   },
-                { provide: 'IResumeDownloadRepository', useValue: mockResumeRepo   },
-                { provide: 'IAuditLogWriteRepository',  useValue: mockAuditLogRepo },
+                { provide: 'IContactWriteRepository', useValue: mockContactRepo },
+                { provide: 'IResumeDownloadRepository', useValue: mockResumeRepo },
+                { provide: 'IAuditLogWriteRepository', useValue: mockAuditLogRepo },
             ],
         }).compile()
 
@@ -187,14 +187,8 @@ describe('DataRetentionTask', () => {
 
             await task.handleDataRetention()
 
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('contact messages'),
-                expect.anything(),
-            )
-            expect(errorSpy).toHaveBeenCalledWith(
-                expect.stringContaining('audit logs'),
-                expect.anything(),
-            )
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('contact messages'), expect.anything())
+            expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('audit logs'), expect.anything())
         })
 
         it('does not throw on unexpected error types', async () => {

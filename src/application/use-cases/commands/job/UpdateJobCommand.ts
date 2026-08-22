@@ -1,14 +1,11 @@
 /**
  * @fileoverview UpdateJobCommand
- * 
+ *
  * Updates a work experience record and invalidates the public cache.
  */
 
 import { Inject, Injectable } from '@nestjs/common'
-import type {
-    IJobWriteRepository,
-    UpdateJobInput,
-} from '../../../../domain/repositories/job/IJobWriteRepository'
+import type { IJobWriteRepository, UpdateJobInput } from '../../../../domain/repositories/job/IJobWriteRepository'
 import type { JobDTO } from '../../../dtos/JobDTO'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -36,12 +33,12 @@ export class UpdateJobCommand {
         await this.cacheService.invalidatePublicJobs()
 
         return {
-        id: updated.id,
-        companyName: updated.companyName,
-        role: updated.role,
-        startedAt: updated.startedAt.toISOString(),
-        endedAt: updated.endedAt?.toISOString() ?? null,
-        isEnded: updated.isEnded,
+            id: updated.id,
+            companyName: updated.companyName,
+            role: updated.role,
+            startedAt: updated.startedAt.toISOString(),
+            endedAt: updated.endedAt?.toISOString() ?? null,
+            isEnded: updated.isEnded,
         }
     }
 }

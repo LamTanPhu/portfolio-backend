@@ -14,9 +14,9 @@ import { SpotifyService } from '../../../infrastructure/spotify/SpotifyService'
         SpotifyService,
         { provide: 'ISpotifyService', useExisting: SpotifyService },
         {
-            provide:    GetNowPlayingQuery,
+            provide: GetNowPlayingQuery,
             useFactory: (spotify: SpotifyService) => new GetNowPlayingQuery(spotify),
-            inject:     [SpotifyService],
+            inject: [SpotifyService],
         },
     ],
 })

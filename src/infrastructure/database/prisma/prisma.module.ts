@@ -1,6 +1,6 @@
 /**
  * @fileoverview PrismaModule
- * 
+ *
  * Global module providing PrismaService across the entire application.
  * Should be imported only once in AppModule.
  *
@@ -19,14 +19,7 @@ import { PrismaUnitOfWork } from '../unit-of-work/PrismaUnitOfWork'
 @Global()
 @Module({
     imports: [ConfigModule],
-    providers: [
-        PrismaService,
-        PrismaUnitOfWork,
-        { provide: 'IUnitOfWork', useExisting: PrismaUnitOfWork },
-    ],
-    exports: [
-        PrismaService,
-        { provide: 'IUnitOfWork', useExisting: PrismaUnitOfWork },
-    ],
+    providers: [PrismaService, PrismaUnitOfWork, { provide: 'IUnitOfWork', useExisting: PrismaUnitOfWork }],
+    exports: [PrismaService, { provide: 'IUnitOfWork', useExisting: PrismaUnitOfWork }],
 })
 export class PrismaModule {}

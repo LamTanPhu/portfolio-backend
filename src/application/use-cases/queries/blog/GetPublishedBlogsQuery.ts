@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetPublishedBlogsQuery
- * 
+ *
  * Public query returning published blog summaries for listing pages.
  * Uses MEDIUM cache profile.
  */
@@ -24,13 +24,9 @@ export class GetPublishedBlogsQuery {
     ) {}
 
     async execute(): Promise<BlogSummaryDTO[]> {
-        return this.cacheQuery.getOrSetWithProfile(
-        'blog:list:public',
-        'MEDIUM',
-        async () => {
+        return this.cacheQuery.getOrSetWithProfile('blog:list:public', 'MEDIUM', async () => {
             const summaries = await this.repo.findPublished()
             return BlogMapper.summaryListToDTO(summaries)
-        },
-        )
+        })
     }
 }

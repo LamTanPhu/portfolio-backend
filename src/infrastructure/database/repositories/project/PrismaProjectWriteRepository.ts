@@ -27,10 +27,7 @@ export class PrismaProjectWriteRepository implements IProjectWriteRepository {
             })
             return ProjectMapper.toDomain(row)
         } catch (error) {
-            if (
-                error instanceof Prisma.PrismaClientKnownRequestError &&
-                error.code === 'P2002'
-            ) {
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
                 throw new ConflictError(`A project with slug "${data.slug}" already exists`)
             }
             throw error

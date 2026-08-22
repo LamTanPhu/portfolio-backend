@@ -18,13 +18,13 @@ import type { TrackDTO } from '../../../application/dtos/TrackDTO'
 @ApiTags('Spotify')
 @Controller('spotify')
 export class SpotifyController {
-  constructor(private readonly query: GetNowPlayingQuery) {}
+    constructor(private readonly query: GetNowPlayingQuery) {}
 
-  @Get('now-playing')
-  @Throttle({ default: { limit: 60, ttl: 60_000 } })
-  @ApiOperation({ summary: 'Get currently playing Spotify track — cached 30 seconds' })
-  @ApiResponse({ status: 200, description: 'Now playing track data — empty strings if nothing playing' })
-  async nowPlaying(): Promise<TrackDTO> {
-    return this.query.execute()
-  }
+    @Get('now-playing')
+    @Throttle({ default: { limit: 60, ttl: 60_000 } })
+    @ApiOperation({ summary: 'Get currently playing Spotify track — cached 30 seconds' })
+    @ApiResponse({ status: 200, description: 'Now playing track data — empty strings if nothing playing' })
+    async nowPlaying(): Promise<TrackDTO> {
+        return this.query.execute()
+    }
 }

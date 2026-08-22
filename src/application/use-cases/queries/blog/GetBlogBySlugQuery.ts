@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetBlogBySlugQuery
- * 
+ *
  * Public query to fetch a single blog post by slug with caching.
  * Uses LONG cache profile (good balance between freshness and performance).
  */
@@ -25,16 +25,12 @@ export class GetBlogBySlugQuery {
     ) {}
 
     async execute(slug: string): Promise<BlogDetailDTO> {
-        return this.cacheQuery.getOrSetWithProfile(
-        `blog:${slug}`,
-        'LONG',
-        async () => {
+        return this.cacheQuery.getOrSetWithProfile(`blog:${slug}`, 'LONG', async () => {
             const blog = await this.repo.findBySlug(slug)
             if (!blog) {
-            throw new NotFoundError(`Blog not found: ${slug}`)
+                throw new NotFoundError(`Blog not found: ${slug}`)
             }
             return BlogMapper.toDetailDTO(blog)
-        },
-        )
+        })
     }
 }

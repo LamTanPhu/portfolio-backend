@@ -14,10 +14,9 @@ import { ValidationError } from '../errors/ValidationError'
 // =============================================================================
 
 describe('Slug', () => {
-
-  // ===========================================================================
-  // Basic slugification
-  // ===========================================================================
+    // ===========================================================================
+    // Basic slugification
+    // ===========================================================================
     describe('from() — basic slugification', () => {
         it('lowercases the input', () => {
             expect(Slug.from('HELLO WORLD').toString()).toBe('hello-world')
@@ -48,9 +47,9 @@ describe('Slug', () => {
         })
     })
 
-  // ===========================================================================
-  // Unicode / Vietnamese support
-  // ===========================================================================
+    // ===========================================================================
+    // Unicode / Vietnamese support
+    // ===========================================================================
     describe('from() — Unicode handling', () => {
         it('converts Vietnamese accented characters to ASCII', () => {
             expect(Slug.from('Lâm Tấn Phú').toString()).toBe('lam-tan-phu')
@@ -70,9 +69,9 @@ describe('Slug', () => {
         })
     })
 
-  // ===========================================================================
-  // Error cases
-  // ===========================================================================
+    // ===========================================================================
+    // Error cases
+    // ===========================================================================
     describe('from() — error cases', () => {
         it('throws ValidationError for empty string', () => {
             expect(() => Slug.from('')).toThrow(ValidationError)
@@ -87,13 +86,12 @@ describe('Slug', () => {
         })
     })
 
-  // ===========================================================================
-  // Named constructor
-  // ===========================================================================
+    // ===========================================================================
+    // Named constructor
+    // ===========================================================================
     describe('from() vs new Slug()', () => {
         it('produces identical result from both constructors', () => {
-            expect(Slug.from('Hello World').toString())
-                .toBe(new Slug('Hello World').toString())
+            expect(Slug.from('Hello World').toString()).toBe(new Slug('Hello World').toString())
         })
     })
 })
@@ -103,17 +101,16 @@ describe('Slug', () => {
 // =============================================================================
 
 describe('Email', () => {
-
-  // ===========================================================================
-  // Valid emails
-  // ===========================================================================
+    // ===========================================================================
+    // Valid emails
+    // ===========================================================================
     describe('constructor — valid emails', () => {
         const validEmails = [
             'user@example.com',
             'user.name@example.com',
             'user+tag@example.co.uk',
             'user@subdomain.example.com',
-            'UPPERCASE@EXAMPLE.COM',   // normalized to lowercase
+            'UPPERCASE@EXAMPLE.COM', // normalized to lowercase
         ]
 
         it.each(validEmails)('accepts valid email: %s', (email) => {
@@ -129,19 +126,19 @@ describe('Email', () => {
         })
     })
 
-  // ===========================================================================
-  // Invalid emails
-  // ===========================================================================
+    // ===========================================================================
+    // Invalid emails
+    // ===========================================================================
     describe('constructor — invalid emails', () => {
         const invalidEmails = [
-            ['missing @',         'userexample.com'      ],
-            ['missing domain',    'user@'                ],
-            ['missing TLD',       'user@domain'          ],
-            ['numeric TLD',       'user@domain.123'      ],
-            ['single char TLD',   'user@domain.c'        ],
-            ['spaces inside',     'user @example.com'    ],
-            ['empty string',      ''                     ],
-            ['multiple @',        'user@@example.com'    ],
+            ['missing @', 'userexample.com'],
+            ['missing domain', 'user@'],
+            ['missing TLD', 'user@domain'],
+            ['numeric TLD', 'user@domain.123'],
+            ['single char TLD', 'user@domain.c'],
+            ['spaces inside', 'user @example.com'],
+            ['empty string', ''],
+            ['multiple @', 'user@@example.com'],
         ]
 
         it.each(invalidEmails)('throws ValidationError for %s', (_, email) => {
@@ -149,9 +146,9 @@ describe('Email', () => {
         })
     })
 
-  // ===========================================================================
-  // Length limits
-  // ===========================================================================
+    // ===========================================================================
+    // Length limits
+    // ===========================================================================
     describe('constructor — length limits', () => {
         it('throws ValidationError for email exceeding 254 characters', () => {
             const longLocal = 'a'.repeat(250)
@@ -164,9 +161,9 @@ describe('Email', () => {
         })
     })
 
-  // ===========================================================================
-  // isValid static method
-  // ===========================================================================
+    // ===========================================================================
+    // isValid static method
+    // ===========================================================================
     describe('isValid()', () => {
         it('returns true for valid email', () => {
             expect(Email.isValid('user@example.com')).toBe(true)

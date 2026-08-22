@@ -8,8 +8,8 @@ import type { User } from '../../entities/User'
 // =============================================================================
 export interface UpdateUserInput {
     firstname?: string
-    lastname?:  string
-    aboutme?:   string | null
+    lastname?: string
+    aboutme?: string | null
     lastLogin?: Date
 }
 

@@ -4,10 +4,10 @@
 // hashPassword excluded — never returned from any endpoint.
 // =============================================================================
 export interface UserProfileDTO {
-    id:        number
+    id: number
     firstname: string
-    lastname:  string
-    email:     string
-    aboutme:   string | null
+    lastname: string
+    email: string
+    aboutme: string | null
     lastLogin: string | null
 }

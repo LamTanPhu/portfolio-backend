@@ -1,11 +1,14 @@
 /**
  * @fileoverview CreateSocialAccountCommand
- * 
+ *
  * Creates a new social account link and invalidates the public cache.
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import type { CreateSocialAccountInput, ISocialAccountWriteRepository } from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
+import type {
+    CreateSocialAccountInput,
+    ISocialAccountWriteRepository,
+} from '../../../../domain/repositories/social/ISocialAccountWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import type { SocialAccountDTO } from '../../../dtos/SocialAccountDTO'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'
@@ -27,11 +30,11 @@ export class CreateSocialAccountCommand {
         await this.cacheService.invalidatePublicSocialAccounts()
 
         return {
-        id:       account.id,
-        name:     account.name,
-        url:      account.url,
-        imageUrl: account.imageUrl,
-        isPublic: account.isPublic,
+            id: account.id,
+            name: account.name,
+            url: account.url,
+            imageUrl: account.imageUrl,
+            isPublic: account.isPublic,
         }
     }
 }

@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteJobCommand
- * 
+ *
  * Deletes a work experience record and invalidates the public cache.
  */
 

@@ -4,8 +4,8 @@
 // category serialized as string — SkillCategory enum never crosses layer boundary.
 // =============================================================================
 export interface SkillDTO {
-    id:       number
-    name:     string
+    id: number
+    name: string
     imageUrl: string | null
     category: string
 }

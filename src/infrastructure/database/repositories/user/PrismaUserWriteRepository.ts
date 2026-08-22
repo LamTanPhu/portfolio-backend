@@ -17,20 +17,17 @@ export class PrismaUserWriteRepository implements IUserWriteRepository {
 
     async update(id: number, data: UpdateUserInput): Promise<User> {
         try {
-        const row = await this.prisma.client.user.update({
-            where: { id },
-            data,
-            select: USER_SAFE_SELECT,
-        })
-        return PrismaUserMapper.toDomain(row)
+            const row = await this.prisma.client.user.update({
+                where: { id },
+                data,
+                select: USER_SAFE_SELECT,
+            })
+            return PrismaUserMapper.toDomain(row)
         } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2025'
-        ) {
-            throw new NotFoundError(`User not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`User not found: ${id}`)
+            }
+            throw error
         }
     }
 }

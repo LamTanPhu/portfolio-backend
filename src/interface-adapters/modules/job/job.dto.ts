@@ -1,6 +1,6 @@
 /**
  * @fileoverview Job DTOs (Request Models)
- * 
+ *
  * These DTOs belong to the Interface Adapter layer.
  * They define the shape of incoming HTTP requests with validation
  * and Swagger documentation.

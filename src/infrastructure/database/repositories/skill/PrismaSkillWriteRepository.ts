@@ -26,33 +26,27 @@ export class PrismaSkillWriteRepository implements ISkillWriteRepository {
 
     async update(id: number, data: UpdateSkillInput): Promise<Skill> {
         try {
-        const row = await this.prisma.client.skill.update({
-            where: { id },
-            data,
-        })
-        return PrismaSkillMapper.toDomain(row)
+            const row = await this.prisma.client.skill.update({
+                where: { id },
+                data,
+            })
+            return PrismaSkillMapper.toDomain(row)
         } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2025'
-        ) {
-            throw new NotFoundError(`Skill not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Skill not found: ${id}`)
+            }
+            throw error
         }
     }
 
     async delete(id: number): Promise<void> {
         try {
-        await this.prisma.client.skill.delete({ where: { id } })
+            await this.prisma.client.skill.delete({ where: { id } })
         } catch (error) {
-        if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === 'P2025'
-        ) {
-            throw new NotFoundError(`Skill not found: ${id}`)
-        }
-        throw error
+            if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+                throw new NotFoundError(`Skill not found: ${id}`)
+            }
+            throw error
         }
     }
 }

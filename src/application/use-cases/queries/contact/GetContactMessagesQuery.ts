@@ -16,9 +16,9 @@ import type { ContactMessageDTO } from '../../../dtos/contact/ContactMessageDTO'
 import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 export interface ContactPageDTO {
-    items:      ContactMessageDTO[]
+    items: ContactMessageDTO[]
     nextCursor: number | null
-    total:      number
+    total: number
 }
 
 // Cache key includes cursor+limit so different pages are cached independently.
@@ -39,21 +39,21 @@ export class GetContactMessagesQuery {
     async execute(cursor?: number, limit?: number): Promise<ContactPageDTO> {
         return this.cacheQuery.getOrSetWithProfile(
             contactListCacheKey(cursor, limit),
-            'SHORT',                    // 1 min fresh, 5 min stale
+            'SHORT', // 1 min fresh, 5 min stale
             async () => {
                 const page = await this.repo.findPaginated(cursor, limit)
                 return {
                     items: page.items.map((m) => ({
-                        id:          m.id,
-                        name:        m.name,
-                        email:       m.email,
-                        message:     m.message,
-                        ipAddress:   m.ipAddress,
+                        id: m.id,
+                        name: m.name,
+                        email: m.email,
+                        message: m.message,
+                        ipAddress: m.ipAddress,
                         browserInfo: m.browserInfo,
-                        createdAt:   m.createdAt.toISOString(),
+                        createdAt: m.createdAt.toISOString(),
                     })),
                     nextCursor: page.nextCursor,
-                    total:      page.total,
+                    total: page.total,
                 }
             },
         )

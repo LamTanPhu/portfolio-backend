@@ -52,9 +52,7 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
 
         // ─── Rate Limiting ──────────────────────────────────────────────────
         ThrottlerModule.forRoot({
-            throttlers: [
-                { name: 'per-ip', ttl: 60_000, limit: 100 },
-            ],
+            throttlers: [{ name: 'per-ip', ttl: 60_000, limit: 100 }],
         }),
 
         // ─── Cache (in-memory, or Redis-primary + in-memory-fallback) ─────────
@@ -112,9 +110,9 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
         ConfigValidationService,
         TokenCleanupTask,
         DataRetentionTask,
-        { provide: APP_GUARD,       useClass: ThrottlerGuard        },
-        { provide: APP_FILTER,      useClass: DomainExceptionFilter },
-        { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor   },
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: APP_FILTER, useClass: DomainExceptionFilter },
+        { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
     ],
 })
 export class AppModule {

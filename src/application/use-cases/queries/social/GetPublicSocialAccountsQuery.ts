@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetPublicSocialAccountsQuery
- * 
+ *
  * Returns all public social accounts (GitHub, LinkedIn, etc.).
  * Uses LONG cache profile since social links change infrequently.
  */
@@ -23,13 +23,9 @@ export class GetPublicSocialAccountsQuery {
     ) {}
 
     async execute(): Promise<SocialAccountDTO[]> {
-        return this.cacheQuery.getOrSetWithProfile(
-        'social:list:public',
-        'LONG',
-        async () => {
+        return this.cacheQuery.getOrSetWithProfile('social:list:public', 'LONG', async () => {
             const accounts = await this.repo.findPublic()
             return accounts
-        },
-        )
+        })
     }
 }

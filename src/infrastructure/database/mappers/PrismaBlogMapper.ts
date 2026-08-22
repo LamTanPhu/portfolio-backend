@@ -18,9 +18,7 @@ type BlogWithTags = PrismaBlog & { tags: PrismaBlogTag[] }
 // =============================================================================
 export class PrismaBlogMapper {
     static toDomain(raw: BlogWithTags): Blog {
-        const tags = raw.tags.map(
-            (t) => new BlogTag(t.id, t.name, t.blogId),
-        )
+        const tags = raw.tags.map((t) => new BlogTag(t.id, t.name, t.blogId))
 
         return new Blog(
             raw.id,

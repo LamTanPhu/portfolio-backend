@@ -14,7 +14,7 @@ import { PrismaHealthCheckService } from '../../../infrastructure/health/PrismaH
 import { HealthController } from './health.controller'
 
 @Module({
-    imports:     [TerminusModule],
+    imports: [TerminusModule],
     controllers: [HealthController],
     providers: [
         CheckSystemHealthQuery,

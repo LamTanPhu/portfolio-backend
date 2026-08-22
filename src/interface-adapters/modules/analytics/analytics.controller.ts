@@ -1,20 +1,5 @@
-import {
-    Body,
-    Controller,
-    Get,
-    Param,
-    ParseIntPipe,
-    Post,
-    Req,
-    UseGuards,
-} from '@nestjs/common'
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger'
+import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { Request } from 'express'
 import type { PageViewDTO } from '../../../application/dtos/PageViewDTO'
@@ -35,10 +20,10 @@ import { TrackPageViewDto } from './analytics.dto'
 @Controller('analytics')
 export class AnalyticsController {
     constructor(
-        private readonly getPageViewsQuery:   GetPageViewsQuery,
-        private readonly trackPageView:       TrackPageViewCommand,
+        private readonly getPageViewsQuery: GetPageViewsQuery,
+        private readonly trackPageView: TrackPageViewCommand,
         private readonly trackResumeDownload: TrackResumeDownloadCommand,
-        private readonly trackProjectView:    TrackProjectViewCommand,
+        private readonly trackProjectView: TrackProjectViewCommand,
     ) {}
 
     // ===========================================================================
@@ -49,9 +34,7 @@ export class AnalyticsController {
     @Throttle({ default: { limit: 20, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a page view — called by frontend on navigation' })
     @ApiResponse({ status: 201, description: 'Page view recorded' })
-    async trackPage(
-        @Body() dto: TrackPageViewDto,
-    ): Promise<{ success: boolean }> {
+    async trackPage(@Body() dto: TrackPageViewDto): Promise<{ success: boolean }> {
         await this.trackPageView.execute(dto.route)
         return { success: true }
     }
@@ -66,9 +49,7 @@ export class AnalyticsController {
     @ApiOperation({ summary: 'Track a project detail page view' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 201, description: 'Project view recorded' })
-    async trackProject(
-        @Param('id', ParseIntPipe) id: number,
-    ): Promise<{ success: boolean }> {
+    async trackProject(@Param('id', ParseIntPipe) id: number): Promise<{ success: boolean }> {
         await this.trackProjectView.execute(id)
         return { success: true }
     }
@@ -89,12 +70,11 @@ export class AnalyticsController {
     @Throttle({ default: { limit: 5, ttl: 60_000 } })
     @ApiOperation({ summary: 'Track a resume PDF download' })
     @ApiResponse({ status: 201, description: 'Resume download recorded' })
-    async trackResume(
-        @Req() req: Request,
-    ): Promise<{ success: boolean }> {
-        const ipAddress   = (req.ip ?? '').slice(0, 45)        // VARCHAR(45) in DB
-        const browserInfo = (req.headers['user-agent'] ?? null) // TEXT — safe unbounded,
-            ?.slice(0, 500) ?? null                             // but 500 chars is plenty
+    async trackResume(@Req() req: Request): Promise<{ success: boolean }> {
+        const ipAddress = (req.ip ?? '').slice(0, 45) // VARCHAR(45) in DB
+        const browserInfo =
+            (req.headers['user-agent'] ?? null) // TEXT — safe unbounded,
+                ?.slice(0, 500) ?? null // but 500 chars is plenty
 
         await this.trackResumeDownload.execute(ipAddress, browserInfo)
         return { success: true }

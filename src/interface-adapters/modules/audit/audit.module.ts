@@ -28,15 +28,15 @@ import { NestLogger } from '../../../infrastructure/logging/NestLogger'
         NestLogger,
 
         { provide: 'IAuditLogWriteRepository', useExisting: PrismaAuditLogRepository },
-        { provide: 'IAuditLogReadRepository',  useExisting: PrismaAuditLogRepository },
-        { provide: 'ILogger',                  useExisting: NestLogger              },
+        { provide: 'IAuditLogReadRepository', useExisting: PrismaAuditLogRepository },
+        { provide: 'ILogger', useExisting: NestLogger },
 
         GetAuditLogsQuery,
     ],
 
     exports: [
         { provide: 'IAuditLogWriteRepository', useExisting: PrismaAuditLogRepository },
-        { provide: 'ILogger',                  useExisting: NestLogger              },
+        { provide: 'ILogger', useExisting: NestLogger },
     ],
 })
 export class AuditModule {}

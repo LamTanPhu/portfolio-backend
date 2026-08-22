@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteBlogCommand
- * 
+ *
  * Deletes a blog post and ensures all related caches are properly invalidated.
  */
 

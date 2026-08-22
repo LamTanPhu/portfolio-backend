@@ -12,9 +12,9 @@
 import type { ContactMe } from '../../entities/ContactMe'
 
 export interface ContactPage {
-    items:      ContactMe[]
-    nextCursor: number | null   // ID of the last item — pass as cursor on next request
-    total:      number          // total row count for display ("Showing X of Y")
+    items: ContactMe[]
+    nextCursor: number | null // ID of the last item — pass as cursor on next request
+    total: number // total row count for display ("Showing X of Y")
 }
 
 export interface IContactReadRepository {

@@ -12,13 +12,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common'
-import {
-    ApiBearerAuth,
-    ApiOperation,
-    ApiParam,
-    ApiResponse,
-    ApiTags,
-} from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
 import { Throttle } from '@nestjs/throttler'
 import type { CertificationDTO } from '../../../application/dtos/certification/CertificationDTO'
 import { CreateCertificationCommand } from '../../../application/use-cases/commands/certification/CreateCertificationCommand'
@@ -40,7 +34,7 @@ import { CreateCertificationDto, UpdateCertificationDto } from './certification.
 @Controller('certifications')
 export class CertificationController {
     constructor(
-        private readonly getQuery:      GetCertificationsQuery,
+        private readonly getQuery: GetCertificationsQuery,
         private readonly createCommand: CreateCertificationCommand,
         private readonly updateCommand: UpdateCertificationCommand,
         private readonly deleteCommand: DeleteCertificationCommand,
@@ -66,17 +60,14 @@ export class CertificationController {
     @ApiOperation({ summary: 'Create certification — admin only' })
     @ApiResponse({ status: 201, description: 'Certification created' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
-    async create(
-        @Body() dto: CreateCertificationDto,
-        @Req() req: AuthenticatedRequest,
-    ): Promise<CertificationDTO> {
+    async create(@Body() dto: CreateCertificationDto, @Req() req: AuthenticatedRequest): Promise<CertificationDTO> {
         return this.createCommand.execute({
-        name:        dto.name,
-        url:         dto.url,
-        startDate:   new Date(dto.startDate),
-        endDate:     dto.endDate ? new Date(dto.endDate) : null,
-        isPublished: dto.isPublished ?? false,
-        userId:      req.user.sub,
+            name: dto.name,
+            url: dto.url,
+            startDate: new Date(dto.startDate),
+            endDate: dto.endDate ? new Date(dto.endDate) : null,
+            isPublished: dto.isPublished ?? false,
+            userId: req.user.sub,
         })
     }
 
@@ -96,12 +87,12 @@ export class CertificationController {
         @Body() dto: UpdateCertificationDto,
     ): Promise<CertificationDTO> {
         return this.updateCommand.execute({
-        id,
-        name:        dto.name,
-        url:         dto.url,
-        startDate:   dto.startDate ? new Date(dto.startDate) : undefined,
-        endDate:     dto.endDate   ? new Date(dto.endDate)   : undefined,
-        isPublished: dto.isPublished,
+            id,
+            name: dto.name,
+            url: dto.url,
+            startDate: dto.startDate ? new Date(dto.startDate) : undefined,
+            endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+            isPublished: dto.isPublished,
         })
     }
 

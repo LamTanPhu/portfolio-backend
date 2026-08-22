@@ -16,16 +16,16 @@ export class PrismaUserReadRepository implements IUserReadRepository {
 
     async findById(id: number): Promise<User | null> {
         const row = await this.prisma.client.user.findUnique({
-        where: { id },
-        select: USER_SAFE_SELECT,
+            where: { id },
+            select: USER_SAFE_SELECT,
         })
         return row ? PrismaUserMapper.toDomain(row) : null
     }
 
     async findByEmail(email: string): Promise<User | null> {
         const row = await this.prisma.client.user.findUnique({
-        where: { email },
-        select: USER_SAFE_SELECT,
+            where: { email },
+            select: USER_SAFE_SELECT,
         })
         return row ? PrismaUserMapper.toDomain(row) : null
     }

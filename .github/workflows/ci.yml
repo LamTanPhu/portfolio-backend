@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Lint, Test, Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Required before lint/test/build — PrismaService and every repository
+      # import types generated from schema.prisma. No live database needed
+      # for this step, or for anything below it: unit tests mock the
+      # repositories, they never hit Postgres.
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      # Deliberately NOT `npm run lint` — that script has --fix baked in,
+      # which is fine locally but meaningless in CI (nothing persists an
+      # in-place fix back to the branch, so it would just auto-correct
+      # itself into always passing). This runs check-only, so it actually
+      # fails the build on real issues.
+      - name: Lint
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+
+      - name: Run unit tests
+        run: npm test -- --ci
+
+      - name: Build
+        run: npm run build

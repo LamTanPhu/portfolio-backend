@@ -21,7 +21,7 @@ import { AuditLogInterceptor } from './AuditLogInterceptor'
 // =============================================================================
 
 const mockAuditLogRepo = { save: jest.fn(), deleteOlderThan: jest.fn() }
-const mockLogger       = { log: jest.fn(), warn: jest.fn(), error: jest.fn() }
+const mockLogger = { log: jest.fn(), warn: jest.fn(), error: jest.fn() }
 
 class BlogController {}
 
@@ -32,7 +32,7 @@ function makeCtx(
 ): ExecutionContext {
     return {
         switchToHttp: () => ({
-            getRequest:  () => req,
+            getRequest: () => req,
             getResponse: () => ({ statusCode }),
         }),
         getClass: () => controllerClass,
@@ -86,56 +86,52 @@ describe('AuditLogInterceptor', () => {
     describe('mutating admin routes (req.user present)', () => {
         it('writes an audit entry with actor, method, route, and status', async () => {
             const req = {
-                method:      'POST',
+                method: 'POST',
                 originalUrl: '/api/blogs?draft=true',
-                user:        { sub: 7 },
-                params:      {},
-                ip:          '203.0.113.5',
+                user: { sub: 7 },
+                params: {},
+                ip: '203.0.113.5',
             }
 
             await lastValueFrom(interceptor.intercept(makeCtx(req, 201), makeHandler()))
 
             expect(mockAuditLogRepo.save).toHaveBeenCalledWith({
-                actorId:    7,
-                method:     'POST',
-                route:      '/api/blogs',        // query string stripped
-                entityType: 'Blog',               // BlogController → "Blog"
-                entityId:   null,
-                ipAddress:  '203.0.113.5',
+                actorId: 7,
+                method: 'POST',
+                route: '/api/blogs', // query string stripped
+                entityType: 'Blog', // BlogController → "Blog"
+                entityId: null,
+                ipAddress: '203.0.113.5',
                 statusCode: 201,
             })
         })
 
         it('extracts entityId from route params.id', async () => {
             const req = {
-                method:      'PATCH',
+                method: 'PATCH',
                 originalUrl: '/api/blogs/42',
-                user:        { sub: 7 },
-                params:      { id: '42' },
-                ip:          '203.0.113.5',
+                user: { sub: 7 },
+                params: { id: '42' },
+                ip: '203.0.113.5',
             }
 
             await lastValueFrom(interceptor.intercept(makeCtx(req, 200), makeHandler()))
 
-            expect(mockAuditLogRepo.save).toHaveBeenCalledWith(
-                expect.objectContaining({ entityId: '42' }),
-            )
+            expect(mockAuditLogRepo.save).toHaveBeenCalledWith(expect.objectContaining({ entityId: '42' }))
         })
 
         it('falls back to params.slug when there is no id', async () => {
             const req = {
-                method:      'PATCH',
+                method: 'PATCH',
                 originalUrl: '/api/blogs/hello-world',
-                user:        { sub: 7 },
-                params:      { slug: 'hello-world' },
-                ip:          '203.0.113.5',
+                user: { sub: 7 },
+                params: { slug: 'hello-world' },
+                ip: '203.0.113.5',
             }
 
             await lastValueFrom(interceptor.intercept(makeCtx(req, 200), makeHandler()))
 
-            expect(mockAuditLogRepo.save).toHaveBeenCalledWith(
-                expect.objectContaining({ entityId: 'hello-world' }),
-            )
+            expect(mockAuditLogRepo.save).toHaveBeenCalledWith(expect.objectContaining({ entityId: 'hello-world' }))
         })
     })
 
@@ -147,16 +143,14 @@ describe('AuditLogInterceptor', () => {
             mockAuditLogRepo.save.mockRejectedValue(new Error('DB unavailable'))
 
             const req = {
-                method:      'DELETE',
+                method: 'DELETE',
                 originalUrl: '/api/blogs/5',
-                user:        { sub: 7 },
-                params:      { id: '5' },
-                ip:          '203.0.113.5',
+                user: { sub: 7 },
+                params: { id: '5' },
+                ip: '203.0.113.5',
             }
 
-            const result = await lastValueFrom(
-                interceptor.intercept(makeCtx(req, 204), makeHandler({ ok: true })),
-            )
+            const result = await lastValueFrom(interceptor.intercept(makeCtx(req, 204), makeHandler({ ok: true })))
 
             expect(result).toEqual({ ok: true })
 

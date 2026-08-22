@@ -7,17 +7,17 @@ import { BlogTag } from './BlogTag'
 // it is populated automatically by a PostgreSQL trigger, never by application code.
 // =============================================================================
 export class Blog {
-  constructor(
-    public readonly id:          number,
-    public readonly title:       string,
-    public readonly slug:        string,
-    public readonly content:     string,
-    public readonly excerpt:     string | null,
-    public readonly tags:        BlogTag[],
-    public readonly isPublished: boolean,
-    public readonly publishedAt: Date | null,
-    public readonly userId:      number,
-    public readonly createdAt:   Date,
-    public readonly updatedAt:   Date,
-  ) {}
+    constructor(
+        public readonly id: number,
+        public readonly title: string,
+        public readonly slug: string,
+        public readonly content: string,
+        public readonly excerpt: string | null,
+        public readonly tags: BlogTag[],
+        public readonly isPublished: boolean,
+        public readonly publishedAt: Date | null,
+        public readonly userId: number,
+        public readonly createdAt: Date,
+        public readonly updatedAt: Date,
+    ) {}
 }

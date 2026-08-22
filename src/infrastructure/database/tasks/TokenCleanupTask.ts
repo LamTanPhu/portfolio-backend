@@ -18,10 +18,7 @@ export class TokenCleanupTask {
             await this.revokedTokenRepo.deleteExpired()
             this.logger.log('Expired token cleanup complete')
         } catch (error) {
-            this.logger.error(
-                `Token cleanup failed: ${(error as Error).message}`,
-                (error as Error).stack,
-            )
+            this.logger.error(`Token cleanup failed: ${(error as Error).message}`, (error as Error).stack)
         }
     }
 }

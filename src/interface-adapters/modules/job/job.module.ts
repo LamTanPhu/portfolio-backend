@@ -1,6 +1,6 @@
 /**
  * @fileoverview JobModule
- * 
+ *
  * Manages work experience records (public view + admin CRUD).
  * Uses split Read/Write repositories and proper caching.
  */
@@ -22,10 +22,7 @@ import { PrismaJobReadRepository } from '../../../infrastructure/database/reposi
 import { PrismaJobWriteRepository } from '../../../infrastructure/database/repositories/job/PrismaJobWriteRepository'
 
 @Module({
-    imports: [
-        AuthModule,
-        CacheInfrastructureModule,
-    ],
+    imports: [AuthModule, CacheInfrastructureModule],
 
     controllers: [JobController],
 

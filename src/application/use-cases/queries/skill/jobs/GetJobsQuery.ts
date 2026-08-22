@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetJobsQuery
- * 
+ *
  * Public query returning all work experience records.
  * Uses LONG cache profile (work experience changes infrequently).
  */
@@ -10,7 +10,6 @@ import type { IJobReadRepository } from '../../../../../domain/repositories/job/
 import { JobDTO } from '../../../../dtos/JobDTO'
 import type { ICacheQueryService } from '../../../../ports/ICacheQueryService'
 import { CACHE_QUERY_SERVICE } from '../../../../../application/ports/cache.tokens'
-
 
 @Injectable()
 export class GetJobsQuery {
@@ -23,13 +22,9 @@ export class GetJobsQuery {
     ) {}
 
     async execute(): Promise<JobDTO[]> {
-        return this.cacheQuery.getOrSetWithProfile(
-        'job:list:public',
-        'LONG',
-        async () => {
+        return this.cacheQuery.getOrSetWithProfile('job:list:public', 'LONG', async () => {
             const jobs = await this.repo.findAll()
             return jobs
-        },
-        )
+        })
     }
 }

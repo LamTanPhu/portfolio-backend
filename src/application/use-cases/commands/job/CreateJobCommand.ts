@@ -1,6 +1,6 @@
 /**
  * @fileoverview CreateJobCommand
- * 
+ *
  * Creates a new work experience record and invalidates the public cache.
  */
 
@@ -27,12 +27,12 @@ export class CreateJobCommand {
         await this.cacheService.invalidatePublicJobs()
 
         return {
-        id: job.id,
-        companyName: job.companyName,
-        role: job.role,
-        startedAt: job.startedAt.toISOString(),
-        endedAt: job.endedAt?.toISOString() ?? null,
-        isEnded: job.isEnded,
+            id: job.id,
+            companyName: job.companyName,
+            role: job.role,
+            startedAt: job.startedAt.toISOString(),
+            endedAt: job.endedAt?.toISOString() ?? null,
+            isEnded: job.isEnded,
         }
     }
 }

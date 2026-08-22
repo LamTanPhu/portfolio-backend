@@ -21,10 +21,10 @@ export class CreateSocialAccountDto {
     @IsOptional()
     imageUrl?: string | null
 
-    @ApiPropertyOptional({ 
-        description: 'Show publicly on portfolio', 
-        example: true, 
-        default: true 
+    @ApiPropertyOptional({
+        description: 'Show publicly on portfolio',
+        example: true,
+        default: true,
     })
     @IsBoolean()
     @IsOptional()

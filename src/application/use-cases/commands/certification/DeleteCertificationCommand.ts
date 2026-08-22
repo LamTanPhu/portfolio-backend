@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteCertificationCommand
- * 
+ *
  * Deletes a certification and invalidates the public cache.
  */
 

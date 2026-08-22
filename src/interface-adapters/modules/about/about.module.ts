@@ -48,9 +48,7 @@ import { PrismaCertificationReadRepository } from '../../../infrastructure/datab
 import { PrismaSocialAccountReadRepository } from '../../../infrastructure/database/repositories/social-account/PrismaSocialAccountReadRepository'
 
 @Module({
-    imports: [
-        CacheInfrastructureModule,
-    ],
+    imports: [CacheInfrastructureModule],
 
     controllers: [AboutController],
 

@@ -5,9 +5,9 @@
 // All strings empty when nothing is currently playing (isPlaying: false).
 // =============================================================================
 export interface TrackDTO {
-  isPlaying: boolean
-  title:     string
-  artist:    string
-  albumArt:  string
-  songUrl:   string
+    isPlaying: boolean
+    title: string
+    artist: string
+    albumArt: string
+    songUrl: string
 }

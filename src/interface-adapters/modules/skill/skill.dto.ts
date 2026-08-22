@@ -7,10 +7,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 export enum SkillCategoryEnum {
     frontend = 'frontend',
-    backend  = 'backend',
-    devops   = 'devops',
+    backend = 'backend',
+    devops = 'devops',
     database = 'database',
-    other    = 'other',
+    other = 'other',
 }
 
 export class CreateSkillDto {
@@ -25,18 +25,18 @@ export class CreateSkillDto {
     @IsOptional()
     imageUrl?: string | null
 
-    @ApiProperty({ 
-        description: 'Skill category', 
-        enum: SkillCategoryEnum, 
-        example: 'frontend' 
+    @ApiProperty({
+        description: 'Skill category',
+        enum: SkillCategoryEnum,
+        example: 'frontend',
     })
     @IsEnum(SkillCategoryEnum)
     category!: SkillCategoryEnum
 
-    @ApiPropertyOptional({ 
-        description: 'Show publicly on portfolio', 
-        example: true, 
-        default: true 
+    @ApiPropertyOptional({
+        description: 'Show publicly on portfolio',
+        example: true,
+        default: true,
     })
     @IsBoolean()
     @IsOptional()

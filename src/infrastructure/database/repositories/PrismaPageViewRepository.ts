@@ -16,26 +16,24 @@ export class PrismaPageViewRepository implements IPageViewRepository {
     // O(1) — upsert on route unique index
     async increment(route: string): Promise<void> {
         await this.prisma.client.pageView.upsert({
-        where:  { route },
-        update: { count: { increment: 1 } },
-        create: { route, count: 1 },
+            where: { route },
+            update: { count: { increment: 1 } },
+            create: { route, count: 1 },
         })
     }
 
     // O(1) — route has @unique index
     async findByRoute(route: string): Promise<PageView | null> {
         const row = await this.prisma.client.pageView.findUnique({
-        where: { route },
+            where: { route },
         })
-        return row
-        ? new PageView(row.id, row.route, row.count, row.lastViewedAt)
-        : null
+        return row ? new PageView(row.id, row.route, row.count, row.lastViewedAt) : null
     }
 
     // O(n) — ordered by count desc, no filter
     async findAll(): Promise<PageView[]> {
         const rows = await this.prisma.client.pageView.findMany({
-        orderBy: { count: 'desc' },
+            orderBy: { count: 'desc' },
         })
         return rows.map((r) => new PageView(r.id, r.route, r.count, r.lastViewedAt))
     }

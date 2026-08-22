@@ -23,24 +23,24 @@ export class CreateBlogCommand {
     ) {}
 
     async execute(input: {
-        title:       string
-        content:     string
-        excerpt?:    string | null
-        tags?:       string[]
+        title: string
+        content: string
+        excerpt?: string | null
+        tags?: string[]
         isPublished: boolean
-        userId:      number
+        userId: number
     }): Promise<BlogDetailDTO> {
         const slug = Slug.from(input.title)
 
         const blog = await this.repo.create({
-            title:       input.title,
-            slug:        slug.toString(),
-            content:     input.content,
-            excerpt:     input.excerpt ?? null,
-            tags:        input.tags ?? [],
+            title: input.title,
+            slug: slug.toString(),
+            content: input.content,
+            excerpt: input.excerpt ?? null,
+            tags: input.tags ?? [],
             isPublished: input.isPublished,
             publishedAt: input.isPublished ? new Date() : null,
-            userId:      input.userId,
+            userId: input.userId,
         })
 
         // Cache invalidation

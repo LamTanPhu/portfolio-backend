@@ -24,33 +24,29 @@ import { PrismaResumeDownloadRepository } from '../../../infrastructure/database
         PrismaProjectViewRepository,
 
         // ─── Interface tokens ───────────────────────────────────────────────────
-        { provide: 'IPageViewRepository',       useExisting: PrismaPageViewRepository },
+        { provide: 'IPageViewRepository', useExisting: PrismaPageViewRepository },
         { provide: 'IResumeDownloadRepository', useExisting: PrismaResumeDownloadRepository },
-        { provide: 'IProjectViewRepository',    useExisting: PrismaProjectViewRepository },
+        { provide: 'IProjectViewRepository', useExisting: PrismaProjectViewRepository },
 
         // ─── Use cases ──────────────────────────────────────────────────────────
         {
-            provide:    GetPageViewsQuery,
-            useFactory: (repo: PrismaPageViewRepository) =>
-                new GetPageViewsQuery(repo),
+            provide: GetPageViewsQuery,
+            useFactory: (repo: PrismaPageViewRepository) => new GetPageViewsQuery(repo),
             inject: [PrismaPageViewRepository],
         },
         {
-            provide:    TrackPageViewCommand,
-            useFactory: (repo: PrismaPageViewRepository) =>
-                new TrackPageViewCommand(repo),
+            provide: TrackPageViewCommand,
+            useFactory: (repo: PrismaPageViewRepository) => new TrackPageViewCommand(repo),
             inject: [PrismaPageViewRepository],
         },
         {
-            provide:    TrackResumeDownloadCommand,
-            useFactory: (repo: PrismaResumeDownloadRepository) =>
-                new TrackResumeDownloadCommand(repo),
+            provide: TrackResumeDownloadCommand,
+            useFactory: (repo: PrismaResumeDownloadRepository) => new TrackResumeDownloadCommand(repo),
             inject: [PrismaResumeDownloadRepository],
         },
         {
-            provide:    TrackProjectViewCommand,
-            useFactory: (repo: PrismaProjectViewRepository) =>
-                new TrackProjectViewCommand(repo),
+            provide: TrackProjectViewCommand,
+            useFactory: (repo: PrismaProjectViewRepository) => new TrackProjectViewCommand(repo),
             inject: [PrismaProjectViewRepository],
         },
     ],
@@ -58,8 +54,6 @@ import { PrismaResumeDownloadRepository } from '../../../infrastructure/database
     // IResumeDownloadRepository exported for DataRetentionTask (root-level
     // provider in AppModule) to inject — same pattern AuthModule uses for
     // ITokenRepository → TokenCleanupTask.
-    exports: [
-        { provide: 'IResumeDownloadRepository', useExisting: PrismaResumeDownloadRepository },
-    ],
+    exports: [{ provide: 'IResumeDownloadRepository', useExisting: PrismaResumeDownloadRepository }],
 })
 export class AnalyticsModule {}

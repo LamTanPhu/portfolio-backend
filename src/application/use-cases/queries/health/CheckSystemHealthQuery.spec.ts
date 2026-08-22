@@ -20,10 +20,7 @@ describe('CheckSystemHealthQuery', () => {
         jest.clearAllMocks()
 
         const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                CheckSystemHealthQuery,
-                { provide: 'IHealthCheckService', useValue: mockHealthCheckService },
-            ],
+            providers: [CheckSystemHealthQuery, { provide: 'IHealthCheckService', useValue: mockHealthCheckService }],
         }).compile()
 
         query = module.get<CheckSystemHealthQuery>(CheckSystemHealthQuery)

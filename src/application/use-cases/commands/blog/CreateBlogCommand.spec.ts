@@ -24,8 +24,8 @@ const mockRepo = {
 }
 
 const mockCacheService = {
-    invalidatePublicBlogs:  jest.fn(),
-    invalidateBlogBySlug:   jest.fn(),
+    invalidatePublicBlogs: jest.fn(),
+    invalidateBlogBySlug: jest.fn(),
 }
 
 // =============================================================================
@@ -34,28 +34,28 @@ const mockCacheService = {
 
 /** Minimal valid blog input */
 const makeInput = (overrides = {}) => ({
-    title:       'My First Blog Post',
-    content:     'This is the content of the blog post.',
-    excerpt:     'Short excerpt',
-    tags:        ['nestjs', 'typescript'],
+    title: 'My First Blog Post',
+    content: 'This is the content of the blog post.',
+    excerpt: 'Short excerpt',
+    tags: ['nestjs', 'typescript'],
     isPublished: false,
-    userId:      1,
+    userId: 1,
     ...overrides,
 })
 
 /** Minimal blog entity returned by the repo */
 const makeBlog = (overrides = {}) => ({
-    id:          1,
-    title:       'My First Blog Post',
-    slug:        'my-first-blog-post',
-    content:     'This is the content of the blog post.',
-    excerpt:     'Short excerpt',
-    tags:        [{ id: 1, name: 'nestjs', blogId: 1 }],
+    id: 1,
+    title: 'My First Blog Post',
+    slug: 'my-first-blog-post',
+    content: 'This is the content of the blog post.',
+    excerpt: 'Short excerpt',
+    tags: [{ id: 1, name: 'nestjs', blogId: 1 }],
     isPublished: false,
     publishedAt: null,
-    userId:      1,
-    createdAt:   new Date(),
-    updatedAt:   new Date(),
+    userId: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
     ...overrides,
 })
 
@@ -76,7 +76,7 @@ describe('CreateBlogCommand', () => {
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 CreateBlogCommand,
-                { provide: 'IBlogWriteRepository',    useValue: mockRepo         },
+                { provide: 'IBlogWriteRepository', useValue: mockRepo },
                 { provide: CACHE_INVALIDATION_SERVICE, useValue: mockCacheService },
             ],
         }).compile()
@@ -84,38 +84,32 @@ describe('CreateBlogCommand', () => {
         command = module.get<CreateBlogCommand>(CreateBlogCommand)
     })
 
-  // ===========================================================================
-  // Slug generation
-  // ===========================================================================
+    // ===========================================================================
+    // Slug generation
+    // ===========================================================================
     describe('slug generation', () => {
         it('generates slug from title and passes it to repo', async () => {
             await command.execute(makeInput({ title: 'My First Blog Post' }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ slug: 'my-first-blog-post' }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'my-first-blog-post' }))
         })
 
         it('generates slug for titles with special characters', async () => {
             await command.execute(makeInput({ title: 'Hello, World! & More' }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ slug: 'hello-world-more' }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'hello-world-more' }))
         })
 
         it('generates slug for Vietnamese titles', async () => {
             await command.execute(makeInput({ title: 'Lâm Tấn Phú học NestJS' }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ slug: 'lam-tan-phu-hoc-nestjs' }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ slug: 'lam-tan-phu-hoc-nestjs' }))
         })
     })
 
-  // ===========================================================================
-  // Cache invalidation — published blog
-  // ===========================================================================
+    // ===========================================================================
+    // Cache invalidation — published blog
+    // ===========================================================================
     describe('cache invalidation — published blog', () => {
         it('always invalidates public blog list on create', async () => {
             await command.execute(makeInput({ isPublished: true }))
@@ -124,10 +118,12 @@ describe('CreateBlogCommand', () => {
         })
 
         it('invalidates slug cache when blog is published', async () => {
-            await command.execute(makeInput({
-                title:       'My Published Post',
-                isPublished: true,
-        }))
+            await command.execute(
+                makeInput({
+                    title: 'My Published Post',
+                    isPublished: true,
+                }),
+            )
 
             expect(mockCacheService.invalidateBlogBySlug).toHaveBeenCalledWith('my-published-post')
         })
@@ -135,15 +131,13 @@ describe('CreateBlogCommand', () => {
         it('sets publishedAt when blog is published', async () => {
             await command.execute(makeInput({ isPublished: true }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ publishedAt: expect.any(Date) }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ publishedAt: expect.any(Date) }))
         })
     })
 
-  // ===========================================================================
-  // Cache invalidation — draft blog
-  // ===========================================================================
+    // ===========================================================================
+    // Cache invalidation — draft blog
+    // ===========================================================================
     describe('cache invalidation — draft blog', () => {
         it('still invalidates public blog list on draft create', async () => {
             await command.execute(makeInput({ isPublished: false }))
@@ -158,32 +152,26 @@ describe('CreateBlogCommand', () => {
         })
 
         it('sets publishedAt to null for draft', async () => {
-        await command.execute(makeInput({ isPublished: false }))
+            await command.execute(makeInput({ isPublished: false }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ publishedAt: null }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ publishedAt: null }))
         })
     })
 
-  // ===========================================================================
-  // Optional fields
-  // ===========================================================================
+    // ===========================================================================
+    // Optional fields
+    // ===========================================================================
     describe('optional fields', () => {
         it('defaults excerpt to null when not provided', async () => {
             await command.execute(makeInput({ excerpt: undefined }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ excerpt: null }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ excerpt: null }))
         })
 
         it('defaults tags to empty array when not provided', async () => {
             await command.execute(makeInput({ tags: undefined }))
 
-            expect(mockRepo.create).toHaveBeenCalledWith(
-                expect.objectContaining({ tags: [] }),
-            )
+            expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ tags: [] }))
         })
     })
 })

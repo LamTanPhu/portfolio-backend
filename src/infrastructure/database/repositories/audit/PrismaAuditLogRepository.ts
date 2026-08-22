@@ -23,21 +23,19 @@ import type {
 import { PrismaService } from '../../prisma/prisma.service'
 
 const AUDIT_LOG_SELECT = {
-    id:         true,
-    actorId:    true,
-    method:     true,
-    route:      true,
+    id: true,
+    actorId: true,
+    method: true,
+    route: true,
     entityType: true,
-    entityId:   true,
-    ipAddress:  true,
+    entityId: true,
+    ipAddress: true,
     statusCode: true,
-    createdAt:  true,
+    createdAt: true,
 } as const
 
 @Injectable()
-export class PrismaAuditLogRepository
-    implements IAuditLogWriteRepository, IAuditLogReadRepository
-{
+export class PrismaAuditLogRepository implements IAuditLogWriteRepository, IAuditLogReadRepository {
     constructor(private readonly prisma: PrismaService) {}
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -45,15 +43,15 @@ export class PrismaAuditLogRepository
     // ──────────────────────────────────────────────────────────────────────────
 
     private static toDomain(row: {
-        id:         number
-        actorId:    number | null
-        method:     string
-        route:      string
+        id: number
+        actorId: number | null
+        method: string
+        route: string
         entityType: string
-        entityId:   string | null
-        ipAddress:  string | null
+        entityId: string | null
+        ipAddress: string | null
         statusCode: number
-        createdAt:  Date
+        createdAt: Date
     }): AuditLog {
         return new AuditLog(
             row.id,
@@ -79,12 +77,12 @@ export class PrismaAuditLogRepository
     async save(entry: AuditLogEntry): Promise<void> {
         await this.prisma.client.auditLog.create({
             data: {
-                actorId:    entry.actorId,
-                method:     entry.method,
-                route:      entry.route,
+                actorId: entry.actorId,
+                method: entry.method,
+                route: entry.route,
                 entityType: entry.entityType,
-                entityId:   entry.entityId,
-                ipAddress:  entry.ipAddress,
+                entityId: entry.entityId,
+                ipAddress: entry.ipAddress,
                 statusCode: entry.statusCode,
                 // createdAt set by DB default — never trust application-layer timestamps
             },
@@ -110,15 +108,15 @@ export class PrismaAuditLogRepository
 
         const [rows, total] = await Promise.all([
             this.prisma.client.auditLog.findMany({
-                select:  AUDIT_LOG_SELECT,
-                where:   cursor ? { id: { lt: cursor } } : undefined,
+                select: AUDIT_LOG_SELECT,
+                where: cursor ? { id: { lt: cursor } } : undefined,
                 orderBy: { id: 'desc' }, // PK desc = newest first, uses PK index
                 take,
             }),
             this.prisma.client.auditLog.count(),
         ])
 
-        const items      = rows.map(PrismaAuditLogRepository.toDomain)
+        const items = rows.map(PrismaAuditLogRepository.toDomain)
         const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
 
         return { items, nextCursor, total }

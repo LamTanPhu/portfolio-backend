@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetAllBlogsQuery
- * 
+ *
  * Admin-only query that returns all blog posts (including drafts).
  * No caching is applied because admin views require absolute freshness.
  */

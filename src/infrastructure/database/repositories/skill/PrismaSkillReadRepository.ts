@@ -16,40 +16,40 @@ export class PrismaSkillReadRepository implements ISkillReadRepository {
 
     async findPublished(): Promise<SkillDTO[]> {
         const rows = await this.prisma.client.skill.findMany({
-        where: { isPublic: true },
-        orderBy: { category: 'asc' },
-        select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            category: true,
-        },
+            where: { isPublic: true },
+            orderBy: { category: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                category: true,
+            },
         })
 
-        return rows.map(row => ({
-        id:       row.id,
-        name:     row.name,
-        imageUrl: row.imageUrl,
-        category: row.category,
+        return rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            imageUrl: row.imageUrl,
+            category: row.category,
         }))
     }
 
     async findAll(): Promise<SkillDTO[]> {
         const rows = await this.prisma.client.skill.findMany({
-        orderBy: { category: 'asc' },
-        select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            category: true,
-        },
+            orderBy: { category: 'asc' },
+            select: {
+                id: true,
+                name: true,
+                imageUrl: true,
+                category: true,
+            },
         })
 
-        return rows.map(row => ({
-        id:       row.id,
-        name:     row.name,
-        imageUrl: row.imageUrl,
-        category: row.category,
+        return rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            imageUrl: row.imageUrl,
+            category: row.category,
         }))
     }
 

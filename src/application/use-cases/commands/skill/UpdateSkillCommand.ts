@@ -1,6 +1,6 @@
 /**
  * @fileoverview UpdateSkillCommand
- * 
+ *
  * Updates a skill record and invalidates the public skills cache.
  */
 
@@ -36,10 +36,10 @@ export class UpdateSkillCommand {
         await this.cacheService.invalidatePublicSkills()
 
         return {
-        id:       skill.id,
-        name:     skill.name,
-        imageUrl: skill.imageUrl,
-        category: skill.category,
+            id: skill.id,
+            name: skill.name,
+            imageUrl: skill.imageUrl,
+            category: skill.category,
         }
     }
 }

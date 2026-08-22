@@ -1,6 +1,6 @@
 /**
  * @fileoverview UpdateSocialAccountCommand
- * 
+ *
  * Updates a social account and invalidates the public cache.
  */
 
@@ -36,11 +36,11 @@ export class UpdateSocialAccountCommand {
         await this.cacheService.invalidatePublicSocialAccounts()
 
         return {
-        id:       account.id,
-        name:     account.name,
-        url:      account.url,
-        imageUrl: account.imageUrl,
-        isPublic: account.isPublic,
+            id: account.id,
+            name: account.name,
+            url: account.url,
+            imageUrl: account.imageUrl,
+            isPublic: account.isPublic,
         }
     }
 }

@@ -26,8 +26,8 @@ import type { IContactWriteRepository } from '../../../domain/repositories/conta
 import type { IResumeDownloadRepository } from '../../../domain/repositories/resume/IResumeDownloadRepository'
 import type { IAuditLogWriteRepository } from '../../../domain/repositories/audit/IAuditLogWriteRepository'
 
-const CONTACT_RETENTION_DAYS  = 7
-const RESUME_RETENTION_DAYS   = 14
+const CONTACT_RETENTION_DAYS = 7
+const RESUME_RETENTION_DAYS = 14
 const AUDIT_LOG_RETENTION_DAYS = 47
 
 function daysAgo(days: number): Date {
@@ -71,11 +71,7 @@ export class DataRetentionTask {
     // Each resource cleaned up independently — one failing must not stop
     // the others, and must not crash the app (same contract as
     // TokenCleanupTask.handleTokenCleanup()).
-    private async cleanup(
-        label: string,
-        retentionDays: number,
-        run: (cutoff: Date) => Promise<void>,
-    ): Promise<void> {
+    private async cleanup(label: string, retentionDays: number, run: (cutoff: Date) => Promise<void>): Promise<void> {
         try {
             await run(daysAgo(retentionDays))
             this.logger.log(`Purged ${label} older than ${retentionDays} days`)

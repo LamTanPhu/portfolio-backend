@@ -11,5 +11,5 @@
  * registering its concrete implementations, satisfying DIP from the other direction.
  */
 
-export const CACHE_QUERY_SERVICE       = 'ICacheQueryService'
+export const CACHE_QUERY_SERVICE = 'ICacheQueryService'
 export const CACHE_INVALIDATION_SERVICE = 'ICacheInvalidationService'

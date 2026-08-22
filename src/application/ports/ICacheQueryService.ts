@@ -37,21 +37,12 @@ export interface ICacheQueryService {
      * @param factory - Function to fetch fresh data on miss/expiration
      * @param options - Advanced caching options
      */
-    getOrSet<T>(
-        key: string,
-        ttl: number,
-        factory: () => Promise<T>,
-        options?: GetOrSetOptions,
-    ): Promise<T>
+    getOrSet<T>(key: string, ttl: number, factory: () => Promise<T>, options?: GetOrSetOptions): Promise<T>
 
     /**
      * Convenience method using predefined cache profiles.
      */
-    getOrSetWithProfile<T>(
-        key: string,
-        profile: CacheProfile,
-        factory: () => Promise<T>,
-    ): Promise<T>
+    getOrSetWithProfile<T>(key: string, profile: CacheProfile, factory: () => Promise<T>): Promise<T>
 
     delete(key: string): Promise<void>
     deletePattern(pattern: string): Promise<void>

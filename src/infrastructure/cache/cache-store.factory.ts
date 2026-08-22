@@ -38,9 +38,7 @@ import { Keyv } from 'keyv'
 
 const logger = new Logger('CacheStoreFactory')
 
-export function buildCacheStores(
-    configService: ConfigService,
-): Pick<CreateCacheOptions, 'stores'> {
+export function buildCacheStores(configService: ConfigService): Pick<CreateCacheOptions, 'stores'> {
     const redisUrl = configService.get<string>('REDIS_URL')
     const memoryKeyv = new Keyv() // same default in-memory adapter used before this change
 

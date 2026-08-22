@@ -1,6 +1,6 @@
 /**
  * @fileoverview BlogModule
- * 
+ *
  * Organizes all Blog-related concerns following Clean Architecture.
  * - Controllers
  * - Application Use Cases (Commands & Queries)
@@ -30,7 +30,7 @@ import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.m
 @Module({
     imports: [
         AuthModule,
-        CacheInfrastructureModule,   // ← Important: brings cache services
+        CacheInfrastructureModule, // ← Important: brings cache services
     ],
 
     controllers: [BlogController],

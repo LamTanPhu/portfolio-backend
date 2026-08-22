@@ -1,6 +1,6 @@
 /**
  * @fileoverview ContactModule
- * 
+ *
  * Manages contact form submissions and admin contact message handling.
  * Combines public submission (with anti-spam) and admin CRUD operations.
  */
@@ -24,10 +24,7 @@ import { MailService } from '../../../infrastructure/mail/MailService'
 import { NestLogger } from '../../../infrastructure/logging/NestLogger'
 
 @Module({
-    imports: [
-        AuthModule,
-        CacheInfrastructureModule,
-    ],
+    imports: [AuthModule, CacheInfrastructureModule],
 
     controllers: [ContactController],
 
@@ -40,10 +37,10 @@ import { NestLogger } from '../../../infrastructure/logging/NestLogger'
         // Ports (Interface Adapters → Infrastructure)
         // PrismaContactRepository implements BOTH interfaces — registered twice as different tokens
         { provide: 'IContactWriteRepository', useExisting: PrismaContactRepository },
-        { provide: 'IContactReadRepository',  useExisting: PrismaContactRepository },
-        { provide: 'ITurnstileVerifier',       useExisting: TurnstileVerifier       },
-        { provide: 'IMailService',             useExisting: MailService             },
-        { provide: 'ILogger',                  useExisting: NestLogger              },
+        { provide: 'IContactReadRepository', useExisting: PrismaContactRepository },
+        { provide: 'ITurnstileVerifier', useExisting: TurnstileVerifier },
+        { provide: 'IMailService', useExisting: MailService },
+        { provide: 'ILogger', useExisting: NestLogger },
 
         // Use Cases & Event Handlers
         SubmitContactCommand,
@@ -55,8 +52,6 @@ import { NestLogger } from '../../../infrastructure/logging/NestLogger'
     // IContactWriteRepository exported for DataRetentionTask (root-level
     // provider in AppModule) to inject — same pattern AuthModule uses for
     // ITokenRepository → TokenCleanupTask.
-    exports: [
-        { provide: 'IContactWriteRepository', useExisting: PrismaContactRepository },
-    ],
+    exports: [{ provide: 'IContactWriteRepository', useExisting: PrismaContactRepository }],
 })
 export class ContactModule {}

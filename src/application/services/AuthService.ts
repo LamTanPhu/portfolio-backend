@@ -1,6 +1,6 @@
 /**
  * @fileoverview AuthService
- * 
+ *
  * Handles all JWT token lifecycle operations with security-first design.
  * Uses short-lived cache for revocation checks to reduce database pressure.
  */
@@ -19,27 +19,27 @@ import type { IUnitOfWork } from '../ports/IUnitOfWork'
 import { CACHE_QUERY_SERVICE } from '../../application/ports/cache.tokens'
 
 export interface AccessTokenPayload {
-    sub:         number
-    role:        'admin'
-    jti:         string
+    sub: number
+    role: 'admin'
+    jti: string
     fingerprint: string
-    iss:         string
-    aud:         string | string[]
+    iss: string
+    aud: string | string[]
 }
 
 export interface RefreshTokenPayload {
-    sub:         number
-    jti:         string
-    type:        'refresh'
+    sub: number
+    jti: string
+    type: 'refresh'
     fingerprint: string
-    iat:         number
-    exp:         number
+    iat: number
+    exp: number
 }
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-    private static readonly ACCESS_TOKEN_EXPIRY     = '15m'
-    private static readonly REFRESH_TOKEN_EXPIRY    = '7d'
+    private static readonly ACCESS_TOKEN_EXPIRY = '15m'
+    private static readonly REFRESH_TOKEN_EXPIRY = '7d'
     private static readonly REFRESH_TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000
 
     // Public (not private) — auth.module.ts's JwtModule.registerAsync signOptions
@@ -53,7 +53,7 @@ export class AuthService implements OnModuleInit {
     // them, so the claims were purely decorative. Not currently exploitable
     // (the HMAC secret alone already scopes tokens to this app), but there's
     // no reason to sign a claim and never check it.
-    static readonly ISSUER   = 'portfolio-api'
+    static readonly ISSUER = 'portfolio-api'
     static readonly AUDIENCE = 'portfolio-admin'
 
     // bcrypt cost factor — 12 matches the seed script.
@@ -103,9 +103,9 @@ export class AuthService implements OnModuleInit {
     // Login
     // ===========================================================================
     async login(
-        password:    string,
+        password: string,
         fingerprint: string,
-        adminEmail:  string,
+        adminEmail: string,
     ): Promise<{ accessToken: string; refreshToken: string }> {
         // Fetch credential record (id + hashPassword) from DB.
         // Returns null when email doesn't exist — intentionally indistinguishable
@@ -154,7 +154,7 @@ export class AuthService implements OnModuleInit {
 
         try {
             payload = await this.jwt.verifyAsync<RefreshTokenPayload>(refreshToken, {
-                issuer:   AuthService.ISSUER,
+                issuer: AuthService.ISSUER,
                 audience: AuthService.AUDIENCE,
             })
         } catch {
@@ -194,10 +194,7 @@ export class AuthService implements OnModuleInit {
         // Fire-and-forget is intentional: a revocation write failure is not worth
         // blocking the response — the token will expire within its 7-day window anyway,
         // and fingerprint enforcement already stops cross-device replay.
-        void this.tokenRepo.revoke(
-            payload.jti,
-            new Date(payload.exp * 1000),
-        )
+        void this.tokenRepo.revoke(payload.jti, new Date(payload.exp * 1000))
 
         return { accessToken: newAccessToken, refreshToken: newRefreshToken }
     }
@@ -262,7 +259,7 @@ export class AuthService implements OnModuleInit {
 
         try {
             payload = await this.jwt.verifyAsync<AccessTokenPayload>(token, {
-                issuer:   AuthService.ISSUER,
+                issuer: AuthService.ISSUER,
                 audience: AuthService.AUDIENCE,
             })
         } catch {
@@ -292,7 +289,7 @@ export class AuthService implements OnModuleInit {
             async () => await this.tokenRepo.isRevoked(jti),
         )
     }
-    
+
     private shouldEnforceFingerprint(): boolean {
         return this.config.get<string>('FINGERPRINT_STRICT') !== 'false'
     }
@@ -301,10 +298,7 @@ export class AuthService implements OnModuleInit {
     // Static Helpers (Used by Controller)
     // ===========================================================================
     static buildFingerprint(userAgent: string, ip: string): string {
-        return crypto
-            .createHash('sha256')
-            .update(`${userAgent}:${ip}`)
-            .digest('hex')
+        return crypto.createHash('sha256').update(`${userAgent}:${ip}`).digest('hex')
     }
 
     static getRefreshTokenExpiryMs(): number {

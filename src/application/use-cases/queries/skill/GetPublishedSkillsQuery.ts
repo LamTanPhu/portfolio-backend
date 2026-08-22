@@ -1,6 +1,6 @@
 /**
  * @fileoverview GetPublishedSkillsQuery
- * 
+ *
  * Returns all public skills ordered by category.
  * Uses LONG cache profile (skills change infrequently).
  */
@@ -23,13 +23,9 @@ export class GetPublishedSkillsQuery {
     ) {}
 
     async execute(): Promise<SkillDTO[]> {
-        return this.cacheQuery.getOrSetWithProfile(
-            'skill:list:public',
-            'LONG',
-            async () => {
-                const skills = await this.repo.findPublished()
-                return skills
-            },
-        )
+        return this.cacheQuery.getOrSetWithProfile('skill:list:public', 'LONG', async () => {
+            const skills = await this.repo.findPublished()
+            return skills
+        })
     }
 }

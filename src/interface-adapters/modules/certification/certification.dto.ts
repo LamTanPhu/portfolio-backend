@@ -1,11 +1,4 @@
-import {
-    IsString,
-    IsBoolean,
-    IsOptional,
-    IsNotEmpty,
-    IsDateString,
-    IsUrl,
-} from 'class-validator'
+import { IsString, IsBoolean, IsOptional, IsNotEmpty, IsDateString, IsUrl } from 'class-validator'
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 // =============================================================================
@@ -55,7 +48,7 @@ export class UpdateCertificationDto {
     @IsOptional()
     url?: string
 
-    @ApiPropertyOptional({ description: 'Issue date ISO 8601',  example: '2024-06-01' })
+    @ApiPropertyOptional({ description: 'Issue date ISO 8601', example: '2024-06-01' })
     @IsDateString()
     @IsOptional()
     startDate?: string

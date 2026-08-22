@@ -9,14 +9,13 @@ import { DateRange } from './DateRange'
 import { ValidationError } from '../errors/ValidationError'
 
 describe('DateRange', () => {
-
-  // ===========================================================================
-  // Construction — valid ranges
-  // ===========================================================================
+    // ===========================================================================
+    // Construction — valid ranges
+    // ===========================================================================
     describe('constructor — valid ranges', () => {
         it('accepts start date before end date', () => {
             const start = new Date('2020-01-01')
-            const end   = new Date('2023-01-01')
+            const end = new Date('2023-01-01')
 
             expect(() => new DateRange(start, end)).not.toThrow()
         })
@@ -34,29 +33,28 @@ describe('DateRange', () => {
         })
     })
 
-  // ===========================================================================
-  // Construction — invalid ranges
-  // ===========================================================================
+    // ===========================================================================
+    // Construction — invalid ranges
+    // ===========================================================================
     describe('constructor — invalid ranges', () => {
         it('throws ValidationError when end is before start', () => {
             const start = new Date('2023-01-01')
-            const end   = new Date('2022-01-01')
+            const end = new Date('2022-01-01')
 
             expect(() => new DateRange(start, end)).toThrow(ValidationError)
         })
 
         it('throws ValidationError with descriptive message', () => {
             const start = new Date('2023-06-01')
-            const end   = new Date('2023-01-01')
+            const end = new Date('2023-01-01')
 
-            expect(() => new DateRange(start, end))
-                .toThrow('End date cannot be before start date')
-            })
+            expect(() => new DateRange(start, end)).toThrow('End date cannot be before start date')
+        })
     })
 
-  // ===========================================================================
-  // isOngoing getter
-  // ===========================================================================
+    // ===========================================================================
+    // isOngoing getter
+    // ===========================================================================
     describe('isOngoing', () => {
         it('returns true when end is null', () => {
             const range = new DateRange(new Date('2022-01-01'), null)
@@ -71,9 +69,9 @@ describe('DateRange', () => {
         })
     })
 
-  // ===========================================================================
-  // durationMs getter
-  // ===========================================================================
+    // ===========================================================================
+    // durationMs getter
+    // ===========================================================================
     describe('durationMs', () => {
         it('returns null when ongoing', () => {
             const range = new DateRange(new Date('2022-01-01'), null)
@@ -83,14 +81,14 @@ describe('DateRange', () => {
 
         it('returns correct duration in milliseconds', () => {
             const start = new Date('2022-01-01')
-            const end   = new Date('2023-01-01')
+            const end = new Date('2023-01-01')
             const range = new DateRange(start, end)
 
             expect(range.durationMs).toBe(end.getTime() - start.getTime())
         })
 
         it('returns zero for same start and end date', () => {
-            const date  = new Date('2023-01-01')
+            const date = new Date('2023-01-01')
             const range = new DateRange(date, date)
 
             expect(range.durationMs).toBe(0)

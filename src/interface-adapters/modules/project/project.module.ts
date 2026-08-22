@@ -1,6 +1,6 @@
 /**
  * @fileoverview ProjectModule
- * 
+ *
  * Manages projects (public display + admin CRUD).
  * Uses split Read/Write repositories and full caching support.
  */
@@ -23,28 +23,25 @@ import { PrismaProjectReadRepository } from '../../../infrastructure/database/re
 import { PrismaProjectWriteRepository } from '../../../infrastructure/database/repositories/project/PrismaProjectWriteRepository'
 
 @Module({
-  imports: [
-    AuthModule,
-    CacheInfrastructureModule,
-  ],
+    imports: [AuthModule, CacheInfrastructureModule],
 
-  controllers: [ProjectController],
+    controllers: [ProjectController],
 
-  providers: [
-    // Repositories
-    PrismaProjectReadRepository,
-    PrismaProjectWriteRepository,
+    providers: [
+        // Repositories
+        PrismaProjectReadRepository,
+        PrismaProjectWriteRepository,
 
-    // Ports
-    { provide: 'IProjectReadRepository', useExisting: PrismaProjectReadRepository },
-    { provide: 'IProjectWriteRepository', useExisting: PrismaProjectWriteRepository },
+        // Ports
+        { provide: 'IProjectReadRepository', useExisting: PrismaProjectReadRepository },
+        { provide: 'IProjectWriteRepository', useExisting: PrismaProjectWriteRepository },
 
-    // Use Cases
-    GetPublishedProjectsQuery,
-    GetProjectBySlugQuery,
-    CreateProjectCommand,
-    UpdateProjectCommand,
-    DeleteProjectCommand,
-  ],
+        // Use Cases
+        GetPublishedProjectsQuery,
+        GetProjectBySlugQuery,
+        CreateProjectCommand,
+        UpdateProjectCommand,
+        DeleteProjectCommand,
+    ],
 })
 export class ProjectModule {}

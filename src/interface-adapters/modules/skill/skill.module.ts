@@ -1,6 +1,6 @@
 /**
  * @fileoverview SkillModule
- * 
+ *
  * Manages skills for the portfolio (public display + admin CRUD).
  * Uses split Read/Write repositories and caching support.
  */
@@ -22,10 +22,7 @@ import { PrismaSkillReadRepository } from '../../../infrastructure/database/repo
 import { PrismaSkillWriteRepository } from '../../../infrastructure/database/repositories/skill/PrismaSkillWriteRepository'
 
 @Module({
-    imports: [
-        AuthModule,
-        CacheInfrastructureModule,
-    ],
+    imports: [AuthModule, CacheInfrastructureModule],
 
     controllers: [SkillController],
 

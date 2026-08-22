@@ -16,32 +16,32 @@ import { ValidationError } from '../errors/ValidationError'
 // Used by CreateProjectCommand and CreateBlogCommand.
 // =============================================================================
 export class Slug {
-  private readonly value: string
+    private readonly value: string
 
-  constructor(raw: string) {
-    const slugified = raw
-      .normalize('NFD')                       // decompose accented chars: "â" → "a" + combining char
-      .replace(/[\u0300-\u036f]/g, '')        // strip combining diacritical marks
-      .toLowerCase()
-      .trim()
-      .replace(/\s+/g, '-')                   // spaces → hyphens
-      .replace(/[^a-z0-9-]/g, '')            // strip non-alphanumeric except hyphens
-      .replace(/^-+|-+$/g, '')               // strip leading/trailing hyphens
-      .replace(/-{2,}/g, '-')                // collapse consecutive hyphens
+    constructor(raw: string) {
+        const slugified = raw
+            .normalize('NFD') // decompose accented chars: "â" → "a" + combining char
+            .replace(/[\u0300-\u036f]/g, '') // strip combining diacritical marks
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, '-') // spaces → hyphens
+            .replace(/[^a-z0-9-]/g, '') // strip non-alphanumeric except hyphens
+            .replace(/^-+|-+$/g, '') // strip leading/trailing hyphens
+            .replace(/-{2,}/g, '-') // collapse consecutive hyphens
 
-    if (!slugified) {
-      throw new ValidationError(`Cannot create slug from: "${raw}"`)
+        if (!slugified) {
+            throw new ValidationError(`Cannot create slug from: "${raw}"`)
+        }
+
+        this.value = slugified
     }
 
-    this.value = slugified
-  }
+    // Named constructor — more expressive than new Slug(title)
+    static from(title: string): Slug {
+        return new Slug(title)
+    }
 
-  // Named constructor — more expressive than new Slug(title)
-  static from(title: string): Slug {
-    return new Slug(title)
-  }
-
-  toString(): string {
-    return this.value
-  }
+    toString(): string {
+        return this.value
+    }
 }

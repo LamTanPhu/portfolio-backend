@@ -1,6 +1,6 @@
 /**
  * @fileoverview DeleteProjectCommand
- * 
+ *
  * Deletes a project and invalidates related caches.
  * Uses Read repository to get slug before deletion for proper cache cleanup.
  */

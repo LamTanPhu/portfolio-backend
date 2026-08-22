@@ -4,7 +4,7 @@
 // Dates serialized as ISO 8601 strings — domain Date objects never cross layers.
 // =============================================================================
 export interface PageViewDTO {
-    route:        string
-    count:        number
+    route: string
+    count: number
     lastViewedAt: string
 }

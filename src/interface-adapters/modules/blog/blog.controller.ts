@@ -1,6 +1,6 @@
 /**
  * @fileoverview BlogController
- * 
+ *
  * REST API controller for blog operations.
  * Public endpoints require no authentication.
  * Admin endpoints require valid JWT.
@@ -91,12 +91,12 @@ export class BlogController {
     @ApiOperation({ summary: 'Create a new blog post (Admin only)' })
     async create(@Body() dto: CreateBlogDto, @Req() req: AuthenticatedRequest) {
         const result = await this.createCommand.execute({
-        title: dto.title,
-        content: dto.content,
-        excerpt: dto.excerpt ?? null,
-        tags: dto.tags ?? [],
-        isPublished: dto.isPublished ?? false,
-        userId: req.user.sub,
+            title: dto.title,
+            content: dto.content,
+            excerpt: dto.excerpt ?? null,
+            tags: dto.tags ?? [],
+            isPublished: dto.isPublished ?? false,
+            userId: req.user.sub,
         })
         return BlogPresenter.toDetailResponse(result)
     }
