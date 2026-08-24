@@ -49,6 +49,6 @@ export class PrismaProjectViewRepository implements IProjectViewRepository {
             where: { projectId },
             orderBy: { date: 'desc' },
         })
-        return rows.map(PrismaProjectViewRepository.toDomain)
+        return rows.map((row) => PrismaProjectViewRepository.toDomain(row))
     }
 }

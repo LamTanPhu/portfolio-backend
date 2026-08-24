@@ -85,7 +85,10 @@ export class AuthService implements OnModuleInit {
     // Lifecycle
     // ===========================================================================
 
-    async onModuleInit(): Promise<void> {
+    // Not async — nothing inside awaits anything. Was previously marked async
+    // with no real asynchronous work inside; NestJS lifecycle hooks accept
+    // either sync or async, so this is a pure cleanup, not a behavior change.
+    onModuleInit(): void {
         // Warm up the V8 JIT compiler for the crypto/signing path.
         // The first real login after a cold start would otherwise hit interpreted
         // code, adding ~12ms of latency. This brings it down to ~3ms.

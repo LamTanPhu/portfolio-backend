@@ -9,7 +9,7 @@ import { Inject, Injectable } from '@nestjs/common'
 import type { IProjectReadRepository } from '../../../../domain/repositories/project/IProjectReadRepository'
 
 import type { ICacheQueryService } from '../../../ports/ICacheQueryService'
-import type { ProjectDTO, ProjectSummaryDTO } from '../../../dtos/ProjectDTO'
+import type { ProjectSummaryDTO } from '../../../dtos/ProjectDTO'
 import { CACHE_QUERY_SERVICE } from '../../../../application/ports/cache.tokens'
 
 @Injectable()

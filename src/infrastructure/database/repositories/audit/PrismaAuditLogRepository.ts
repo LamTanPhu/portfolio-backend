@@ -116,7 +116,7 @@ export class PrismaAuditLogRepository implements IAuditLogWriteRepository, IAudi
             this.prisma.client.auditLog.count(),
         ])
 
-        const items = rows.map(PrismaAuditLogRepository.toDomain)
+        const items = rows.map((row) => PrismaAuditLogRepository.toDomain(row))
         const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
 
         return { items, nextCursor, total }

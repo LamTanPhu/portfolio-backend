@@ -1,5 +1,4 @@
 import { JobDTO } from '../../../application/dtos/JobDTO'
-import type { Job } from '../../entities/Job'
 
 // =============================================================================
 // IJobReadRepository

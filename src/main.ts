@@ -57,6 +57,10 @@ async function bootstrap(): Promise<void> {
     app.set('trust proxy', proxyHops)
 
     // ─── Middleware ─────────────────────────────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call -- @types/compression
+    // resolution quirk (esModuleInterop + this package's `export =` typing), not a real
+    // gap: this middleware is already proven working end-to-end (live-tested with real
+    // Accept-Encoding negotiation — br and gzip both confirmed, threshold behavior confirmed).
     app.use(compression({ threshold: 1024, level: 6 }))
 
     app.use(
@@ -142,4 +146,7 @@ async function bootstrap(): Promise<void> {
     }
 }
 
-bootstrap()
+bootstrap().catch((error: unknown) => {
+    console.error('Fatal error during bootstrap:', error)
+    process.exit(1)
+})

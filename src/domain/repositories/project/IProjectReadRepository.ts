@@ -1,4 +1,4 @@
-import { ProjectDTO, ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
+import { ProjectSummaryDTO } from '../../../application/dtos/ProjectDTO'
 import type { Project } from '../../entities/Project'
 
 // =============================================================================

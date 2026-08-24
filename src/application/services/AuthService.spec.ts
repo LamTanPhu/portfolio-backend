@@ -164,8 +164,8 @@ describe('AuthService', () => {
             expect(mockJwtService.signAsync).not.toHaveBeenCalled()
         })
 
-        it('completes without throwing', async () => {
-            await expect(service.onModuleInit()).resolves.not.toThrow()
+        it('completes without throwing', () => {
+            expect(() => service.onModuleInit()).not.toThrow()
         })
     })
 

@@ -6,7 +6,6 @@
  */
 
 import { Injectable, Inject } from '@nestjs/common'
-import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import type { IEducationWriteRepository } from '../../../../domain/repositories/education/IEducationWriteRepository'
 import type { ICacheInvalidationService } from '../../../ports/ICacheInvalidationService'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../application/ports/cache.tokens'

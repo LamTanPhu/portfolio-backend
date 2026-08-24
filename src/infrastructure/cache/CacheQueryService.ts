@@ -114,12 +114,17 @@ export class CacheQueryService implements ICacheQueryService {
     /**
      * Background refresh with guaranteed cleanup to prevent memory leaks.
      */
-    private async refreshInBackground<T>(
+    // Not async — the real async work runs inside the IIFE below, independently
+    // handled (awaited internally, errors caught, cleanup in `finally`). This
+    // outer function has no top-level await of its own; removing `async` here
+    // is a pure cleanup — callers already invoke this as `void this.refreshInBackground(...)`,
+    // which works identically whether this returns a Promise or not.
+    private refreshInBackground<T>(
         key: string,
         ttl: number,
         staleTtl: number,
         factory: () => Promise<T>,
-    ): Promise<void> {
+    ): void {
         if (this.refreshing.has(key)) return
 
         const promise = (async () => {
