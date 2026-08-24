@@ -25,7 +25,7 @@ export class ProjectPresenter {
      * Transform list of projects for response
      */
     static toListResponse(dtos: ProjectDTO[]): ProjectDTO[] {
-        return dtos.map(ProjectPresenter.toResponse)
+        return dtos.map((dto) => ProjectPresenter.toResponse(dto))
     }
 
     /**
@@ -39,6 +39,6 @@ export class ProjectPresenter {
      * Transform a list of project summaries for response
      */
     static toSummaryListResponse(dtos: ProjectSummaryDTO[]): ProjectSummaryDTO[] {
-        return dtos.map(ProjectPresenter.toSummaryResponse)
+        return dtos.map((dto) => ProjectPresenter.toSummaryResponse(dto))
     }
 }

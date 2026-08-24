@@ -20,7 +20,7 @@ import {
     Req,
     UseGuards,
 } from '@nestjs/common'
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { Throttle } from '@nestjs/throttler'

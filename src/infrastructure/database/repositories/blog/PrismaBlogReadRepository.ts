@@ -66,7 +66,7 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
             orderBy: { publishedAt: 'desc' },
         })
 
-        return rows.map(PrismaBlogReadRepository.toBlogSummary)
+        return rows.map((row) => PrismaBlogReadRepository.toBlogSummary(row))
     }
 
     async findAll(): Promise<BlogSummary[]> {
@@ -75,7 +75,7 @@ export class PrismaBlogReadRepository implements IBlogReadRepository {
             orderBy: { createdAt: 'desc' },
         })
 
-        return rows.map(PrismaBlogReadRepository.toBlogSummary)
+        return rows.map((row) => PrismaBlogReadRepository.toBlogSummary(row))
     }
 
     async findById(id: number): Promise<Blog | null> {

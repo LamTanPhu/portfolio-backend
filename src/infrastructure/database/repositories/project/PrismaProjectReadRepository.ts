@@ -12,7 +12,7 @@ import type { IProjectReadRepository } from '../../../../domain/repositories/pro
 import { Project } from '../../../../domain/entities/Project'
 import { PrismaService } from '../../prisma/prisma.service'
 import { ProjectMapper } from '../../mappers/ProjectMapper'
-import { ProjectDTO, ProjectSummaryDTO } from '../../../../application/dtos/ProjectDTO'
+import { ProjectSummaryDTO } from '../../../../application/dtos/ProjectDTO'
 
 // Shared select for list queries — description intentionally excluded
 const LIST_SELECT = {
@@ -40,7 +40,7 @@ export class PrismaProjectReadRepository implements IProjectReadRepository {
             orderBy: { createdAt: 'desc' },
         })
 
-        return rows.map(PrismaProjectReadRepository.toSummary)
+        return rows.map((row) => PrismaProjectReadRepository.toSummary(row))
     }
 
     async findAll(): Promise<ProjectSummaryDTO[]> {
@@ -49,7 +49,7 @@ export class PrismaProjectReadRepository implements IProjectReadRepository {
             orderBy: { createdAt: 'desc' },
         })
 
-        return rows.map(PrismaProjectReadRepository.toSummary)
+        return rows.map((row) => PrismaProjectReadRepository.toSummary(row))
     }
 
     async findById(id: number): Promise<Project | null> {

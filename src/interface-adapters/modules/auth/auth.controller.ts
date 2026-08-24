@@ -18,12 +18,12 @@ import {
     UseGuards,
 } from '@nestjs/common'
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 import { Throttle } from '@nestjs/throttler'
 import type { Request, Response } from 'express'
 
 import { ConfigService } from '@nestjs/config'
 import { AuthService } from '../../../application/services/AuthService'
-import type { AccessTokenPayload } from '../../../application/services/AuthService'
 
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { LoginDto } from './login.dto'
@@ -121,7 +121,7 @@ export class AuthController {
     @ApiResponse({ status: 204, description: 'Logged out successfully' })
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<void> {
-        const user = (req as any).user as AccessTokenPayload
+        const user = (req as AuthenticatedRequest).user
         const refreshToken = req.cookies?.refreshToken as string | undefined
 
         await this.authService.logout(user.jti, refreshToken)

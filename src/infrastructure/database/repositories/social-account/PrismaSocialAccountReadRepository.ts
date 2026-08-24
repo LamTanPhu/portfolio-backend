@@ -40,7 +40,7 @@ export class PrismaSocialAccountReadRepository implements ISocialAccountReadRepo
         const rows = await this.prisma.client.socialAccount.findMany({
             orderBy: { name: 'asc' },
         })
-        return rows.map(PrismaSocialAccountMapper.toDomain)
+        return rows.map((row) => PrismaSocialAccountMapper.toDomain(row))
     }
 
     async findById(id: number): Promise<SocialAccount | null> {

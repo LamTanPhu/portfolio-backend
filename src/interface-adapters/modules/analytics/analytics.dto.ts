@@ -37,7 +37,7 @@ export class TrackPageViewDto {
     @IsString()
     @IsNotEmpty()
     @MaxLength(255)
-    @Matches(/^\/[a-z0-9\-\/]*$/, {
+    @Matches(/^\/[a-z0-9\-/]*$/, {
         message: 'route must be a valid URL path (lowercase, hyphens, slashes only, starting with /)',
     })
     route!: string

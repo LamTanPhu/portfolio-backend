@@ -37,6 +37,6 @@ export class BlogPresenter {
      * Transforms a list of blog summaries.
      */
     static toSummaryListResponse(dtos: BlogSummaryDTO[]): BlogSummaryDTO[] {
-        return dtos.map(BlogPresenter.toSummaryResponse)
+        return dtos.map((dto) => BlogPresenter.toSummaryResponse(dto))
     }
 }

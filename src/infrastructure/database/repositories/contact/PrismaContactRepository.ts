@@ -106,7 +106,7 @@ export class PrismaContactRepository implements IContactWriteRepository, IContac
             this.prisma.client.contactMe.count(),
         ])
 
-        const items = rows.map(PrismaContactRepository.toDomain)
+        const items = rows.map((row) => PrismaContactRepository.toDomain(row))
         const nextCursor = rows.length === take ? rows[rows.length - 1].id : null
 
         return { items, nextCursor, total }

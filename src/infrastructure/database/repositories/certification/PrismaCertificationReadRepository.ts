@@ -3,7 +3,6 @@
  */
 
 import { Injectable } from '@nestjs/common'
-import { Prisma } from '@prisma/client'
 import type { ICertificationReadRepository } from '../../../../domain/repositories/certification/ICertificationReadRepository'
 import { PrismaService } from '../../prisma/prisma.service'
 import { CertificationDTO } from '../../../../application/dtos/certification/CertificationDTO'
