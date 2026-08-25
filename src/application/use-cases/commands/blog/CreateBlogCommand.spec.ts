@@ -131,6 +131,7 @@ describe('CreateBlogCommand', () => {
         it('sets publishedAt when blog is published', async () => {
             await command.execute(makeInput({ isPublished: true }))
 
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- expect.any() returns `any` in @types/jest
             expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ publishedAt: expect.any(Date) }))
         })
     })

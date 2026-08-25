@@ -28,11 +28,34 @@ import { RateLimitError } from '../../domain/errors/RateLimitError'
 import { InternalServerError } from '../../domain/errors/InternalServerError'
 
 // =============================================================================
+// Local types
+//
+// FIX (eslint): mockJson/mockStatus were plain `jest.fn()`, which TypeScript
+// infers as `Mock<any, any>`. Every `mockJson.mock.calls[0][0]` read
+// therefore resolved to `any` and tripped @typescript-eslint/no-unsafe-
+// assignment / no-unsafe-member-access / no-unsafe-argument wherever it was
+// used (assigned to `response`, destructured for `timestamp`, passed to
+// `new Date(...)`). Typing mockJson against the filter's actual response
+// shape removes the `any` at the source instead of casting at each read.
+// =============================================================================
+
+interface ErrorResponseBody {
+    statusCode: number
+    error: string
+    message: string
+    timestamp: string
+    path?: string
+    stack?: string
+}
+
+// =============================================================================
 // Mock ArgumentsHost Factory
 // =============================================================================
 
-const mockJson = jest.fn()
-const mockStatus = jest.fn().mockReturnValue({ json: mockJson })
+const mockJson = jest.fn() as jest.MockedFunction<(body: ErrorResponseBody) => void>
+const mockStatus = jest.fn().mockReturnValue({ json: mockJson }) as jest.MockedFunction<
+    (code: number) => { json: typeof mockJson }
+>
 
 function makeMockHost(
     requestOverrides: Partial<{ method: string; url: string; ip: string | undefined }> = {},
@@ -284,6 +307,9 @@ describe('DomainExceptionFilter', () => {
                     statusCode: 404,
                     error: 'NotFoundError',
                     message: 'not found',
+                    // jest's expect.any() is typed to return `any` — not fixable
+                    // by typing the mock, so it's disabled narrowly right here.
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                     timestamp: expect.any(String),
                 }),
             )

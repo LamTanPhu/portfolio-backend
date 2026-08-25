@@ -36,7 +36,7 @@ jest.mock('bcrypt', () => ({
 // which rely on real crypto.createHash().
 // =============================================================================
 jest.mock('crypto', () => {
-    const actualCrypto = jest.requireActual('crypto') as typeof crypto
+    const actualCrypto = jest.requireActual('crypto') as unknown as typeof crypto
     return {
         ...actualCrypto,
         randomBytes: jest.fn(actualCrypto.randomBytes),
@@ -265,7 +265,10 @@ describe('AuthService', () => {
 
             expect(mockUserWriteRepo.update).toHaveBeenCalledWith(
                 FAKE_CREDENTIAL.id,
-                expect.objectContaining({ lastLogin: expect.any(Date) as unknown as Date }),
+                // expect.any() is typed `any` in @types/jest; objectContaining's generic
+                // inference doesn't accept a narrowed cast here, so the rule needs disabling.
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                expect.objectContaining({ lastLogin: expect.any(Date) }),
             )
         })
     })

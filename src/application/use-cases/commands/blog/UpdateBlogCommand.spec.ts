@@ -19,20 +19,55 @@ import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import { CACHE_INVALIDATION_SERVICE } from '../../../../infrastructure/cache/cache.module'
 
 // =============================================================================
+// Local types
+//
+// FIX (eslint): mockReadRepo.findById / mockWriteRepo.update were plain
+// `jest.fn()` with no generics, which TypeScript infers as `Mock<any, any>`.
+// Every downstream read of `.mock.calls[...]` therefore resolved to `any`,
+// tripping @typescript-eslint/no-unsafe-assignment / no-unsafe-member-access
+// wherever that value was assigned to a variable or had a property accessed
+// on it. Typing the mocks against the real repo shapes removes the `any` at
+// the source instead of casting it away at each call site.
+// =============================================================================
+
+interface BlogRecord {
+    id: number
+    title: string
+    slug: string
+    content: string
+    excerpt: string | null
+    tags: any[]
+    isPublished: boolean
+    publishedAt: Date | null
+    userId: number
+    createdAt: Date
+    updatedAt: Date
+}
+
+interface UpdateBlogWriteData {
+    title?: string
+    content?: string
+    excerpt?: string | null
+    tags?: any[]
+    isPublished?: boolean
+    publishedAt?: Date
+}
+
+// =============================================================================
 // Mocks
 // =============================================================================
 
 const mockReadRepo = {
-    findById: jest.fn(),
+    findById: jest.fn() as jest.MockedFunction<(id: number) => Promise<BlogRecord | null>>,
 }
 
 const mockWriteRepo = {
-    update: jest.fn(),
+    update: jest.fn() as jest.MockedFunction<(id: number, data: UpdateBlogWriteData) => Promise<BlogRecord>>,
 }
 
 const mockCacheService = {
-    invalidatePublicBlogs: jest.fn(),
-    invalidateBlogBySlug: jest.fn(),
+    invalidatePublicBlogs: jest.fn() as jest.MockedFunction<() => Promise<void>>,
+    invalidateBlogBySlug: jest.fn() as jest.MockedFunction<(slug: string) => Promise<void>>,
 }
 
 // =============================================================================
@@ -188,6 +223,9 @@ describe('UpdateBlogCommand', () => {
 
             expect(mockWriteRepo.update).toHaveBeenCalledWith(
                 1,
+                // jest's expect.any() is typed to return `any` — not fixable by
+                // typing the mock, so it's disabled narrowly right here.
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
                 expect.objectContaining({ publishedAt: expect.any(Date) }),
             )
         })
