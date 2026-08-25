@@ -10,10 +10,6 @@ import { PrismaBlogMapper } from '../../mappers/PrismaBlogMapper'
 // Prisma Payload Types - Read Operations
 // =============================================================================
 
-type BlogWithTags = Prisma.BlogGetPayload<{
-    include: { tags: true }
-}>
-
 const LIST_SELECT = {
     id: true,
     title: true,

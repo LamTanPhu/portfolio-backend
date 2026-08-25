@@ -21,6 +21,13 @@ import type { Request } from 'express'
 
 import type { ITurnstileVerifier } from '../../application/ports/ITurnstileVerifier'
 
+// NOTE: local, minimal shape for the incoming body — Express types `req.body`
+// as `any` by default. If a shared DTO for this route already types
+// `turnstileToken` (e.g. a SubmitContactDto), prefer importing that instead.
+interface TurnstileRequestBody {
+    turnstileToken?: unknown
+}
+
 @Injectable()
 export class TurnstileGuard implements CanActivate {
     private readonly logger = new Logger(TurnstileGuard.name)
@@ -32,7 +39,8 @@ export class TurnstileGuard implements CanActivate {
 
     async canActivate(ctx: ExecutionContext): Promise<boolean> {
         const req = ctx.switchToHttp().getRequest<Request>()
-        const token = req.body?.turnstileToken as string | undefined
+        const body = req.body as TurnstileRequestBody
+        const token = body.turnstileToken as string | undefined
 
         if (typeof token !== 'string' || token.trim().length === 0) {
             this.logger.warn(`Missing Turnstile token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
@@ -48,7 +56,7 @@ export class TurnstileGuard implements CanActivate {
             }
 
             // Clean up token from body after successful verification
-            delete req.body.turnstileToken
+            delete body.turnstileToken
 
             return true
         } catch (error) {

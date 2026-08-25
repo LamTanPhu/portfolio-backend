@@ -48,11 +48,12 @@ export class JwtAuthGuard implements CanActivate {
             req.user = payload
 
             return true
-        } catch (error: any) {
+        } catch (error) {
+            const message = error instanceof Error && error.message ? error.message : 'Invalid token'
             this.logger.warn(
-                `Authentication failed | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url} | ${error.message}`,
+                `Authentication failed | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url} | ${message}`,
             )
-            throw new UnauthorizedException(error.message || 'Invalid token')
+            throw new UnauthorizedException(message)
         }
     }
 }

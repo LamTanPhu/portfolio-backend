@@ -5,7 +5,6 @@
  */
 
 import { Prisma } from '@prisma/client'
-import type { SkillCategory } from '../../../domain/entities/Skill'
 import { Skill } from '../../../domain/entities/Skill'
 
 type PrismaSkill = Prisma.SkillGetPayload<Record<string, never>>

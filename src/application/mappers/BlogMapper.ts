@@ -31,7 +31,7 @@ export class BlogMapper {
     // =========================================================================
     // Summary projection → Summary DTO
     // =========================================================================
-    static toSummaryDTO(summary: BlogSummary): BlogSummaryDTO {
+    static toSummaryDTO(this: void, summary: BlogSummary): BlogSummaryDTO {
         return {
             id: summary.id,
             title: summary.title,

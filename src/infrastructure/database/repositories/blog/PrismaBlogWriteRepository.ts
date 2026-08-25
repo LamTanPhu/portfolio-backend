@@ -13,14 +13,6 @@ import { PrismaBlogMapper } from '../../mappers/PrismaBlogMapper'
 import type { TransactionalClient } from '../../../../application/ports/IUnitOfWork'
 
 // =============================================================================
-// Prisma Payload Types - Write Operations
-// =============================================================================
-
-type BlogWithTags = Prisma.BlogGetPayload<{
-    include: { tags: true }
-}>
-
-// =============================================================================
 // PrismaBlogWriteRepository
 // Write-only repository for Blog aggregate.
 //

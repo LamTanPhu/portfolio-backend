@@ -36,7 +36,7 @@ jest.mock('bcrypt', () => ({
 // which rely on real crypto.createHash().
 // =============================================================================
 jest.mock('crypto', () => {
-    const actualCrypto = jest.requireActual('crypto')
+    const actualCrypto = jest.requireActual('crypto') as typeof crypto
     return {
         ...actualCrypto,
         randomBytes: jest.fn(actualCrypto.randomBytes),
@@ -44,6 +44,15 @@ jest.mock('crypto', () => {
 })
 
 import * as bcrypt from 'bcrypt'
+
+// =============================================================================
+// Test-local types
+// =============================================================================
+// Shape of the args recorded by mockTokenRepo.revoke's mock.calls. jest.fn()
+// without generics types `.mock.calls` as `any[]`, so reads through it need
+// a cast before indexing/searching — see CacheQueryService.spec.ts for the
+// same pattern.
+type RevokeCallArgs = [jti: string, expiresAt: Date, tx?: unknown]
 
 // =============================================================================
 // Mocks
@@ -157,8 +166,8 @@ describe('AuthService', () => {
         // FIX: implementation now warms up the JIT with crypto.randomBytes(32)
         // instead of a real signed JWT — see AuthService.onModuleInit() comment
         // for the rationale (no throwaway credential is produced this way).
-        it('calls crypto.randomBytes to warm up JIT on init', async () => {
-            await service.onModuleInit()
+        it('calls crypto.randomBytes to warm up JIT on init', () => {
+            service.onModuleInit()
 
             expect(crypto.randomBytes).toHaveBeenCalledWith(32)
             expect(mockJwtService.signAsync).not.toHaveBeenCalled()
@@ -256,7 +265,7 @@ describe('AuthService', () => {
 
             expect(mockUserWriteRepo.update).toHaveBeenCalledWith(
                 FAKE_CREDENTIAL.id,
-                expect.objectContaining({ lastLogin: expect.any(Date) }),
+                expect.objectContaining({ lastLogin: expect.any(Date) as unknown as Date }),
             )
         })
     })
@@ -478,7 +487,8 @@ describe('AuthService', () => {
 
             await service.logout('some-jti')
 
-            const expiresAt: Date = mockTokenRepo.revoke.mock.calls[0][1]
+            const calls = mockTokenRepo.revoke.mock.calls as RevokeCallArgs[]
+            const expiresAt = calls[0][1]
             const expectedMs = 15 * 60 * 1000
             expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + expectedMs - 100)
             expect(expiresAt.getTime()).toBeLessThanOrEqual(before + expectedMs + 100)
@@ -509,8 +519,9 @@ describe('AuthService', () => {
 
             await service.logout('access-jti-123', 'some-refresh-cookie-value')
 
-            const refreshCall = mockTokenRepo.revoke.mock.calls.find((call) => call[0] === 'refresh-jti-456')
-            const expiresAt: Date = refreshCall![1]
+            const calls = mockTokenRepo.revoke.mock.calls as RevokeCallArgs[]
+            const refreshCall = calls.find((call) => call[0] === 'refresh-jti-456')
+            const expiresAt = refreshCall![1]
             const sevenDaysMs = 7 * 24 * 60 * 60 * 1000
             expect(expiresAt.getTime()).toBeGreaterThanOrEqual(before + sevenDaysMs - 100)
         })

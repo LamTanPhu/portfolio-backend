@@ -18,10 +18,36 @@ import { Keyv } from 'keyv'
 import { CacheQueryService } from './CacheQueryService'
 
 // =============================================================================
+// Test-local types
+// =============================================================================
+// NOTE: these describe only the shape these tests read/write. If the real
+// envelope or cache field in CacheQueryService.ts gains more fields, prefer
+// importing the real types instead of extending these.
+
+interface TestCacheEnvelope<T> {
+    data: T
+    expiresAt: number
+    staleUntil: number
+}
+
+interface CacheQueryServiceTestAccess {
+    cache: {
+        get: jest.Mock
+        set: jest.Mock
+        del: jest.Mock
+        stores: Keyv[]
+    }
+}
+
+// =============================================================================
 // Helpers
 // =============================================================================
 
-const makeEnvelope = <T>(data: T, options: { fresh?: boolean; stale?: boolean } = {}) => {
+const makeEnvelope = <T>(
+    data: T,
+
+    options: { fresh?: boolean; stale?: boolean } = {},
+): TestCacheEnvelope<T> => {
     const now = Date.now()
     return {
         data,
@@ -125,7 +151,8 @@ describe('CacheQueryService', () => {
 
             await service.getOrSet('my-key', 60, factory)
 
-            const envelope = mockCacheManager.set.mock.calls[0][1]
+            const calls = mockCacheManager.set.mock.calls as [string, TestCacheEnvelope<unknown>, number][]
+            const envelope = calls[0][1]
             expect(envelope.expiresAt).toBeGreaterThan(before)
             expect(envelope.expiresAt).toBeLessThanOrEqual(before + 60_000 + 100)
         })
@@ -136,7 +163,8 @@ describe('CacheQueryService', () => {
 
             await service.getOrSet('my-key', 60, factory, { staleTtl: 300 })
 
-            const envelope = mockCacheManager.set.mock.calls[0][1]
+            const calls = mockCacheManager.set.mock.calls as [string, TestCacheEnvelope<unknown>, number][]
+            const envelope = calls[0][1]
             expect(envelope.staleUntil).toBeGreaterThan(envelope.expiresAt)
         })
     })
@@ -188,7 +216,7 @@ describe('CacheQueryService', () => {
             mockCacheManager.get.mockResolvedValue(null)
 
             const callTimes: number[] = []
-            const factory = jest.fn().mockImplementation(async () => {
+            const factory = jest.fn().mockImplementation(() => {
                 callTimes.push(Date.now())
                 if (callTimes.length < 3) throw new Error('fail')
                 return 'ok'
@@ -207,7 +235,7 @@ describe('CacheQueryService', () => {
             mockCacheManager.get.mockResolvedValue(null)
 
             const callTimes: number[] = []
-            const factory = jest.fn().mockImplementation(async () => {
+            const factory = jest.fn().mockImplementation(() => {
                 callTimes.push(Date.now())
                 if (callTimes.length < 3) throw new Error('fail')
                 return 'ok'
@@ -248,7 +276,7 @@ describe('CacheQueryService', () => {
             await keyv.set('portfolio:v1:blog:1', 'A')
             await keyv.set('portfolio:v1:blog:2', 'B')
             await keyv.set('portfolio:v1:project:1', 'C') // must survive
-            ;(service as any).cache = {
+            ;(service as unknown as CacheQueryServiceTestAccess).cache = {
                 ...mockCacheManager,
                 stores: [keyv],
             }
