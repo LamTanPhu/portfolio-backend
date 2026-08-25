@@ -119,12 +119,7 @@ export class CacheQueryService implements ICacheQueryService {
     // outer function has no top-level await of its own; removing `async` here
     // is a pure cleanup — callers already invoke this as `void this.refreshInBackground(...)`,
     // which works identically whether this returns a Promise or not.
-    private refreshInBackground<T>(
-        key: string,
-        ttl: number,
-        staleTtl: number,
-        factory: () => Promise<T>,
-    ): void {
+    private refreshInBackground<T>(key: string, ttl: number, staleTtl: number, factory: () => Promise<T>): void {
         if (this.refreshing.has(key)) return
 
         const promise = (async () => {
