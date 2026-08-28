@@ -50,8 +50,100 @@ jobs:
       - name: Lint
         run: npx eslint "{src,apps,libs,test}/**/*.ts"
 
-      - name: Run unit tests
-        run: npm test -- --ci
+      # NEW: --coverage instead of the plain test run. Same tests, same
+      # pass/fail outcome — this just additionally produces the coverage
+      # report so the artifact upload below has something to publish.
+      - name: Run unit tests with coverage
+        run: npm test -- --ci --coverage
+
+      # NEW: publishes the HTML + lcov coverage report as a downloadable
+      # build artifact (Actions tab → this run → Artifacts). This is
+      # advisory only for now — it does NOT fail the build on low
+      # coverage. See the note below on turning it into a hard gate once
+      # you know your actual baseline number.
+      #
+      # To enforce a minimum instead of just reporting it, add a
+      # `coverageThreshold` block to the "jest" section of package.json,
+      # e.g.:
+      #   "coverageThreshold": {
+      #     "global": { "branches": 60, "functions": 60, "lines": 60, "statements": 60 }
+      #   }
+      # Run `npm run test:cov` locally first to see your real numbers —
+      # setting a threshold above your current coverage will just break
+      # every PR immediately.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 14
 
       - name: Build
         run: npm run build
+
+  # NEW: integration/e2e job — separate from the unit-test job above
+  # because it needs a real Postgres instance, which the unit tests
+  # deliberately never touch (they mock every repository).
+  #
+  # `services:` here is a native GitHub Actions feature, not a
+  # third-party action or anything you install — GitHub spins up the
+  # container on its own runner for the duration of this job and tears
+  # it down after. Nothing installs on your machine.
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: portfolio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/portfolio_test?schema=public
+      # Dummy values — this is a throwaway CI database, not a real
+      # deployment. ConfigValidationService requires these to be present
+      # (non-empty) at boot; their actual values don't matter here since
+      # nothing in the e2e suite exercises Turnstile or Resend for real.
+      JWT_SECRET: e2e-test-secret-do-not-use-in-production-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      COOKIE_SECRET: e2e-test-cookie-secret-do-not-use-in-production-aaaaaaaaaaaaaaaaaaaaaaaaaa
+      ADMIN_EMAIL: admin@example.test
+      ADMIN_PASSWORD: e2e-test-password
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      RESEND_API_KEY: re_test_dummy_key
+      # REDIS_URL intentionally unset — exercises the in-memory cache
+      # fallback path, which is also what production runs on right now.
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate
+
+      - name: Apply migrations to test database
+        run: npx prisma migrate deploy
+
+      - name: Run e2e tests
+        run: npm run test:e2e
