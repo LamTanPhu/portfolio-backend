@@ -28,6 +28,7 @@ import { BlogModule } from './interface-adapters/modules/blog/blog.module'
 import { CertificationModule } from './interface-adapters/modules/certification/certification.module'
 import { ContactModule } from './interface-adapters/modules/contact/contact.module'
 import { EducationModule } from './interface-adapters/modules/education/education.module'
+import { HealthModule } from './interface-adapters/modules/health/health.module'
 import { JobModule } from './interface-adapters/modules/job/job.module'
 import { ProjectModule } from './interface-adapters/modules/project/project.module'
 import { SkillModule } from './interface-adapters/modules/skill/skill.module'
@@ -101,6 +102,7 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
         JobModule,
         CertificationModule,
         AuditModule,
+        HealthModule,
 
         // ─── Event Modules ────────────────────────────────────────────────
         EventEmitterModule.forRoot(),
