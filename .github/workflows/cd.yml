@@ -1,0 +1,41 @@
+# CD — deploy to Render, gated behind CI passing.
+#
+# There's no official GitHub-provided template for this (GitHub's own
+# "deployments" starter workflows only cover Azure/AWS/GCP/Alibaba Cloud —
+# nothing for Render), so this is intentionally the smallest thing that
+# works: one curl call to Render's Deploy Hook.
+#
+# `workflow_run` (rather than putting this as a third job inside ci.yml)
+# means this only fires after ci.yml has *fully finished* on main — both
+# the "Lint, Test, Build" job and the new "E2E Tests" job — and only
+# proceeds if every job in that run succeeded. A broken build or a failing
+# e2e test never reaches production.
+#
+# One-time setup on Render's side:
+#   1. Create the Web Service on Render (connect this GitHub repo,
+#      runtime: Node — no Dockerfile needed).
+#   2. In that service's Settings tab, copy the "Deploy Hook" URL.
+#   3. Add it to this repo as a secret named RENDER_DEPLOY_HOOK_URL
+#      (Settings → Secrets and variables → Actions → New repository secret).
+#   4. Optional but recommended: set Render's "Pre-Deploy Command" to
+#      `npx prisma migrate deploy` so schema changes apply automatically
+#      on every deploy instead of needing to be run by hand.
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"

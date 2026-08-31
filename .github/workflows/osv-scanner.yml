@@ -1,0 +1,49 @@
+# OSV-Scanner (Google) — the visibility-independent backstop to
+# dependency-review.yml.
+#
+# dependency-review-action (the other workflow in this folder) is free
+# right now because this repo is public, but it silently starts requiring
+# a paid GitHub Advanced Security license the moment this repo goes
+# private. OSV-Scanner is Apache-2.0, queries the open OSV.dev database
+# instead of a GitHub-billed feature, and keeps working regardless of
+# repo visibility or plan — genuinely free forever, not "free for now."
+#
+# Two jobs because Google publishes separate reusable workflows for the
+# two use cases: one annotates a PR's diff, the other does a full-repo
+# scan on push/schedule. `if:` picks the right one per trigger so this
+# stays a single file instead of two near-duplicates.
+#
+# security-events: write lets results also show up in the Security tab
+# if Code Scanning is available on this repo (free on public repos) —
+# but the vulnerability check itself, and whether it fails the build,
+# does not depend on that upload succeeding.
+name: OSV-Scanner
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '30 5 * * 1' # weekly, Monday 05:30 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  scan-pr:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@v2.5.0"
+
+  scan-full:
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@v2.5.0"

@@ -1,0 +1,37 @@
+# Dependency Review — official GitHub Action, published by the `actions` org.
+# Runs on every PR, diffs the dependency changes, and fails the check if a
+# newly introduced package has a known vulnerability or a disallowed license.
+# Free automatically on public repos (Dependency Graph is on by default).
+#
+# Visibility caveat: this specific action requires a paid GitHub Advanced
+# Security license the moment this repo becomes private — it's a GitHub
+# product feature, not a general open-source tool. osv-scanner.yml in this
+# same folder covers the same job (dependency vulnerabilities) using a
+# free-regardless-of-visibility scanner, so nothing breaks if that changes.
+# Keep both while public: this one gives nicer inline PR diff annotations.
+#
+# This is deliberately left close to GitHub's own published template —
+# see https://github.com/actions/dependency-review-action
+name: "Dependency Review"
+
+on:
+    pull_request:
+        branches: [main]
+
+permissions:
+    contents: read
+
+jobs:
+    dependency-review:
+        runs-on: ubuntu-latest
+        steps:
+            - name: "Checkout Repository"
+              uses: actions/checkout@v6
+
+            - name: "Dependency Review"
+              uses: actions/dependency-review-action@v5
+              with:
+                  # Fail the check on moderate-or-higher severity vulnerabilities.
+                  # Comment this line out (or set to "critical") if it turns out
+                  # to be too noisy for transitive deps you don't control.
+                  fail-on-severity: moderate
