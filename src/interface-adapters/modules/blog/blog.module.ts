@@ -19,6 +19,7 @@ import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/
 import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
 import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
 import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
+import { SearchBlogsQuery } from '../../../application/use-cases/queries/blog/SearchBlogsQuery'
 
 // Repositories
 import { PrismaBlogReadRepository } from '../../../infrastructure/database/repositories/blog/PrismaBlogReadRepository'
@@ -53,6 +54,7 @@ import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.m
         GetPublishedBlogsQuery,
         GetAllBlogsQuery,
         GetBlogBySlugQuery,
+        SearchBlogsQuery,
         CreateBlogCommand,
         UpdateBlogCommand,
         DeleteBlogCommand,

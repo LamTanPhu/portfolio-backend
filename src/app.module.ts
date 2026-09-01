@@ -11,7 +11,7 @@ import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core'
 import { ScheduleModule } from '@nestjs/schedule'
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
+import { ThrottlerModule } from '@nestjs/throttler'
 
 // Infrastructure
 import { buildCacheStores } from './infrastructure/cache/cache-store.factory'
@@ -39,6 +39,7 @@ import { UserModule } from './interface-adapters/modules/user/user.module'
 // Global Providers
 import { ConfigValidationService } from './infrastructure/config/config-validation.service'
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
+import { DomainThrottlerGuard } from './interface-adapters/guards/DomainThrottlerGuard'
 import { AuditLogInterceptor } from './interface-adapters/interceptors/AuditLogInterceptor'
 import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
 import { DataRetentionTask } from './infrastructure/database/tasks/DataRetentionTask'
@@ -112,7 +113,7 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
         ConfigValidationService,
         TokenCleanupTask,
         DataRetentionTask,
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: APP_GUARD, useClass: DomainThrottlerGuard },
         { provide: APP_FILTER, useClass: DomainExceptionFilter },
         { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
     ],

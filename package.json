@@ -51,7 +51,6 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
-    "@hono/node-server": "^1.19.14",
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
@@ -98,10 +97,83 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coverageThreshold": {
+      "global": {
+        "statements": 10,
+        "branches": 5,
+        "functions": 10,
+        "lines": 10
+      },
+      "src/application/services/AuthService.ts": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 90,
+        "lines": 95
+      },
+      "src/application/use-cases/commands/blog/CreateBlogCommand.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "src/application/use-cases/commands/blog/UpdateBlogCommand.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "src/application/use-cases/commands/contact/SubmitContactCommand.ts": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 95,
+        "lines": 95
+      },
+      "src/domain/value-objects/Slug.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "src/domain/value-objects/Email.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "src/domain/value-objects/DateRange.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "src/infrastructure/cache/CacheQueryService.ts": {
+        "statements": 85,
+        "branches": 80,
+        "functions": 85,
+        "lines": 85
+      },
+      "src/infrastructure/cache/CacheInvalidationService.ts": {
+        "statements": 85,
+        "branches": 95,
+        "functions": 75,
+        "lines": 85
+      },
+      "src/infrastructure/database/tasks/TokenCleanupTask.ts": {
+        "statements": 95,
+        "branches": 65,
+        "functions": 95,
+        "lines": 95
+      },
+      "src/interface-adapters/filters/DomainExceptionFilter.ts": {
+        "statements": 95,
+        "branches": 90,
+        "functions": 95,
+        "lines": 95
+      }
+    }
   },
   "overrides": {
-    "@hono/node-server": "^1.19.14",
     "qs": "^6.13.0",
     "js-yaml": "^4.1.0",
     "deepmerge-ts": "^8.0.1",

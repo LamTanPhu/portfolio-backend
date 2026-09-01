@@ -12,6 +12,24 @@ import { IsArray, IsBoolean, IsNotEmpty, IsOptional, IsString, MaxLength, MinLen
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger'
 
 // =============================================================================
+// SearchBlogsDto
+// Validates the ?q= query param on GET /blogs/search.
+// MaxLength(100) is generous for a search box — also keeps the raw SQL
+// query cheap and keeps blog:search:<query> cache keys bounded in size.
+// =============================================================================
+export class SearchBlogsDto {
+    @ApiProperty({
+        description: 'Search query — matched against title, excerpt, and content',
+        example: 'clean architecture',
+    })
+    @IsString()
+    @IsNotEmpty()
+    @MinLength(1)
+    @MaxLength(100)
+    q!: string
+}
+
+// =============================================================================
 // CreateBlogDto
 // Validates admin blog post creation request.
 // slug auto-generated from title in CreateBlogCommand — never accepted from client.

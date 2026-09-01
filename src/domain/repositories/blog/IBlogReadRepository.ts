@@ -16,6 +16,7 @@ import type { BlogSummary } from '../../projections/BlogSummary'
 export interface IBlogReadRepository {
     findPublished(): Promise<BlogSummary[]>
     findAll(): Promise<BlogSummary[]>
+    search(query: string, limit?: number): Promise<BlogSummary[]>
 
     findById(id: number): Promise<Blog | null>
     findBySlug(slug: string): Promise<Blog | null>

@@ -244,6 +244,12 @@ model Blog {
   publishedAt   DateTime? @map("published_at")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  // Populated by blogs_search_vector_trigger (see migration
+  // 20260901010005_blog_search_vector) — BEFORE INSERT/UPDATE trigger,
+  // not application code, since Prisma's `Unsupported` type means the
+  // client can't read or write this column directly. Backed by a GIN
+  // index (blog_search_vector_idx), also added in that migration —
+  // without it, `search_vector @@ ...` would sequential-scan the table.
   searchVector  Unsupported("tsvector")? @map("search_vector")
 
   userId        Int      @map("user_id")

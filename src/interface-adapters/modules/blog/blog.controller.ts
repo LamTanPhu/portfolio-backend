@@ -17,6 +17,7 @@ import {
     ParseIntPipe,
     Patch,
     Post,
+    Query,
     Req,
     UseGuards,
 } from '@nestjs/common'
@@ -31,9 +32,10 @@ import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
 import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
+import { SearchBlogsQuery } from '../../../application/use-cases/queries/blog/SearchBlogsQuery'
 
 import { BlogPresenter } from './blog.presenter'
-import { CreateBlogDto, UpdateBlogDto } from './blog.dto'
+import { CreateBlogDto, UpdateBlogDto, SearchBlogsDto } from './blog.dto'
 
 @ApiTags('Blog')
 @Controller('blogs')
@@ -42,6 +44,7 @@ export class BlogController {
         private readonly getPublishedQuery: GetPublishedBlogsQuery,
         private readonly getAllQuery: GetAllBlogsQuery,
         private readonly getBySlugQuery: GetBlogBySlugQuery,
+        private readonly searchQuery: SearchBlogsQuery,
         private readonly createCommand: CreateBlogCommand,
         private readonly updateCommand: UpdateBlogCommand,
         private readonly deleteCommand: DeleteBlogCommand,
@@ -67,6 +70,20 @@ export class BlogController {
     @ApiOperation({ summary: 'Get all blog posts including drafts (Admin only)' })
     async findAllAdmin() {
         const dtos = await this.getAllQuery.execute()
+        return BlogPresenter.toSummaryListResponse(dtos)
+    }
+
+    // ===========================================================================
+    // GET /api/blogs/search?q=... — public
+    // Must come before GET /:slug — Nest/Express match routes in
+    // declaration order, so a search here would otherwise be swallowed by
+    // :slug (treated as findBySlug('search')) if declared after it.
+    // ===========================================================================
+    @Get('search')
+    @Throttle({ default: { limit: 60, ttl: 60_000 } })
+    @ApiOperation({ summary: 'Full-text search across published blog posts' })
+    async search(@Query() dto: SearchBlogsDto) {
+        const dtos = await this.searchQuery.execute(dto.q)
         return BlogPresenter.toSummaryListResponse(dtos)
     }
 
