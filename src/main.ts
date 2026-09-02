@@ -40,6 +40,10 @@ async function bootstrap(): Promise<void> {
 
     const app = await NestFactory.create<NestExpressApplication>(AppModule, { httpsOptions })
 
+    // Enable graceful shutdown so Nest can run OnModuleDestroy / BeforeApplicationShutdown
+    // hooks when the process receives SIGTERM or SIGINT (e.g. Docker/K8s stop, Ctrl+C).
+    app.enableShutdownHooks()
+
     // ─── Reverse-Proxy Trust ────────────────────────────────────────────
     // CRITICAL: Without this, req.ip returns the proxy's IP (127.0.0.1),
     // not the real client IP. This breaks:
