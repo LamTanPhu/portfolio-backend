@@ -179,7 +179,8 @@
     "deepmerge-ts": "^8.0.1",
     "glob": "^13.0.6",
     "test-exclude": "^8.0.0",
-      "mysql2": "^3.23.1"
+    "mysql2": "^3.23.1",
+    "browserslist": "^4.28.7"
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
