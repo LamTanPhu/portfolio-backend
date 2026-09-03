@@ -28,6 +28,8 @@ on:
     types: [completed]
     branches: [main]
 
+permissions: {}
+
 jobs:
   deploy:
     name: Deploy to Render
