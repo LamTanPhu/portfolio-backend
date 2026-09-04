@@ -44,10 +44,10 @@ async function main(): Promise<void> {
         update: {}, // If user exists, do nothing
         create: {
             firstname: 'YOUR_FIRSTNAME_HERE',     // ← Change this
-            lastname: 'YOUR_LASTNAME_HERE',       // ← Change this
+            lastname: 'YOUR_LASTNAME_HERE', // ← Change this
             email: adminEmail,
             hashPassword,
-            aboutme: 'YOUR_SHORT_BIO_HERE',       // ← Change this
+            aboutme: 'YOUR_SHORT_BIO_HERE', // ← Change this
         },
     })
 
