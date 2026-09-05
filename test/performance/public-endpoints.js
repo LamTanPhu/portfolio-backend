@@ -33,10 +33,10 @@ const aboutTrend = new Trend('about_endpoints_duration')
 export const options = {
     insecureSkipTLSVerify: true,
     stages: [
-        { duration: '10s', target: 10  }, // Ramp up to 10 virtual users
-        { duration: '30s', target: 50  }, // Ramp up to 50 virtual users
-        { duration: '30s', target: 50  }, // Hold at 50 VUs
-        { duration: '10s', target: 0   }, // Ramp down
+        { duration: '10s', target: 10 }, // Ramp up to 10 virtual users
+        { duration: '30s', target: 50 }, // Ramp up to 50 virtual users
+        { duration: '30s', target: 50 }, // Hold at 50 VUs
+        { duration: '10s', target: 0 }, // Ramp down
     ],
     thresholds: {
         // 95% of all requests must complete under 200ms
@@ -44,9 +44,9 @@ export const options = {
         // Error rate must stay under 1%
         error_rate: ['rate<0.01'],
         // Individual endpoint thresholds
-        blog_list_duration:      ['p(95)<150'],
-        projects_list_duration:  ['p(95)<150'],
-        skills_list_duration:    ['p(95)<150'],
+        blog_list_duration: ['p(95)<150'],
+        projects_list_duration: ['p(95)<150'],
+        skills_list_duration: ['p(95)<150'],
         about_endpoints_duration: ['p(95)<150'],
     },
 }
@@ -73,7 +73,7 @@ export default function () {
     errorRate.add(blogsRes.status !== 200)
 
     check(blogsRes, {
-        'GET /blogs → 200':           (r) => r.status === 200,
+        'GET /blogs → 200': (r) => r.status === 200,
         'GET /blogs → returns array': (r) => Array.isArray(JSON.parse(r.body)),
     })
 
@@ -85,7 +85,7 @@ export default function () {
     errorRate.add(projectsRes.status !== 200)
 
     check(projectsRes, {
-        'GET /projects → 200':           (r) => r.status === 200,
+        'GET /projects → 200': (r) => r.status === 200,
         'GET /projects → returns array': (r) => Array.isArray(JSON.parse(r.body)),
     })
 
@@ -117,7 +117,7 @@ export default function () {
         errorRate.add(res.status !== 200)
 
         check(res, {
-        [`GET ${endpoint} → 200`]: (r) => r.status === 200,
+            [`GET ${endpoint} → 200`]: (r) => r.status === 200,
         })
 
         sleep(0.05)

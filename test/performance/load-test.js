@@ -23,11 +23,11 @@ import { Rate, Trend, Counter } from 'k6/metrics'
 // Custom Metrics
 // =============================================================================
 
-const errorRate        = new Rate('error_rate')
-const successRate      = new Rate('success_rate')
-const blogsLatency     = new Trend('blogs_latency')
-const projectsLatency  = new Trend('projects_latency')
-const totalRequests    = new Counter('total_requests')
+const errorRate = new Rate('error_rate')
+const successRate = new Rate('success_rate')
+const blogsLatency = new Trend('blogs_latency')
+const projectsLatency = new Trend('projects_latency')
+const totalRequests = new Counter('total_requests')
 
 // =============================================================================
 // Test Configuration
@@ -37,27 +37,27 @@ export const options = {
     insecureSkipTLSVerify: true,
 
     stages: [
-        { duration: '30s', target: 50   }, // Warm up — known baseline
-        { duration: '60s', target: 50   }, // Hold baseline
-        { duration: '30s', target: 100  }, // Ramp to 100 VUs
-        { duration: '60s', target: 100  }, // Hold at 100
-        { duration: '30s', target: 200  }, // Ramp to 200 VUs
-        { duration: '60s', target: 200  }, // Hold at 200
-        { duration: '30s', target: 500  }, // Ramp to 500 VUs
-        { duration: '60s', target: 500  }, // Hold at 500
+        { duration: '30s', target: 50 }, // Warm up — known baseline
+        { duration: '60s', target: 50 }, // Hold baseline
+        { duration: '30s', target: 100 }, // Ramp to 100 VUs
+        { duration: '60s', target: 100 }, // Hold at 100
+        { duration: '30s', target: 200 }, // Ramp to 200 VUs
+        { duration: '60s', target: 200 }, // Hold at 200
+        { duration: '30s', target: 500 }, // Ramp to 500 VUs
+        { duration: '60s', target: 500 }, // Hold at 500
         { duration: '30s', target: 1000 }, // Ramp to 1000 VUs — stress territory
         { duration: '60s', target: 1000 }, // Hold at 1000
-        { duration: '30s', target: 0    }, // Cool down
+        { duration: '30s', target: 0 }, // Cool down
     ],
 
     thresholds: {
         // Error rate must stay under 5% — above this the server is struggling
-        error_rate:          ['rate<0.05'],
+        error_rate: ['rate<0.05'],
         // 95% of requests under 500ms at any load level
-        http_req_duration:   ['p(95)<500'],
+        http_req_duration: ['p(95)<500'],
         // Individual endpoint thresholds
-        blogs_latency:       ['p(95)<500'],
-        projects_latency:    ['p(95)<500'],
+        blogs_latency: ['p(95)<500'],
+        projects_latency: ['p(95)<500'],
     },
 }
 
@@ -131,11 +131,11 @@ export default function () {
 
 export function handleSummary(data) {
     const successPercent = (data.metrics.success_rate?.values?.rate * 100).toFixed(2)
-    const errorPercent   = (data.metrics.error_rate?.values?.rate * 100).toFixed(2)
-    const p95            = data.metrics.http_req_duration?.values['p(95)']?.toFixed(2)
-    const p99            = data.metrics.http_req_duration?.values['p(99)']?.toFixed(2)
-    const rps            = data.metrics.http_reqs?.values?.rate?.toFixed(0)
-    const totalReqs      = data.metrics.http_reqs?.values?.count
+    const errorPercent = (data.metrics.error_rate?.values?.rate * 100).toFixed(2)
+    const p95 = data.metrics.http_req_duration?.values['p(95)']?.toFixed(2)
+    const p99 = data.metrics.http_req_duration?.values['p(99)']?.toFixed(2)
+    const rps = data.metrics.http_reqs?.values?.rate?.toFixed(0)
+    const totalReqs = data.metrics.http_reqs?.values?.count
 
     console.log('\n========================================')
     console.log('         LOAD TEST SUMMARY')
