@@ -5,11 +5,19 @@
  *  - missing / empty token → 400
  *  - invalid token (verifier returns false) → 400 with specific message
  *  - verifier throws a network/internal error → 400 with generic message
- *  - valid token → true, token stripped from body
+ *  - valid token → true, token left on the body (see below)
  *
  * The critical regression case is the HttpException re-throw: the catch block
  * must not swallow the BadRequestException raised by the `!isValid` branch and
  * replace it with the generic fallback message.
+ *
+ * turnstileToken is deliberately NOT stripped from the body on success — see
+ * TurnstileGuard's own comment on this: guards run before Nest's
+ * ValidationPipe, and SubmitContactDto still declares turnstileToken as a
+ * required field, so removing it here would fail an otherwise valid request
+ * at the DTO-validation stage with a 400. This was previously asserted the
+ * other way; that assertion described a stripping behavior the guard does
+ * not (and must not) implement.
  */
 
 import { ExecutionContext, BadRequestException } from '@nestjs/common'
@@ -61,7 +69,10 @@ describe('TurnstileGuard', () => {
     // Verification outcome
     // ---------------------------------------------------------------------------
     describe('verification', () => {
-        it('returns true and strips token from body when verification succeeds', async () => {
+        it('returns true and leaves the token on the body when verification succeeds', async () => {
+            // Left in place on purpose: guards run before ValidationPipe, and
+            // SubmitContactDto still requires turnstileToken, so stripping it
+            // here would fail DTO validation on an otherwise-valid request.
             mockVerifier.verifyToken.mockResolvedValue(true)
             const body = { turnstileToken: 'valid-token', name: 'Alice' }
             const ctx = makeCtx(body)
@@ -69,7 +80,7 @@ describe('TurnstileGuard', () => {
             const result = await guard.canActivate(ctx)
 
             expect(result).toBe(true)
-            expect(body).not.toHaveProperty('turnstileToken')
+            expect(body).toHaveProperty('turnstileToken', 'valid-token')
             expect(body).toHaveProperty('name', 'Alice') // other fields untouched
         })
 

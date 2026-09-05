@@ -71,6 +71,11 @@ const mockTokenRepo = {
 
 const mockCacheQuery = {
     getOrSetWithProfile: jest.fn(),
+    // AuthService.refresh()/logout() call this to evict the cached negative
+    // revocation result the instant a token is actually revoked — otherwise
+    // an immediate replay could still read a stale "not revoked" hit from
+    // getOrSetWithProfile's own cache. See ICacheQueryService.delete().
+    delete: jest.fn(),
 }
 
 const mockUserWriteRepo = {
@@ -131,6 +136,7 @@ describe('AuthService', () => {
 
         // Default happy-path mock state
         mockCacheQuery.getOrSetWithProfile.mockResolvedValue(false)
+        mockCacheQuery.delete.mockResolvedValue(undefined)
         mockTokenRepo.isRevoked.mockResolvedValue(false)
         mockJwtService.signAsync.mockResolvedValue('signed-token')
         mockUserWriteRepo.update.mockResolvedValue(undefined)
