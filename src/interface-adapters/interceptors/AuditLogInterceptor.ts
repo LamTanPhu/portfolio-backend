@@ -17,6 +17,13 @@
  * DomainExceptionFilter) — duplicating them here would just be noise in
  * a log whose entire value is "what did the admin actually change."
  *
+ * entityId resolution: PATCH/DELETE routes carry the id (or slug) in the
+ * URL itself (req.params), which is preferred when present since it's
+ * always correct regardless of what the handler returns. POST (create)
+ * routes have no :id in the URL at all — the id only exists once the
+ * handler's response body comes back — so that's the fallback, read from
+ * the tap() payload rather than req.params.
+ *
  * Fire-and-forget by design: an audit write failing must never surface as
  * a failure of the admin action itself. Logged via ILogger, swallowed.
  */
@@ -59,7 +66,7 @@ export class AuditLogInterceptor implements NestInterceptor {
         const entityType = context.getClass().name.replace(/Controller$/, '')
 
         return next.handle().pipe(
-            tap(() => {
+            tap((body: unknown) => {
                 const authedReq = req as AuthenticatedRequest
 
                 // No req.user = route had no JwtAuthGuard = not an admin action.
@@ -70,19 +77,24 @@ export class AuditLogInterceptor implements NestInterceptor {
 
                 const res = context.switchToHttp().getResponse<Response>()
 
-                void this.write(authedReq, entityType, res.statusCode)
+                void this.write(authedReq, entityType, res.statusCode, body)
             }),
         )
     }
 
-    private async write(req: AuthenticatedRequest, entityType: string, statusCode: number): Promise<void> {
+    private async write(
+        req: AuthenticatedRequest,
+        entityType: string,
+        statusCode: number,
+        body: unknown,
+    ): Promise<void> {
         try {
             await this.auditLogRepo.save({
                 actorId: req.user.sub,
                 method: req.method,
                 route: req.originalUrl.split('?')[0],
                 entityType,
-                entityId: (req.params?.id ?? req.params?.slug ?? null) as string | null,
+                entityId: this.resolveEntityId(req, body),
                 ipAddress: req.ip ?? null,
                 statusCode,
             })
@@ -95,5 +107,25 @@ export class AuditLogInterceptor implements NestInterceptor {
                 AuditLogInterceptor.name,
             )
         }
+    }
+
+    /**
+     * Prefers the URL param (PATCH/DELETE — always present, always correct).
+     * Falls back to the response body (POST/create — the only place the new
+     * entity's id exists, since the URL never had one).
+     */
+    private resolveEntityId(req: AuthenticatedRequest, body: unknown): string | null {
+        const fromParams = req.params?.id ?? req.params?.slug
+        if (fromParams != null) return String(fromParams)
+
+        if (body && typeof body === 'object') {
+            const { id, slug } = body as { id?: unknown; slug?: unknown }
+            const fromBody = id ?? slug
+            if (typeof fromBody === 'string' || typeof fromBody === 'number') {
+                return String(fromBody)
+            }
+        }
+
+        return null
     }
 }

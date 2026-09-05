@@ -7,13 +7,18 @@
  * a mutation is not guaranteed to see it yet. The short delay below is a
  * pragmatic trade-off for that, not a sign of a race worth fixing — audit
  * logging staying off the response's critical path is the whole point.
+ *
+ * entityId is stored as a string column (schema.prisma AuditLog.entityId is
+ * String?) — for POST/create routes it's resolved from the response body's
+ * numeric id and stringified, so comparisons against skillId here go through
+ * String(skillId) to match what actually comes back over JSON.
  */
 
 import type { INestApplication } from '@nestjs/common'
 import type { Server } from 'http'
+import { loginAsAdmin } from './utils/auth'
 import { createTestApp } from './utils/create-test-app'
 import { api, authHeader } from './utils/http'
-import { loginAsAdmin } from './utils/auth'
 import { unique } from './utils/unique'
 
 function wait(ms: number): Promise<void> {
@@ -61,11 +66,11 @@ describe('Audit (e2e)', () => {
             .expect(200)
 
         const body = res.body as {
-            items: { method: string; route: string; entityType: string; entityId: number; statusCode: number }[]
+            items: { method: string; route: string; entityType: string; entityId: string | null; statusCode: number }[]
             total: number
         }
 
-        const entry = body.items.find((e) => e.entityType === 'Skill' && e.entityId === skillId)
+        const entry = body.items.find((e) => e.entityType === 'Skill' && e.entityId === String(skillId))
         expect(entry).toBeDefined()
         expect(entry!.method).toBe('POST')
         expect(entry!.statusCode).toBe(201)
@@ -87,9 +92,9 @@ describe('Audit (e2e)', () => {
             .set(...authHeader(accessToken))
             .expect(200)
 
-        const body = res.body as { items: { entityId: number; entityType: string }[] }
+        const body = res.body as { items: { entityId: string | null; entityType: string }[] }
         // The only Skill entry expected is the one from the previous test.
         const skillEntries = body.items.filter((e) => e.entityType === 'Skill')
-        expect(skillEntries.every((e) => e.entityId === skillId)).toBe(true)
+        expect(skillEntries.every((e) => e.entityId === String(skillId))).toBe(true)
     })
 })
