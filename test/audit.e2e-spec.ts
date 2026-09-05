@@ -4,25 +4,51 @@
  * AuditLogInterceptor writes fire-and-forget (`void this.write(...)`,
  * intentionally not awaited before the HTTP response is sent — see the
  * interceptor's own comments), so a GET /api/audit called immediately after
- * a mutation is not guaranteed to see it yet. The short delay below is a
- * pragmatic trade-off for that, not a sign of a race worth fixing — audit
- * logging staying off the response's critical path is the whole point.
+ * a mutation is not guaranteed to see it yet. Polling (rather than a fixed
+ * delay) is used below specifically because that write's actual latency is
+ * not bounded — it varies with DB load — so any fixed wait is inherently a
+ * race, just a smaller or larger one.
  *
  * entityId is stored as a string column (schema.prisma AuditLog.entityId is
  * String?) — for POST/create routes it's resolved from the response body's
  * numeric id and stringified, so comparisons against skillId here go through
  * String(skillId) to match what actually comes back over JSON.
+ *
+ * The second test checks for the specific failed request (route + status),
+ * not "every Skill entry belongs to skillId" — this suite runs concurrently
+ * alongside skill.e2e-spec.ts against the same live server/DB, which creates
+ * and deletes its own Skill entities independently. An assumption of
+ * exclusive access to the Skill audit trail is false under that concurrency,
+ * regardless of what this suite itself does.
  */
 
 import type { INestApplication } from '@nestjs/common'
 import type { Server } from 'http'
-import { loginAsAdmin } from './utils/auth'
 import { createTestApp } from './utils/create-test-app'
 import { api, authHeader } from './utils/http'
+import { loginAsAdmin } from './utils/auth'
 import { unique } from './utils/unique'
 
 function wait(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Polls `fn` until it returns a truthy value or `timeoutMs` elapses.
+ * Used for asserting on the fire-and-forget audit write, whose completion
+ * time isn't bounded by the HTTP response — a fixed wait() is a race no
+ * matter the duration chosen, just a bigger or smaller one.
+ */
+async function waitFor<T>(fn: () => Promise<T | undefined>, timeoutMs = 5000, intervalMs = 150): Promise<T> {
+    const start = Date.now()
+    for (;;) {
+        const result = await fn()
+        if (result !== undefined) return result
+        if (Date.now() - start >= timeoutMs) {
+            throw new Error(`waitFor: condition not met within ${timeoutMs}ms`)
+        }
+        await wait(intervalMs)
+    }
 }
 
 describe('Audit (e2e)', () => {
@@ -58,28 +84,35 @@ describe('Audit (e2e)', () => {
             .expect(201)
         skillId = (createRes.body as { id: number }).id
 
-        await wait(500)
-
-        const res = await api(app)
-            .get('/api/audit')
-            .set(...authHeader(accessToken))
-            .expect(200)
-
-        const body = res.body as {
-            items: { method: string; route: string; entityType: string; entityId: string | null; statusCode: number }[]
-            total: number
+        interface AuditEntry {
+            method: string
+            route: string
+            entityType: string
+            entityId: string | null
+            statusCode: number
         }
 
-        const entry = body.items.find((e) => e.entityType === 'Skill' && e.entityId === String(skillId))
-        expect(entry).toBeDefined()
-        expect(entry!.method).toBe('POST')
-        expect(entry!.statusCode).toBe(201)
+        const entry = await waitFor<AuditEntry>(async () => {
+            const res = await api(app)
+                .get('/api/audit')
+                .set(...authHeader(accessToken))
+                .expect(200)
+
+            const body = res.body as { items: AuditEntry[]; total: number }
+            return body.items.find((e) => e.entityType === 'Skill' && e.entityId === String(skillId))
+        })
+
+        expect(entry.method).toBe('POST')
+        expect(entry.statusCode).toBe(201)
     })
 
     it('does not log a failed (guard-rejected) request', async () => {
         // An unauthenticated POST never reaches the interceptor at all —
-        // JwtAuthGuard rejects it first. Nothing new should appear tied to a
-        // route that was never actually mutated.
+        // JwtAuthGuard rejects it first. This checks specifically that the
+        // failed attempt itself never got logged, rather than asserting
+        // something about every Skill entry currently in the log — this
+        // suite runs concurrently with skill.e2e-spec.ts, which creates and
+        // deletes its own Skill rows against the same server/DB.
         await api(app)
             .post('/api/skills')
             .send({ name: unique('unauthorized-skill'), category: 'backend' })
@@ -92,19 +125,8 @@ describe('Audit (e2e)', () => {
             .set(...authHeader(accessToken))
             .expect(200)
 
-        const body = res.body as {
-            items: { entityId: string | null; entityType: string; method: string; route: string }[]
-        }
-
-        // Other E2E suites share the same test database, so this spec cannot
-        // assume it owns every historical Skill audit row. The interceptor's
-        // contract is that a guard-rejected request produces no audit entry at all.
-        // An actual successful POST always has the created entity id, so a POST
-        // with a null entityId on this route would prove the rejected request leaked
-        // into the audit log.
-        const leakedUnauthorizedEntries = body.items.filter(
-            (e) => e.entityType === 'Skill' && e.method === 'POST' && e.route === '/api/skills' && e.entityId === null,
-        )
-        expect(leakedUnauthorizedEntries).toHaveLength(0)
+        const body = res.body as { items: { route: string; statusCode: number }[] }
+        const loggedTheFailedAttempt = body.items.some((e) => e.route === '/api/skills' && e.statusCode === 401)
+        expect(loggedTheFailedAttempt).toBe(false)
     })
 })

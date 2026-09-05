@@ -4,10 +4,20 @@
  * Full CRUD + search coverage for the blog module — the richest module in
  * the codebase (draft/publish state, tags, full-text search).
  *
- * The search test here is exactly what caught the search_vector bug: with
- * no trigger populating blogs.search_vector (fixed in migration
- * 20260903120000_blog_search_vector), this test would have failed forever —
- * a published post, searched by its own exact title, returning zero results.
+ * The search test here is exactly what catches the search_vector
+ * regression: with no trigger populating blogs.search_vector, this test
+ * fails forever — a published post, searched for, returning zero results.
+ * (This is precisely the bug that was found and fixed via migration
+ * blog_search_vector — see schema.prisma's comment on Blog.searchVector.)
+ *
+ * The search test embeds its own plain alnum marker word in the post's
+ * content, rather than deriving a search term by parsing unique()'s
+ * hyphenated title output. Two reasons: (1) it sidesteps any ambiguity in
+ * how Postgres's text-search parser tokenizes a hyphen-delimited compound
+ * like "e2e-published-post-<ts>-<n>", and (2) the marker is unique per
+ * run, so it can never collide with older rows left behind by previous
+ * runs against a non-reset dev database — no other row will ever contain
+ * this exact token.
  */
 
 import type { INestApplication } from '@nestjs/common'
@@ -32,6 +42,7 @@ interface BlogDetail extends BlogSummary {
 describe('Blog (e2e)', () => {
     let app: INestApplication<Server>
     let accessToken: string
+    let searchMarker: string
 
     beforeAll(async () => {
         app = await createTestApp()
@@ -60,13 +71,16 @@ describe('Blog (e2e)', () => {
 
         it('creates a published post and auto-generates a slug', async () => {
             const title = unique('published-post')
+            // A plain alnum token with no hyphens, unique to this run — see
+            // file header for why this is used instead of parsing `title`.
+            searchMarker = `searchmarker${Date.now()}`
 
             const res = await api(app)
                 .post('/api/blogs')
                 .set(...authHeader(accessToken))
                 .send({
                     title,
-                    content: 'A deep dive into clean architecture patterns with NestJS.',
+                    content: `A deep dive into clean architecture patterns with NestJS. ${searchMarker}`,
                     excerpt: 'A short excerpt about clean architecture.',
                     tags: ['NestJS', 'Architecture'],
                     isPublished: true,
@@ -129,14 +143,12 @@ describe('Blog (e2e)', () => {
 
     describe('GET /api/blogs/search', () => {
         // This is the test that catches the search_vector regression: if the
-        // populating trigger from migration 20260903120000_blog_search_vector
-        // is ever reverted or dropped, search_vector goes back to NULL on
-        // every row and this assertion fails.
-        it('finds the published post by a distinctive word from its title', async () => {
-            const searchTerm = publishedPost.title.split('-').slice(0, 2).join(' ')
-
+        // trigger from migration blog_search_vector is ever reverted or
+        // dropped, search_vector goes back to NULL on every row and this
+        // assertion fails.
+        it('finds the published post by its unique content marker', async () => {
             const res = await api(app)
-                .get(`/api/blogs/search?q=${encodeURIComponent(searchTerm)}`)
+                .get(`/api/blogs/search?q=${encodeURIComponent(searchMarker)}`)
                 .expect(200)
 
             const body = res.body as BlogSummary[]
