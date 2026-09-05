@@ -54,7 +54,7 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
 
         // ─── Rate Limiting ──────────────────────────────────────────────────
         ThrottlerModule.forRoot({
-            throttlers: [{ name: 'per-ip', ttl: 60_000, limit: 100 }],
+            throttlers: [{ name: 'default', ttl: 60_000, limit: 100 }],
         }),
 
         // ─── Cache (in-memory, or Redis-primary + in-memory-fallback) ─────────

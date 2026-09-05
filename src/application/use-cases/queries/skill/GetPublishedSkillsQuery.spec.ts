@@ -26,6 +26,7 @@ const makeSkillDTO = (overrides = {}) => ({
     name: 'TypeScript',
     imageUrl: 'https://cdn.example.com/typescript.svg',
     category: 'backend',
+    isPublic: true,
     ...overrides,
 })
 

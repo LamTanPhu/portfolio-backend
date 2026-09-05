@@ -40,6 +40,7 @@ export class UpdateSkillCommand {
             name: skill.name,
             imageUrl: skill.imageUrl,
             category: skill.category,
+            isPublic: skill.isPublic,
         }
     }
 }

@@ -23,6 +23,7 @@ export class PrismaSkillReadRepository implements ISkillReadRepository {
                 name: true,
                 imageUrl: true,
                 category: true,
+                isPublic: true,
             },
         })
 
@@ -31,6 +32,7 @@ export class PrismaSkillReadRepository implements ISkillReadRepository {
             name: row.name,
             imageUrl: row.imageUrl,
             category: row.category,
+            isPublic: row.isPublic,
         }))
     }
 
@@ -42,6 +44,7 @@ export class PrismaSkillReadRepository implements ISkillReadRepository {
                 name: true,
                 imageUrl: true,
                 category: true,
+                isPublic: true,
             },
         })
 
@@ -50,6 +53,7 @@ export class PrismaSkillReadRepository implements ISkillReadRepository {
             name: row.name,
             imageUrl: row.imageUrl,
             category: row.category,
+            isPublic: row.isPublic,
         }))
     }
 

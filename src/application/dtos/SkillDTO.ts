@@ -8,4 +8,5 @@ export interface SkillDTO {
     name: string
     imageUrl: string | null
     category: string
+    isPublic: boolean
 }

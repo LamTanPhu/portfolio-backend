@@ -92,9 +92,19 @@ describe('Audit (e2e)', () => {
             .set(...authHeader(accessToken))
             .expect(200)
 
-        const body = res.body as { items: { entityId: string | null; entityType: string }[] }
-        // The only Skill entry expected is the one from the previous test.
-        const skillEntries = body.items.filter((e) => e.entityType === 'Skill')
-        expect(skillEntries.every((e) => e.entityId === String(skillId))).toBe(true)
+        const body = res.body as {
+            items: { entityId: string | null; entityType: string; method: string; route: string }[]
+        }
+
+        // Other E2E suites share the same test database, so this spec cannot
+        // assume it owns every historical Skill audit row. The interceptor's
+        // contract is that a guard-rejected request produces no audit entry at all.
+        // An actual successful POST always has the created entity id, so a POST
+        // with a null entityId on this route would prove the rejected request leaked
+        // into the audit log.
+        const leakedUnauthorizedEntries = body.items.filter(
+            (e) => e.entityType === 'Skill' && e.method === 'POST' && e.route === '/api/skills' && e.entityId === null,
+        )
+        expect(leakedUnauthorizedEntries).toHaveLength(0)
     })
 })

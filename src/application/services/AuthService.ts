@@ -177,27 +177,25 @@ export class AuthService implements OnModuleInit {
             throw new UnauthorizedError('Token fingerprint mismatch')
         }
 
-        // Rotate: issue both tokens in parallel, then revoke the old refresh token.
+        // Rotate: issue the new token pair, then persist revocation before returning.
+        // The response must not race the revocation write; otherwise an immediate
+        // replay of the old refresh token can slip through while the revoke is still
+        // running in the background.
         //
-        // Why revoke AFTER issuing (not before)?
-        //   Issuing first ensures the client always gets a usable token pair even
-        //   if the revocation write fails (e.g. transient DB hiccup). The old token
-        //   will expire naturally within its TTL in the worst case — far better than
-        //   leaving the client logged out with no new token.
-        //
-        // Why parallel issuance?
-        //   Both sign calls are independent CPU work (HMAC-SHA256). Running them in
-        //   parallel halves the signing latency on the hot refresh path.
+        // Parallel issuance is safe because the two sign operations are independent.
         const [newAccessToken, newRefreshToken] = await Promise.all([
             this.issueAccessToken(payload.sub, fingerprint),
             this.issueRefreshToken(payload.sub, fingerprint),
         ])
 
-        // Revoke the consumed refresh token so it cannot be replayed.
-        // Fire-and-forget is intentional: a revocation write failure is not worth
-        // blocking the response — the token will expire within its 7-day window anyway,
-        // and fingerprint enforcement already stops cross-device replay.
-        void this.tokenRepo.revoke(payload.jti, new Date(payload.exp * 1000))
+        // Revoke the consumed refresh token before returning the new token pair.
+        // Rotation is a security boundary: once the new pair is issued, the old
+        // refresh token must already be unusable. Awaiting this write prevents a
+        // replay from racing the revocation and also avoids duplicate jti inserts.
+        await this.tokenRepo.revoke(payload.jti, new Date(payload.exp * 1000))
+        // The revocation check is cached. Remove the cached negative result before
+        // returning, otherwise an immediate replay can still see "not revoked".
+        await this.cacheQuery.delete(`revoked-token:${payload.jti}`)
 
         return { accessToken: newAccessToken, refreshToken: newRefreshToken }
     }
@@ -252,6 +250,14 @@ export class AuthService implements OnModuleInit {
                 await this.tokenRepo.revoke(refreshJti, refreshExpiresAt, tx)
             }
         })
+
+        // JwtAuthGuard may have cached this access token as non-revoked while it
+        // authenticated the logout request. Invalidate both revocation keys so
+        // the very next protected request observes the DB revocation immediately.
+        await this.cacheQuery.delete(`revoked-token:${accessJti}`)
+        if (refreshJti) {
+            await this.cacheQuery.delete(`revoked-token:${refreshJti}`)
+        }
     }
 
     // ===========================================================================

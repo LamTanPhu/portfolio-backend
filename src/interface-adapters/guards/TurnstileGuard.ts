@@ -55,9 +55,10 @@ export class TurnstileGuard implements CanActivate {
                 throw new BadRequestException('Turnstile verification failed. Please try again.')
             }
 
-            // Clean up token from body after successful verification
-            delete body.turnstileToken
-
+            // Leave the verified token on the request body. NestJS executes guards
+            // before the route's ValidationPipe, and SubmitContactDto still declares
+            // turnstileToken as a required input. Mutating the body here would make
+            // an otherwise valid request fail DTO validation with 400.
             return true
         } catch (error) {
             // Re-throw NestJS HTTP exceptions as-is (e.g. the BadRequestException thrown

@@ -76,6 +76,7 @@ describe('UpdateSkillCommand', () => {
             name: 'Go',
             imageUrl: 'https://cdn.example.com/typescript.svg',
             category: 'devops',
+            isPublic: true,
         })
     })
 

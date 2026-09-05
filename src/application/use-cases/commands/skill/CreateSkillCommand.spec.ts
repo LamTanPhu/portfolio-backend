@@ -81,6 +81,7 @@ describe('CreateSkillCommand', () => {
             name: 'Rust',
             imageUrl: 'https://cdn.example.com/typescript.svg',
             category: 'other',
+            isPublic: true,
         })
     })
 
