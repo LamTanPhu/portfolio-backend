@@ -91,7 +91,7 @@ export class CertificationController {
             name: dto.name,
             url: dto.url,
             startDate: dto.startDate ? new Date(dto.startDate) : undefined,
-            endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+            endDate: dto.endDate === undefined ? undefined : dto.endDate === null ? null : new Date(dto.endDate),
             isPublished: dto.isPublished,
         })
     }

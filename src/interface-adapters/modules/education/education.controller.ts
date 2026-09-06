@@ -93,7 +93,7 @@ export class EducationController {
             instituteName: dto.instituteName,
             instituteUrl: dto.instituteUrl,
             startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+            endedAt: dto.endedAt === undefined ? undefined : dto.endedAt === null ? null : new Date(dto.endedAt),
             isCompleted: dto.isCompleted,
         })
     }

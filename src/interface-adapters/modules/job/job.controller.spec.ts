@@ -1,10 +1,10 @@
 /**
  * @fileoverview JobController Unit Tests
  *
- * NOTE ON A LIKELY BUG: update() does `dto.endedAt ? new Date(dto.endedAt) : undefined`,
- * same pattern as CertificationController/EducationController. Sending
- * `endedAt: null` on PATCH (e.g. correcting a job wrongly marked ended) is
- * indistinguishable from omitting the field — see the test below.
+ * update() distinguishes three states for endedAt: omitted (undefined ->
+ * leave unchanged), explicit null (-> un-end the job, still employed
+ * again), and a date string (-> set it). Same three-state handling as
+ * CertificationController/EducationController.
  */
 
 import { Test, TestingModule } from '@nestjs/testing'
@@ -109,12 +109,12 @@ describe('JobController', () => {
             )
         })
 
-        it('KNOWN BUG: sending endedAt: null to un-end a job resolves to undefined, not null — the clear is silently dropped', async () => {
+        it('un-ends a job (still employed again) when endedAt is explicitly sent as null', async () => {
             mockUpdate.execute.mockResolvedValue({ id: 1 })
 
             await controller.update(1, { endedAt: null })
 
-            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: undefined }))
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: null }))
         })
     })
 

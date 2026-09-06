@@ -4,12 +4,12 @@
  * Covers ISO-string -> Date conversion (the controller's own job — commands
  * expect real Date objects) and guard wiring.
  *
- * NOTE ON A LIKELY BUG: update() does `dto.endDate ? new Date(dto.endDate) : undefined`.
- * That means sending `endDate: null` on PATCH (the natural way to clear an
- * expiry and make a cert permanent again) is indistinguishable from omitting
- * the field entirely — both resolve to `undefined`, so UpdateCertificationCommand
- * never receives the clear. The test below locks in this *current* behavior
- * so a future fix is a deliberate, visible change here, not a silent one.
+ * update() distinguishes three states for endDate: omitted (undefined ->
+ * leave unchanged), explicit null (-> clear the expiry, lifetime cert), and
+ * a date string (-> set it). A plain `dto.endDate ? new Date(...) : undefined`
+ * ternary would collapse null and undefined together, silently dropping an
+ * admin's attempt to clear an existing expiry — the tests below cover all
+ * three states so that regression can't creep back in unnoticed.
  */
 
 import { Test, TestingModule } from '@nestjs/testing'
@@ -124,12 +124,12 @@ describe('CertificationController', () => {
             )
         })
 
-        it('KNOWN BUG: sending endDate: null to clear an expiry resolves to undefined, not null — the clear is silently dropped', async () => {
+        it('clears an existing expiry (lifetime cert) when endDate is explicitly sent as null', async () => {
             mockUpdate.execute.mockResolvedValue({ id: 1 })
 
             await controller.update(1, { endDate: null })
 
-            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endDate: undefined }))
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endDate: null }))
         })
     })
 

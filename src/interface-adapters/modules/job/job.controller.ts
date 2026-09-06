@@ -91,7 +91,7 @@ export class JobController {
             companyName: dto.companyName,
             role: dto.role,
             startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
+            endedAt: dto.endedAt === undefined ? undefined : dto.endedAt === null ? null : new Date(dto.endedAt),
             isEnded: dto.isEnded,
         })
     }
