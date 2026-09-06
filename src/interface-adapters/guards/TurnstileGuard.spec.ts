@@ -7,8 +7,8 @@
  *  - verifier throws a network/internal error → 400 with generic message
  *  - valid token → true, token left on the body (see below)
  *
- * The critical regression case is the HttpException re-throw: the catch block
- * must not swallow the BadRequestException raised by the `!isValid` branch and
+ * The critical regression case is the DomainError re-throw: the catch block
+ * must not swallow the ValidationError raised by the `!isValid` branch and
  * replace it with the generic fallback message.
  *
  * turnstileToken is deliberately NOT stripped from the body on success — see
@@ -20,8 +20,9 @@
  * not (and must not) implement.
  */
 
-import { ExecutionContext, BadRequestException } from '@nestjs/common'
+import { ExecutionContext } from '@nestjs/common'
 import { TurnstileGuard } from './TurnstileGuard'
+import { ValidationError } from '../../domain/errors/ValidationError'
 
 // =============================================================================
 // Helpers
@@ -52,16 +53,16 @@ describe('TurnstileGuard', () => {
     // Token presence checks
     // ---------------------------------------------------------------------------
     describe('token presence', () => {
-        it('throws BadRequestException when turnstileToken is missing', async () => {
-            await expect(guard.canActivate(makeCtx({}))).rejects.toThrow(BadRequestException)
+        it('throws ValidationError when turnstileToken is missing', async () => {
+            await expect(guard.canActivate(makeCtx({}))).rejects.toThrow(ValidationError)
         })
 
-        it('throws BadRequestException when turnstileToken is an empty string', async () => {
-            await expect(guard.canActivate(makeCtx({ turnstileToken: '   ' }))).rejects.toThrow(BadRequestException)
+        it('throws ValidationError when turnstileToken is an empty string', async () => {
+            await expect(guard.canActivate(makeCtx({ turnstileToken: '   ' }))).rejects.toThrow(ValidationError)
         })
 
-        it('throws BadRequestException when turnstileToken is not a string', async () => {
-            await expect(guard.canActivate(makeCtx({ turnstileToken: 42 }))).rejects.toThrow(BadRequestException)
+        it('throws ValidationError when turnstileToken is not a string', async () => {
+            await expect(guard.canActivate(makeCtx({ turnstileToken: 42 }))).rejects.toThrow(ValidationError)
         })
     })
 
@@ -92,37 +93,35 @@ describe('TurnstileGuard', () => {
         })
 
         // -------------------------------------------------------------------------
-        // Regression: HttpException re-throw — the specific message must survive
+        // Regression: DomainError re-throw — the specific message must survive
         // -------------------------------------------------------------------------
-        it('preserves the specific BadRequestException message when verifier returns false', async () => {
+        it('preserves the specific ValidationError message when verifier returns false', async () => {
             mockVerifier.verifyToken.mockResolvedValue(false)
 
-            let caught: BadRequestException | undefined
+            let caught: ValidationError | undefined
             try {
                 await guard.canActivate(makeCtx({ turnstileToken: 'bad-token' }))
             } catch (e) {
-                caught = e as BadRequestException
+                caught = e as ValidationError
             }
 
-            expect(caught).toBeInstanceOf(BadRequestException)
+            expect(caught).toBeInstanceOf(ValidationError)
             // Must be the specific user-facing message, NOT the generic fallback
-            const response = caught!.getResponse() as { message: string }
-            expect(response.message).toBe('Turnstile verification failed. Please try again.')
+            expect(caught!.message).toBe('Turnstile verification failed. Please try again.')
         })
 
-        it('throws a generic BadRequestException when verifier throws an unexpected error', async () => {
+        it('throws a generic ValidationError when verifier throws an unexpected error', async () => {
             mockVerifier.verifyToken.mockRejectedValue(new Error('network timeout'))
 
-            let caught: BadRequestException | undefined
+            let caught: ValidationError | undefined
             try {
                 await guard.canActivate(makeCtx({ turnstileToken: 'some-token' }))
             } catch (e) {
-                caught = e as BadRequestException
+                caught = e as ValidationError
             }
 
-            expect(caught).toBeInstanceOf(BadRequestException)
-            const response = caught!.getResponse() as { message: string }
-            expect(response.message).toBe('Turnstile verification failed')
+            expect(caught).toBeInstanceOf(ValidationError)
+            expect(caught!.message).toBe('Turnstile verification failed')
         })
     })
 })

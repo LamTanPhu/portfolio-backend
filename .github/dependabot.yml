@@ -1,0 +1,68 @@
+# Dependabot version updates. This file previously existed but was empty,
+# which is a silent no-op — no config body means Dependabot never opens a
+# single update PR. This is NOT a replacement for vulnerability scanning:
+# osv-scanner.yml and dependency-review.yml already cover that on every push
+# and PR. This file's job is routine version currency (including patch/minor
+# bumps with no known CVE), which neither of those workflows does.
+#
+# Groups are intentional, not default behavior: without them, a single
+# @nestjs minor release would open ~10 separate PRs (one per @nestjs/*
+# package) that all need to land together anyway. Grouping collapses that
+# into one PR per related family. `patch`/`minor` are auto-grouped; `major`
+# bumps are excluded from every group on purpose so they always arrive as
+# their own PR and get a real look before merging — that's also why Prisma
+# (currently on the 7.x line, and the exact version this app was written
+# against) is called out separately below rather than folded into "other".
+version: 2
+updates:
+    - package-ecosystem: "npm"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      open-pull-requests-limit: 5
+      commit-message:
+          prefix: "chore(deps)"
+          prefix-development: "chore(deps-dev)"
+      groups:
+          nestjs:
+              patterns:
+                  - "@nestjs/*"
+              update-types: ["patch", "minor"]
+          prisma:
+              patterns:
+                  - "prisma"
+                  - "@prisma/*"
+              update-types: ["patch", "minor"]
+          lint-and-format:
+              patterns:
+                  - "eslint*"
+                  - "@eslint/*"
+                  - "typescript-eslint"
+                  - "prettier*"
+              update-types: ["patch", "minor"]
+          test-tooling:
+              patterns:
+                  - "jest*"
+                  - "@types/jest"
+                  - "ts-jest"
+                  - "supertest"
+                  - "@types/supertest"
+                  - "@stryker-mutator/*"
+              update-types: ["patch", "minor"]
+
+    # Pins the SHAs/tags used in the workflow files themselves (actions/checkout@v6
+    # and friends). Separate from the npm entry above — different ecosystem, same file.
+    - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      open-pull-requests-limit: 5
+      commit-message:
+          prefix: "chore(ci)"
+      groups:
+          actions:
+              patterns:
+                  - "*"
+              update-types: ["patch", "minor"]

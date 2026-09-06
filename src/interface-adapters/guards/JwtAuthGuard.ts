@@ -11,11 +11,12 @@
  * Attaches verified payload to `req.user` for downstream use.
  */
 
-import { CanActivate, ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { CanActivate, ExecutionContext, Injectable, Logger } from '@nestjs/common'
 import type { Request } from 'express'
 
 import type { AccessTokenPayload } from '../../application/services/AuthService'
 import { AuthService } from '../../application/services/AuthService'
+import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 
 export interface AuthenticatedRequest extends Request {
     user: AccessTokenPayload
@@ -33,7 +34,7 @@ export class JwtAuthGuard implements CanActivate {
         const authHeader = req.headers.authorization
         if (!authHeader?.startsWith('Bearer ')) {
             this.logger.warn(`Missing Bearer token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
-            throw new UnauthorizedException('Missing authorization token')
+            throw new UnauthorizedError('Missing authorization token')
         }
 
         const token = authHeader.slice(7) // Remove "Bearer "
@@ -53,7 +54,7 @@ export class JwtAuthGuard implements CanActivate {
             this.logger.warn(
                 `Authentication failed | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url} | ${message}`,
             )
-            throw new UnauthorizedException(message)
+            throw new UnauthorizedError(message)
         }
     }
 }

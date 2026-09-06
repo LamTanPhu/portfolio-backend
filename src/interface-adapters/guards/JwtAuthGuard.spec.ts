@@ -13,13 +13,14 @@
  *  - fingerprint computed from the request's User-Agent + IP and forwarded
  *    unchanged to AuthService
  *  - verified payload attached to req.user on success
- *  - AuthService rejection propagated as UnauthorizedException, and req.user
- *    left untouched
+ *  - AuthService rejection propagated as UnauthorizedError (domain), and
+ *    req.user left untouched
  */
 
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common'
+import { ExecutionContext } from '@nestjs/common'
 import { JwtAuthGuard, AuthenticatedRequest } from './JwtAuthGuard'
 import { AuthService, AccessTokenPayload } from '../../application/services/AuthService'
+import { UnauthorizedError } from '../../domain/errors/UnauthorizedError'
 
 // =============================================================================
 // Helpers
@@ -63,21 +64,21 @@ describe('JwtAuthGuard', () => {
     // Header presence / shape
     // ---------------------------------------------------------------------------
     describe('Authorization header', () => {
-        it('throws UnauthorizedException when the header is missing entirely', async () => {
+        it('throws UnauthorizedError when the header is missing entirely', async () => {
             const { ctx } = makeCtx({})
-            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException)
+            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedError)
             expect(mockAuthService.verifyAccessToken).not.toHaveBeenCalled()
         })
 
-        it('throws UnauthorizedException when the header does not start with "Bearer "', async () => {
+        it('throws UnauthorizedError when the header does not start with "Bearer "', async () => {
             const { ctx } = makeCtx({ authorization: 'Basic sometoken' })
-            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException)
+            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedError)
             expect(mockAuthService.verifyAccessToken).not.toHaveBeenCalled()
         })
 
-        it('throws UnauthorizedException when the header is just "Bearer" with no token', async () => {
+        it('throws UnauthorizedError when the header is just "Bearer" with no token', async () => {
             const { ctx } = makeCtx({ authorization: 'Bearer' })
-            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedException)
+            await expect(guard.canActivate(ctx)).rejects.toThrow(UnauthorizedError)
             expect(mockAuthService.verifyAccessToken).not.toHaveBeenCalled()
         })
 
@@ -135,18 +136,18 @@ describe('JwtAuthGuard', () => {
             expect(req.user).toEqual(validPayload)
         })
 
-        it('propagates an AuthService rejection as UnauthorizedException with the same message', async () => {
+        it('propagates an AuthService rejection as UnauthorizedError with the same message', async () => {
             mockAuthService.verifyAccessToken.mockRejectedValue(new Error('Token has been revoked'))
             const { ctx, req } = makeCtx({ authorization: 'Bearer tok' })
 
-            let caught: UnauthorizedException | undefined
+            let caught: UnauthorizedError | undefined
             try {
                 await guard.canActivate(ctx)
             } catch (e) {
-                caught = e as UnauthorizedException
+                caught = e as UnauthorizedError
             }
 
-            expect(caught).toBeInstanceOf(UnauthorizedException)
+            expect(caught).toBeInstanceOf(UnauthorizedError)
             expect(caught!.message).toBe('Token has been revoked')
             expect(req.user).toBeUndefined()
         })
@@ -155,14 +156,14 @@ describe('JwtAuthGuard', () => {
             mockAuthService.verifyAccessToken.mockRejectedValue('not an Error instance')
             const { ctx } = makeCtx({ authorization: 'Bearer tok' })
 
-            let caught: UnauthorizedException | undefined
+            let caught: UnauthorizedError | undefined
             try {
                 await guard.canActivate(ctx)
             } catch (e) {
-                caught = e as UnauthorizedException
+                caught = e as UnauthorizedError
             }
 
-            expect(caught).toBeInstanceOf(UnauthorizedException)
+            expect(caught).toBeInstanceOf(UnauthorizedError)
             expect(caught!.message).toBe('Invalid token')
         })
     })

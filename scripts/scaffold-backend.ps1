@@ -1,3 +1,37 @@
+# ══════════════════════════════════════════════════════════════════════════
+# ARCHIVED — DO NOT RUN AGAINST THIS REPO
+#
+# This is a one-time snapshot of the project's very first scaffold, from
+# before the clean/hexagonal rewrite. It is kept for historical reference
+# only and does not reflect the current architecture. Concretely, as of the
+# current codebase:
+#
+#   - Auth here is a bare `jwt.sign({role:'admin'})` with no expiry handling,
+#     no refresh token, no fingerprint binding, and no revocation. The real
+#     AuthService (src/application/services/AuthService.ts) issues a short-
+#     lived access token + rotating refresh token bound to a UA/IP
+#     fingerprint, with logout/revocation support.
+#   - JwtAuthGuard/TurnstileGuard here throw plain `UnauthorizedException` /
+#     `ForbiddenException`. The real guards throw domain errors
+#     (UnauthorizedError / ValidationError) so every error response goes
+#     through DomainExceptionFilter with one consistent shape.
+#   - DomainExceptionFilter here maps status via an `instanceof` chain. The
+#     real filter reads `exception.statusCode` directly, since every
+#     DomainError subclass carries its own status.
+#   - Only 7 of the current 15 feature modules exist below (auth, project,
+#     blog, contact, skill, analytics, spotify) — about, audit, certification,
+#     education, health, job, social, and user were all added later.
+#
+# HAZARD if you run it anyway: the `.env` step near the bottom uses
+# Set-Content, which OVERWRITES that file unconditionally with placeholder
+# secrets (JWT_SECRET=change_me_in_production, etc.) — no prompt, no diff.
+# Run this from inside any directory that already has a real .env and it
+# silently clobbers it. Every other file below is written the same way.
+#
+# If you don't need this for reference, delete it — nothing else in the
+# repo (scripts, CI, README) references this file.
+# ══════════════════════════════════════════════════════════════════════════
+
 # Run this from inside your portfolio-backend directory
 # cd portfolio-backend
 # .\scaffold-backend.ps1

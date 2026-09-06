@@ -49,6 +49,11 @@ export class OnContactSubmitted {
         }
     }
 
+    // BUG FIX: every interpolated field here must go through escapeHtml() — including
+    // ipAddress. It looks server-derived (req.ip), but it isn't a trusted constant: with
+    // TRUST_PROXY_HOPS misconfigured relative to the real reverse-proxy chain (or a proxy
+    // that doesn't strip incoming X-Forwarded-For), a client can put arbitrary text at the
+    // position Express reads as req.ip. That text used to land in this HTML email unescaped.
     private buildEmailBody(event: ContactSubmittedEvent): string {
         return `
       <h3>New Contact Form Submission</h3>
@@ -56,7 +61,7 @@ export class OnContactSubmitted {
       <p><strong>Email:</strong> ${this.escapeHtml(event.email)}</p>
       <p><strong>Time:</strong> ${event.occurredAt.toISOString()}</p>
       
-      ${event.ipAddress ? `<p><strong>IP Address:</strong> ${event.ipAddress}</p>` : ''}
+      ${event.ipAddress ? `<p><strong>IP Address:</strong> ${this.escapeHtml(event.ipAddress)}</p>` : ''}
       ${event.browserInfo ? `<p><strong>Browser:</strong> ${this.escapeHtml(event.browserInfo)}</p>` : ''}
 
       <hr>

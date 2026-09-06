@@ -8,18 +8,12 @@
  * Placed in Interface Adapters layer — use cases remain unaware of anti-bot mechanisms.
  */
 
-import {
-    Injectable,
-    CanActivate,
-    ExecutionContext,
-    BadRequestException,
-    HttpException,
-    Logger,
-    Inject,
-} from '@nestjs/common'
+import { Injectable, CanActivate, ExecutionContext, Logger, Inject } from '@nestjs/common'
 import type { Request } from 'express'
 
 import type { ITurnstileVerifier } from '../../application/ports/ITurnstileVerifier'
+import { DomainError } from '../../domain/errors/DomainError'
+import { ValidationError } from '../../domain/errors/ValidationError'
 
 // NOTE: local, minimal shape for the incoming body — Express types `req.body`
 // as `any` by default. If a shared DTO for this route already types
@@ -44,7 +38,7 @@ export class TurnstileGuard implements CanActivate {
 
         if (typeof token !== 'string' || token.trim().length === 0) {
             this.logger.warn(`Missing Turnstile token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
-            throw new BadRequestException('Turnstile token is required')
+            throw new ValidationError('Turnstile token is required')
         }
 
         try {
@@ -52,7 +46,7 @@ export class TurnstileGuard implements CanActivate {
 
             if (!isValid) {
                 this.logger.warn(`Invalid Turnstile token | IP: ${req.ip ?? 'unknown'} | ${req.method} ${req.url}`)
-                throw new BadRequestException('Turnstile verification failed. Please try again.')
+                throw new ValidationError('Turnstile verification failed. Please try again.')
             }
 
             // Leave the verified token on the request body. NestJS executes guards
@@ -61,13 +55,13 @@ export class TurnstileGuard implements CanActivate {
             // an otherwise valid request fail DTO validation with 400.
             return true
         } catch (error) {
-            // Re-throw NestJS HTTP exceptions as-is (e.g. the BadRequestException thrown
+            // Re-throw our own domain errors as-is (e.g. the ValidationError thrown
             // above when isValid is false). Without this guard the outer catch would
             // swallow the specific message and replace it with the generic fallback below.
-            if (error instanceof HttpException) throw error
+            if (error instanceof DomainError) throw error
 
             this.logger.error(`Turnstile verification error | IP: ${req.ip ?? 'unknown'}`, error)
-            throw new BadRequestException('Turnstile verification failed')
+            throw new ValidationError('Turnstile verification failed')
         }
     }
 }
