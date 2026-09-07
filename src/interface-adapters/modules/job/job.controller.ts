@@ -3,7 +3,7 @@
  *
  * Handles work experience records for the public portfolio and admin management.
  *
- * - Public GET: Returns published (isPublic) job records — no auth required
+ * - Public GET: Returns new published (isPublic) job records — no auth required
  * - Admin POST/PATCH/DELETE: Requires valid JWT
  * - userId is extracted from JWT payload — never trusted from client input
  */
