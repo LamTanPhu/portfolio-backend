@@ -1,10 +1,10 @@
 /**
  * @fileoverview EducationController Unit Tests
  *
- * update() distinguishes three states for endedAt: omitted (undefined ->
- * leave unchanged), explicit null (-> reopen the degree, currently
- * enrolled), and a date string (-> set it). Same three-state handling as
- * CertificationController.
+ * NOTE ON A LIKELY BUG: update() does `dto.endedAt ? new Date(dto.endedAt) : undefined`,
+ * same pattern as CertificationController. Sending `endedAt: null` on PATCH
+ * (e.g. re-opening a degree marked complete by mistake) is indistinguishable
+ * from omitting the field — see the test below that locks in this behavior.
  */
 
 import { Test, TestingModule } from '@nestjs/testing'
@@ -98,6 +98,33 @@ describe('EducationController', () => {
 
             expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ isCompleted: false, userId: 9 }))
         })
+
+        it("defaults isPublic to true when omitted (preserves today's always-visible behavior)", async () => {
+            mockCreate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.create(
+                { degreeName: 'B.Sc.', instituteName: 'State University', startedAt: '2018-09-01' },
+                makeAuthenticatedRequest(),
+            )
+
+            expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: true }))
+        })
+
+        it('passes isPublic: false straight through when the record should be hidden', async () => {
+            mockCreate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.create(
+                {
+                    degreeName: 'B.Sc.',
+                    instituteName: 'State University',
+                    startedAt: '2018-09-01',
+                    isPublic: false,
+                },
+                makeAuthenticatedRequest(),
+            )
+
+            expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
+        })
     })
 
     describe('PATCH /education/:id — admin only', () => {
@@ -116,12 +143,20 @@ describe('EducationController', () => {
             )
         })
 
-        it('reopens a degree (currently enrolled) when endedAt is explicitly sent as null', async () => {
+        it('KNOWN BUG: sending endedAt: null to reopen a degree resolves to undefined, not null — the clear is silently dropped', async () => {
             mockUpdate.execute.mockResolvedValue({ id: 1 })
 
             await controller.update(1, { endedAt: null })
 
-            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: null }))
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: undefined }))
+        })
+
+        it('passes isPublic through unmodified so the record can be hidden or shown', async () => {
+            mockUpdate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.update(1, { isPublic: false })
+
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
         })
     })
 

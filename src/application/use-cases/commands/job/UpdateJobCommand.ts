@@ -39,6 +39,7 @@ export class UpdateJobCommand {
             startedAt: updated.startedAt.toISOString(),
             endedAt: updated.endedAt?.toISOString() ?? null,
             isEnded: updated.isEnded,
+            isPublic: updated.isPublic,
         }
     }
 }

@@ -8,6 +8,7 @@
 import { GetEducationQuery } from './GetEducationQuery'
 
 const repo = {
+    findPublished: jest.fn(),
     findAll: jest.fn(),
 }
 
@@ -27,6 +28,7 @@ const makeEducationDTO = (overrides = {}) => ({
     startedAt: '2018-09-01T00:00:00.000Z',
     endedAt: '2022-06-01T00:00:00.000Z',
     isCompleted: true,
+    isPublic: true,
     ...overrides,
 })
 
@@ -38,7 +40,7 @@ describe('GetEducationQuery', () => {
         cacheQuery.getOrSetWithProfile.mockImplementation(
             (_key: string, _profile: string, factory: () => Promise<any>) => factory(),
         )
-        repo.findAll.mockResolvedValue([makeEducationDTO()])
+        repo.findPublished.mockResolvedValue([makeEducationDTO()])
 
         query = new GetEducationQuery(repo, cacheQuery)
     })
@@ -47,6 +49,13 @@ describe('GetEducationQuery', () => {
         const result = await query.execute()
 
         expect(result).toEqual([makeEducationDTO()])
+    })
+
+    it('calls repo.findPublished, not findAll — hidden education records must never appear here', async () => {
+        await query.execute()
+
+        expect(repo.findPublished).toHaveBeenCalledTimes(1)
+        expect(repo.findAll).not.toHaveBeenCalled()
     })
 
     it('uses the LONG cache profile under the education:list:public key', async () => {
@@ -59,8 +68,8 @@ describe('GetEducationQuery', () => {
         )
     })
 
-    it('returns an empty array when there are no education records', async () => {
-        repo.findAll.mockResolvedValue([])
+    it('returns an empty array when there are no published education records', async () => {
+        repo.findPublished.mockResolvedValue([])
 
         const result = await query.execute()
 

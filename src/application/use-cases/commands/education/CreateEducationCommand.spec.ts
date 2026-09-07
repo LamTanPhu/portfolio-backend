@@ -23,6 +23,7 @@ const makeInput = (overrides = {}) => ({
     startedAt: new Date('2018-09-01'),
     endedAt: new Date('2022-06-01'),
     isCompleted: true,
+    isPublic: true,
     userId: 1,
     ...overrides,
 })
@@ -35,6 +36,7 @@ const makeEducation = (overrides = {}) => ({
     startedAt: new Date('2018-09-01'),
     endedAt: new Date('2022-06-01'),
     isCompleted: true,
+    isPublic: true,
     userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -94,7 +96,17 @@ describe('CreateEducationCommand', () => {
             startedAt: '2018-09-01T00:00:00.000Z',
             endedAt: '2022-06-01T00:00:00.000Z',
             isCompleted: true,
+            isPublic: true,
         })
+    })
+
+    it('passes isPublic: false through when the record should stay hidden', async () => {
+        mockRepo.create.mockResolvedValue(makeEducation({ isPublic: false }))
+
+        const input = makeInput({ isPublic: false })
+        await command.execute(input)
+
+        expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
     })
 
     it('returns endedAt: null when the person is currently enrolled', async () => {

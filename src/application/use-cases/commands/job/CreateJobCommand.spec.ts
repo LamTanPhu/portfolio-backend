@@ -22,6 +22,7 @@ const makeInput = (overrides = {}) => ({
     startedAt: new Date('2022-01-01'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     userId: 1,
     ...overrides,
 })
@@ -33,6 +34,7 @@ const makeJob = (overrides = {}) => ({
     startedAt: new Date('2022-01-01'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -85,7 +87,17 @@ describe('CreateJobCommand', () => {
             startedAt: '2022-01-01T00:00:00.000Z',
             endedAt: null,
             isEnded: false,
+            isPublic: true,
         })
+    })
+
+    it('passes isPublic: false through when the record should stay hidden', async () => {
+        mockRepo.create.mockResolvedValue(makeJob({ isPublic: false }))
+
+        const input = makeInput({ isPublic: false })
+        await command.execute(input)
+
+        expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
     })
 
     it('returns endedAt as an ISO string when the job has already ended', async () => {

@@ -1,7 +1,7 @@
 /**
  * @fileoverview GetEducationQuery
  *
- * Public query returning all education records with caching.
+ * Public query returning published education records with caching.
  * Uses LONG cache profile (education data changes infrequently).
  */
 
@@ -23,7 +23,7 @@ export class GetEducationQuery {
 
     async execute(): Promise<EducationDTO[]> {
         return this.cacheQuery.getOrSetWithProfile('education:list:public', 'LONG', async () => {
-            const records = await this.repo.findAll()
+            const records = await this.repo.findPublished()
             return records
         })
     }

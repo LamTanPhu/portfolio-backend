@@ -43,6 +43,7 @@ export class UpdateEducationCommand {
             startedAt: updated.startedAt.toISOString(),
             endedAt: updated.endedAt?.toISOString() ?? null,
             isCompleted: updated.isCompleted,
+            isPublic: updated.isPublic,
         }
     }
 }

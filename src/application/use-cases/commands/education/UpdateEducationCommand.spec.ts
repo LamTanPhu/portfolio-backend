@@ -24,6 +24,7 @@ const makeEducation = (overrides = {}) => ({
     startedAt: new Date('2018-09-01'),
     endedAt: new Date('2022-06-01'),
     isCompleted: true,
+    isPublic: true,
     userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -63,6 +64,12 @@ describe('UpdateEducationCommand', () => {
             isCompleted: true,
             endedAt: new Date('2024-01-01'),
         })
+    })
+
+    it('supports hiding a record from the public list via a partial update', async () => {
+        await command.execute({ id: 1, isPublic: false })
+
+        expect(mockRepo.update).toHaveBeenCalledWith(1, { isPublic: false })
     })
 
     it('invalidates the public education cache after update', async () => {

@@ -59,6 +59,15 @@ export class CreateEducationDto {
     @IsBoolean()
     @IsOptional()
     isCompleted?: boolean
+
+    @ApiPropertyOptional({
+        description: 'Show publicly on portfolio',
+        example: true,
+        default: true,
+    })
+    @IsBoolean()
+    @IsOptional()
+    isPublic?: boolean
 }
 
 export class UpdateEducationDto {
@@ -111,4 +120,12 @@ export class UpdateEducationDto {
     @IsBoolean()
     @IsOptional()
     isCompleted?: boolean
+
+    @ApiPropertyOptional({
+        description: 'Public visibility',
+        example: true,
+    })
+    @IsBoolean()
+    @IsOptional()
+    isPublic?: boolean
 }

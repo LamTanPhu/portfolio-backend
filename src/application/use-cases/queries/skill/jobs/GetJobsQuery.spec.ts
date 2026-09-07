@@ -8,6 +8,7 @@
 import { GetJobsQuery } from './GetJobsQuery'
 
 const repo = {
+    findPublished: jest.fn(),
     findAll: jest.fn(),
 }
 
@@ -26,6 +27,7 @@ const makeJobDTO = (overrides = {}) => ({
     startedAt: '2022-01-01T00:00:00.000Z',
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     ...overrides,
 })
 
@@ -37,7 +39,7 @@ describe('GetJobsQuery', () => {
         cacheQuery.getOrSetWithProfile.mockImplementation(
             (_key: string, _profile: string, factory: () => Promise<any>) => factory(),
         )
-        repo.findAll.mockResolvedValue([makeJobDTO()])
+        repo.findPublished.mockResolvedValue([makeJobDTO()])
 
         query = new GetJobsQuery(repo, cacheQuery)
     })
@@ -48,14 +50,21 @@ describe('GetJobsQuery', () => {
         expect(result).toEqual([makeJobDTO()])
     })
 
+    it('calls repo.findPublished, not findAll — hidden jobs must never appear here', async () => {
+        await query.execute()
+
+        expect(repo.findPublished).toHaveBeenCalledTimes(1)
+        expect(repo.findAll).not.toHaveBeenCalled()
+    })
+
     it('uses the LONG cache profile under the job:list:public key', async () => {
         await query.execute()
 
         expect(cacheQuery.getOrSetWithProfile).toHaveBeenCalledWith('job:list:public', 'LONG', expect.any(Function))
     })
 
-    it('returns an empty array when there is no work experience recorded', async () => {
-        repo.findAll.mockResolvedValue([])
+    it('returns an empty array when there is no published work experience', async () => {
+        repo.findPublished.mockResolvedValue([])
 
         const result = await query.execute()
 

@@ -11,6 +11,7 @@ export interface CreateJobInput {
     startedAt: Date
     endedAt: Date | null
     isEnded: boolean
+    isPublic: boolean
     userId: number
 }
 
@@ -24,6 +25,7 @@ export interface UpdateJobInput {
     startedAt?: Date
     endedAt?: Date | null
     isEnded?: boolean
+    isPublic?: boolean
 }
 
 // =============================================================================

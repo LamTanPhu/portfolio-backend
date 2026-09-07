@@ -19,6 +19,7 @@ export class PrismaJobMapper {
             raw.startedAt,
             raw.endedAt,
             raw.isEnded,
+            raw.isPublic,
             raw.userId,
             raw.createdAt,
             raw.updatedAt,

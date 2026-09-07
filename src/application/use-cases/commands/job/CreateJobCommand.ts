@@ -33,6 +33,7 @@ export class CreateJobCommand {
             startedAt: job.startedAt.toISOString(),
             endedAt: job.endedAt?.toISOString() ?? null,
             isEnded: job.isEnded,
+            isPublic: job.isPublic,
         }
     }
 }

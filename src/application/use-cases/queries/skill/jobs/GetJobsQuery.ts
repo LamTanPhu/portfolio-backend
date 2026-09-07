@@ -1,7 +1,7 @@
 /**
  * @fileoverview GetJobsQuery
  *
- * Public query returning all work experience records.
+ * Public query returning published work experience records.
  * Uses LONG cache profile (work experience changes infrequently).
  */
 
@@ -23,7 +23,7 @@ export class GetJobsQuery {
 
     async execute(): Promise<JobDTO[]> {
         return this.cacheQuery.getOrSetWithProfile('job:list:public', 'LONG', async () => {
-            const jobs = await this.repo.findAll()
+            const jobs = await this.repo.findPublished()
             return jobs
         })
     }

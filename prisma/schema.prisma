@@ -88,6 +88,7 @@ model Education {
   startedAt     DateTime  @map("started_at")
   endedAt       DateTime? @map("ended_at")
   isCompleted   Boolean   @default(false) @map("is_completed")
+  isPublic      Boolean   @default(true) @map("is_public")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
@@ -95,6 +96,7 @@ model Education {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([isPublic])
   @@map("educations")
 }
 
@@ -105,6 +107,7 @@ model Job {
   startedAt   DateTime  @map("started_at")
   endedAt     DateTime? @map("ended_at")
   isEnded     Boolean   @default(false) @map("is_ended")
+  isPublic    Boolean   @default(true) @map("is_public")
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
@@ -112,6 +115,7 @@ model Job {
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([isPublic])
   @@map("jobs")
 }
 

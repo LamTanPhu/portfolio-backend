@@ -33,6 +33,7 @@ const makeRow = (overrides = {}) => ({
     startedAt: new Date('2022-01-01T00:00:00.000Z'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     userId: 1,
     createdAt: new Date('2022-01-01T00:00:00.000Z'),
     updatedAt: new Date('2022-01-01T00:00:00.000Z'),
@@ -55,6 +56,7 @@ describe('PrismaJobWriteRepository', () => {
                 startedAt: new Date('2022-01-01'),
                 endedAt: null,
                 isEnded: false,
+                isPublic: true,
                 userId: 1,
             }
             mockClient.job.create.mockResolvedValue(makeRow())
@@ -74,6 +76,7 @@ describe('PrismaJobWriteRepository', () => {
                 startedAt: row.startedAt,
                 endedAt: row.endedAt,
                 isEnded: row.isEnded,
+                isPublic: row.isPublic,
                 userId: row.userId,
             })
 

@@ -3,9 +3,11 @@ import { JobDTO } from '../../../application/dtos/JobDTO'
 // =============================================================================
 // IJobReadRepository
 // Read interface for Job aggregate.
-// No publish filter — all job records shown publicly.
-// Ordered by startedAt descending at repository level.
+// findPublished returns only isPublic records — hidden records never exposed.
+// findAll returns every record — admin use only.
+// Both ordered by startedAt descending at repository level.
 // =============================================================================
 export interface IJobReadRepository {
+    findPublished(): Promise<JobDTO[]>
     findAll(): Promise<JobDTO[]>
 }

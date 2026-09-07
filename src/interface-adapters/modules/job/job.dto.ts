@@ -50,6 +50,15 @@ export class CreateJobDto {
     @IsBoolean()
     @IsOptional()
     isEnded?: boolean
+
+    @ApiPropertyOptional({
+        description: 'Show publicly on portfolio',
+        example: true,
+        default: true,
+    })
+    @IsBoolean()
+    @IsOptional()
+    isPublic?: boolean
 }
 
 export class UpdateJobDto {
@@ -93,4 +102,12 @@ export class UpdateJobDto {
     @IsBoolean()
     @IsOptional()
     isEnded?: boolean
+
+    @ApiPropertyOptional({
+        description: 'Public visibility',
+        example: true,
+    })
+    @IsBoolean()
+    @IsOptional()
+    isPublic?: boolean
 }

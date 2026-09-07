@@ -14,8 +14,9 @@ import { JobDTO } from '../../../../application/dtos/JobDTO'
 export class PrismaJobReadRepository implements IJobReadRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async findAll(): Promise<JobDTO[]> {
+    async findPublished(): Promise<JobDTO[]> {
         const rows = await this.prisma.client.job.findMany({
+            where: { isPublic: true },
             orderBy: { startedAt: 'desc' },
             select: {
                 id: true,
@@ -24,6 +25,7 @@ export class PrismaJobReadRepository implements IJobReadRepository {
                 startedAt: true,
                 endedAt: true,
                 isEnded: true,
+                isPublic: true,
             },
         })
 
@@ -34,6 +36,32 @@ export class PrismaJobReadRepository implements IJobReadRepository {
             startedAt: row.startedAt.toISOString(),
             endedAt: row.endedAt?.toISOString() ?? null,
             isEnded: row.isEnded,
+            isPublic: row.isPublic,
+        }))
+    }
+
+    async findAll(): Promise<JobDTO[]> {
+        const rows = await this.prisma.client.job.findMany({
+            orderBy: { startedAt: 'desc' },
+            select: {
+                id: true,
+                companyName: true,
+                role: true,
+                startedAt: true,
+                endedAt: true,
+                isEnded: true,
+                isPublic: true,
+            },
+        })
+
+        return rows.map((row) => ({
+            id: row.id,
+            companyName: row.companyName,
+            role: row.role,
+            startedAt: row.startedAt.toISOString(),
+            endedAt: row.endedAt?.toISOString() ?? null,
+            isEnded: row.isEnded,
+            isPublic: row.isPublic,
         }))
     }
 

@@ -59,6 +59,7 @@ export class PrismaEducationWriteRepository implements IEducationWriteRepository
             raw.startedAt,
             raw.endedAt,
             raw.isCompleted,
+            raw.isPublic,
             raw.userId,
             raw.createdAt,
             raw.updatedAt,

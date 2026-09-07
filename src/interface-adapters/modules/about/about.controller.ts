@@ -40,16 +40,16 @@ export class AboutController {
 
     @Get('education')
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all education records ordered by most recent' })
-    @ApiResponse({ status: 200, description: 'List of education records' })
+    @ApiOperation({ summary: 'Get published education records ordered by most recent' })
+    @ApiResponse({ status: 200, description: 'List of published education records' })
     async education(): Promise<EducationDTO[]> {
         return this.getEducation.execute()
     }
 
     @Get('jobs')
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all work experience ordered by most recent' })
-    @ApiResponse({ status: 200, description: 'List of work experience records' })
+    @ApiOperation({ summary: 'Get published work experience ordered by most recent' })
+    @ApiResponse({ status: 200, description: 'List of published work experience records' })
     async jobs(): Promise<JobDTO[]> {
         return this.getJobs.execute()
     }

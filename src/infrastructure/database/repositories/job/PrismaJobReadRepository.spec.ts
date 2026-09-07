@@ -2,9 +2,10 @@
  * @fileoverview PrismaJobReadRepository Unit Tests
  *
  * PrismaService is fully mocked — no real database, no generated Prisma
- * Client needed to run these. Unlike its siblings, this repository exposes
- * both a DTO-shaped findAll() (for the public /about/jobs list) and a
- * domain-entity findById() — both are covered here.
+ * Client needed to run these. Mirrors PrismaSkillReadRepository's shape:
+ * findPublished (isPublic-filtered, for the public /about/jobs list) and
+ * findAll (unfiltered, admin use) both return the DTO shape; findById
+ * additionally returns a domain entity via PrismaJobMapper.
  */
 
 import { PrismaJobReadRepository } from './PrismaJobReadRepository'
@@ -27,6 +28,7 @@ const makeListRow = (overrides = {}) => ({
     startedAt: new Date('2022-01-01T00:00:00.000Z'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     ...overrides,
 })
 
@@ -37,6 +39,7 @@ const makeFullRow = (overrides = {}) => ({
     startedAt: new Date('2022-01-01T00:00:00.000Z'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     userId: 1,
     createdAt: new Date('2022-01-01T00:00:00.000Z'),
     updatedAt: new Date('2022-01-01T00:00:00.000Z'),
@@ -51,21 +54,21 @@ describe('PrismaJobReadRepository', () => {
         repo = new PrismaJobReadRepository(mockPrisma as unknown as PrismaService)
     })
 
-    describe('findAll', () => {
-        it('orders by startedAt descending', async () => {
+    describe('findPublished', () => {
+        it('filters to isPublic and orders by startedAt descending', async () => {
             mockClient.job.findMany.mockResolvedValue([makeListRow()])
 
-            await repo.findAll()
+            await repo.findPublished()
 
             expect(mockClient.job.findMany).toHaveBeenCalledWith(
-                expect.objectContaining({ orderBy: { startedAt: 'desc' } }),
+                expect.objectContaining({ where: { isPublic: true }, orderBy: { startedAt: 'desc' } }),
             )
         })
 
         it('maps dates to ISO strings', async () => {
             mockClient.job.findMany.mockResolvedValue([makeListRow({ endedAt: new Date('2023-12-31T00:00:00.000Z') })])
 
-            const result = await repo.findAll()
+            const result = await repo.findPublished()
 
             expect(result[0].startedAt).toBe('2022-01-01T00:00:00.000Z')
             expect(result[0].endedAt).toBe('2023-12-31T00:00:00.000Z')
@@ -74,9 +77,43 @@ describe('PrismaJobReadRepository', () => {
         it('maps a null endedAt to null (still employed) rather than throwing on .toISOString()', async () => {
             mockClient.job.findMany.mockResolvedValue([makeListRow({ endedAt: null })])
 
-            const result = await repo.findAll()
+            const result = await repo.findPublished()
 
             expect(result[0].endedAt).toBeNull()
+        })
+
+        it('returns an empty array when there is no published work experience', async () => {
+            mockClient.job.findMany.mockResolvedValue([])
+
+            const result = await repo.findPublished()
+
+            expect(result).toEqual([])
+        })
+    })
+
+    describe('findAll', () => {
+        it('applies no where filter (includes hidden records) but keeps the same ordering', async () => {
+            mockClient.job.findMany.mockResolvedValue([makeListRow()])
+
+            await repo.findAll()
+
+            expect(mockClient.job.findMany).toHaveBeenCalledWith(
+                expect.objectContaining({ orderBy: { startedAt: 'desc' } }),
+            )
+            const callArgs = (mockClient.job.findMany.mock.calls[0] as unknown[])[0] as Record<string, unknown>
+            expect(callArgs.where).toBeUndefined()
+        })
+
+        it('includes both public and hidden records in the mapped result', async () => {
+            mockClient.job.findMany.mockResolvedValue([
+                makeListRow({ id: 1, isPublic: true }),
+                makeListRow({ id: 2, isPublic: false }),
+            ])
+
+            const result = await repo.findAll()
+
+            expect(result.map((r) => r.id)).toEqual([1, 2])
+            expect(result.map((r) => r.isPublic)).toEqual([true, false])
         })
     })
 

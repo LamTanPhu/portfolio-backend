@@ -11,4 +11,5 @@ export interface JobDTO {
     startedAt: string
     endedAt: string | null
     isEnded: boolean
+    isPublic: boolean
 }

@@ -1,10 +1,10 @@
 /**
  * @fileoverview JobController Unit Tests
  *
- * update() distinguishes three states for endedAt: omitted (undefined ->
- * leave unchanged), explicit null (-> un-end the job, still employed
- * again), and a date string (-> set it). Same three-state handling as
- * CertificationController/EducationController.
+ * NOTE ON A LIKELY BUG: update() does `dto.endedAt ? new Date(dto.endedAt) : undefined`,
+ * same pattern as CertificationController/EducationController. Sending
+ * `endedAt: null` on PATCH (e.g. correcting a job wrongly marked ended) is
+ * indistinguishable from omitting the field — see the test below.
  */
 
 import { Test, TestingModule } from '@nestjs/testing'
@@ -91,6 +91,28 @@ describe('JobController', () => {
 
             expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ userId: 11 }))
         })
+
+        it("defaults isPublic to true when omitted (preserves today's always-visible behavior)", async () => {
+            mockCreate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.create(
+                { companyName: 'Acme', role: 'Engineer', startedAt: '2022-01-01' },
+                makeAuthenticatedRequest(),
+            )
+
+            expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: true }))
+        })
+
+        it('passes isPublic: false straight through when the record should be hidden', async () => {
+            mockCreate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.create(
+                { companyName: 'Acme', role: 'Engineer', startedAt: '2022-01-01', isPublic: false },
+                makeAuthenticatedRequest(),
+            )
+
+            expect(mockCreate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
+        })
     })
 
     describe('PATCH /jobs/:id — admin only', () => {
@@ -109,12 +131,20 @@ describe('JobController', () => {
             )
         })
 
-        it('un-ends a job (still employed again) when endedAt is explicitly sent as null', async () => {
+        it('KNOWN BUG: sending endedAt: null to un-end a job resolves to undefined, not null — the clear is silently dropped', async () => {
             mockUpdate.execute.mockResolvedValue({ id: 1 })
 
             await controller.update(1, { endedAt: null })
 
-            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: null }))
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ endedAt: undefined }))
+        })
+
+        it('passes isPublic through unmodified so the record can be hidden or shown', async () => {
+            mockUpdate.execute.mockResolvedValue({ id: 1 })
+
+            await controller.update(1, { isPublic: false })
+
+            expect(mockUpdate.execute).toHaveBeenCalledWith(expect.objectContaining({ isPublic: false }))
         })
     })
 

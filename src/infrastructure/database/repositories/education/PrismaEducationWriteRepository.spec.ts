@@ -34,6 +34,7 @@ const makeRow = (overrides = {}) => ({
     startedAt: new Date('2018-09-01T00:00:00.000Z'),
     endedAt: new Date('2022-06-01T00:00:00.000Z'),
     isCompleted: true,
+    isPublic: true,
     userId: 1,
     createdAt: new Date('2018-09-01T00:00:00.000Z'),
     updatedAt: new Date('2018-09-01T00:00:00.000Z'),
@@ -57,6 +58,7 @@ describe('PrismaEducationWriteRepository', () => {
                 startedAt: new Date('2018-09-01'),
                 endedAt: new Date('2022-06-01'),
                 isCompleted: true,
+                isPublic: true,
                 userId: 1,
             }
             mockClient.education.create.mockResolvedValue(makeRow())
@@ -77,6 +79,7 @@ describe('PrismaEducationWriteRepository', () => {
                 startedAt: row.startedAt,
                 endedAt: row.endedAt,
                 isCompleted: row.isCompleted,
+                isPublic: row.isPublic,
                 userId: row.userId,
             })
 
@@ -88,6 +91,7 @@ describe('PrismaEducationWriteRepository', () => {
                     row.instituteUrl,
                     row.startedAt,
                     row.endedAt,
+                    true,
                     true,
                     1,
                     row.createdAt,

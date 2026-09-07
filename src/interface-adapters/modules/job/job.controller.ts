@@ -3,7 +3,7 @@
  *
  * Handles work experience records for the public portfolio and admin management.
  *
- * - Public GET: Returns all job records (no authentication required)
+ * - Public GET: Returns published (isPublic) job records — no auth required
  * - Admin POST/PATCH/DELETE: Requires valid JWT
  * - userId is extracted from JWT payload — never trusted from client input
  */
@@ -51,8 +51,8 @@ export class JobController {
     // ===========================================================================
     @Get()
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all work experience records (Public)' })
-    @ApiResponse({ status: 200, description: 'List of work experience records' })
+    @ApiOperation({ summary: 'Get published work experience records (Public)' })
+    @ApiResponse({ status: 200, description: 'List of published work experience records' })
     async findAll(): Promise<JobDTO[]> {
         return this.getQuery.execute()
     }
@@ -73,6 +73,7 @@ export class JobController {
             startedAt: new Date(dto.startedAt),
             endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
             isEnded: dto.isEnded ?? false,
+            isPublic: dto.isPublic ?? true,
             userId: req.user.sub,
         })
     }
@@ -91,8 +92,9 @@ export class JobController {
             companyName: dto.companyName,
             role: dto.role,
             startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-            endedAt: dto.endedAt === undefined ? undefined : dto.endedAt === null ? null : new Date(dto.endedAt),
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
             isEnded: dto.isEnded,
+            isPublic: dto.isPublic,
         })
     }
 

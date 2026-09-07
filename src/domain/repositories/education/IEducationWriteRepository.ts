@@ -11,6 +11,7 @@ export interface CreateEducationInput {
     startedAt: Date
     endedAt: Date | null
     isCompleted: boolean
+    isPublic: boolean
     userId: number
 }
 
@@ -25,6 +26,7 @@ export interface UpdateEducationInput {
     startedAt?: Date
     endedAt?: Date | null
     isCompleted?: boolean
+    isPublic?: boolean
 }
 
 // =============================================================================

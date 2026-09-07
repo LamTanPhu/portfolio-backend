@@ -1,10 +1,9 @@
 /**
  * @fileoverview job.e2e-spec.ts
  *
- * CRUD coverage for the job/work-experience module. No isPublic/isPublished
- * concept here at all (confirmed by reading job.dto.ts and JobController) —
- * GET /api/jobs is public and unconditionally returns every record. Dates
- * are validated as ISO 8601 strings via @IsDateString.
+ * CRUD coverage for the job/work-experience module. GET /api/jobs is public
+ * and filtered to isPublic records. Dates are validated as ISO 8601 strings
+ * via @IsDateString.
  */
 
 import type { INestApplication } from '@nestjs/common'
@@ -19,6 +18,7 @@ interface Job {
     companyName: string
     role: string
     isEnded: boolean
+    isPublic: boolean
 }
 
 describe('Job (e2e)', () => {
@@ -63,13 +63,45 @@ describe('Job (e2e)', () => {
             expect(job.companyName).toBe(companyName)
             expect(job.isEnded).toBe(false)
         })
+
+        it('defaults isPublic to true when omitted', () => {
+            expect(job.isPublic).toBe(true)
+        })
+
+        it('creates a hidden job when isPublic: false is sent', async () => {
+            const res = await api(app)
+                .post('/api/jobs')
+                .set(...authHeader(accessToken))
+                .send({
+                    companyName: unique('stealth-startup'),
+                    role: 'Engineer',
+                    startedAt: '2024-08-01',
+                    isPublic: false,
+                })
+                .expect(201)
+
+            expect((res.body as Job).isPublic).toBe(false)
+        })
     })
 
     describe('GET /api/jobs (public)', () => {
-        it('includes the created job with no auth required', async () => {
+        it('includes the created public job with no auth required', async () => {
             const res = await api(app).get('/api/jobs').expect(200)
             const body = res.body as Job[]
             expect(body.some((j) => j.id === job.id)).toBe(true)
+        })
+
+        it('never includes jobs created with isPublic: false', async () => {
+            const hiddenRes = await api(app)
+                .post('/api/jobs')
+                .set(...authHeader(accessToken))
+                .send({ companyName: unique('hidden-co'), role: 'Engineer', startedAt: '2024-08-01', isPublic: false })
+                .expect(201)
+            const hidden = hiddenRes.body as Job
+
+            const res = await api(app).get('/api/jobs').expect(200)
+            const body = res.body as Job[]
+            expect(body.some((j) => j.id === hidden.id)).toBe(false)
         })
     })
 

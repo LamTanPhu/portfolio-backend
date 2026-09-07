@@ -23,6 +23,7 @@ const makeJob = (overrides = {}) => ({
     startedAt: new Date('2022-01-01'),
     endedAt: null,
     isEnded: false,
+    isPublic: true,
     userId: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -61,6 +62,12 @@ describe('UpdateJobCommand', () => {
         await command.execute({ id: 1, isEnded: true, endedAt })
 
         expect(mockRepo.update).toHaveBeenCalledWith(1, { isEnded: true, endedAt })
+    })
+
+    it('supports hiding a record from the public list via a partial update', async () => {
+        await command.execute({ id: 1, isPublic: false })
+
+        expect(mockRepo.update).toHaveBeenCalledWith(1, { isPublic: false })
     })
 
     it('invalidates the public jobs cache after update', async () => {

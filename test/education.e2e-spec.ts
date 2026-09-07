@@ -1,8 +1,8 @@
 /**
  * @fileoverview education.e2e-spec.ts
  *
- * CRUD coverage for the education module — same shape as job: public,
- * unfiltered GET, ISO 8601 date validation.
+ * CRUD coverage for the education module — same shape as job: public GET
+ * filtered to isPublic records, ISO 8601 date validation.
  */
 
 import type { INestApplication } from '@nestjs/common'
@@ -17,6 +17,7 @@ interface Education {
     degreeName: string
     instituteName: string
     isCompleted: boolean
+    isPublic: boolean
 }
 
 describe('Education (e2e)', () => {
@@ -70,13 +71,50 @@ describe('Education (e2e)', () => {
             expect(record.degreeName).toBe(degreeName)
             expect(record.isCompleted).toBe(false)
         })
+
+        it('defaults isPublic to true when omitted', () => {
+            expect(record.isPublic).toBe(true)
+        })
+
+        it('creates a hidden record when isPublic: false is sent', async () => {
+            const res = await api(app)
+                .post('/api/education')
+                .set(...authHeader(accessToken))
+                .send({
+                    degreeName: unique('draft-degree'),
+                    instituteName: 'FPT University',
+                    startedAt: '2022-09-01',
+                    isPublic: false,
+                })
+                .expect(201)
+
+            expect((res.body as Education).isPublic).toBe(false)
+        })
     })
 
     describe('GET /api/education (public)', () => {
-        it('includes the created record with no auth required', async () => {
+        it('includes the created public record with no auth required', async () => {
             const res = await api(app).get('/api/education').expect(200)
             const body = res.body as Education[]
             expect(body.some((e) => e.id === record.id)).toBe(true)
+        })
+
+        it('never includes records created with isPublic: false', async () => {
+            const hiddenRes = await api(app)
+                .post('/api/education')
+                .set(...authHeader(accessToken))
+                .send({
+                    degreeName: unique('hidden-degree'),
+                    instituteName: 'FPT University',
+                    startedAt: '2022-09-01',
+                    isPublic: false,
+                })
+                .expect(201)
+            const hidden = hiddenRes.body as Education
+
+            const res = await api(app).get('/api/education').expect(200)
+            const body = res.body as Education[]
+            expect(body.some((e) => e.id === hidden.id)).toBe(false)
         })
     })
 

@@ -3,7 +3,7 @@
  *
  * Handles education records for the public portfolio and admin management.
  *
- * - Public GET: Returns all education records (no authentication required)
+ * - Public GET: Returns published (isPublic) education records — no auth required
  * - Admin POST/PATCH/DELETE: Requires valid JWT
  * - userId is extracted from JWT payload — never trusted from client input
  */
@@ -51,8 +51,8 @@ export class EducationController {
     // ===========================================================================
     @Get()
     @Throttle({ default: { limit: 120, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get all education records (Public)' })
-    @ApiResponse({ status: 200, description: 'List of education records' })
+    @ApiOperation({ summary: 'Get published education records (Public)' })
+    @ApiResponse({ status: 200, description: 'List of published education records' })
     async findAll(): Promise<EducationDTO[]> {
         return this.getQuery.execute()
     }
@@ -74,6 +74,7 @@ export class EducationController {
             startedAt: new Date(dto.startedAt),
             endedAt: dto.endedAt ? new Date(dto.endedAt) : null,
             isCompleted: dto.isCompleted ?? false,
+            isPublic: dto.isPublic ?? true,
             userId: req.user.sub,
         })
     }
@@ -93,8 +94,9 @@ export class EducationController {
             instituteName: dto.instituteName,
             instituteUrl: dto.instituteUrl,
             startedAt: dto.startedAt ? new Date(dto.startedAt) : undefined,
-            endedAt: dto.endedAt === undefined ? undefined : dto.endedAt === null ? null : new Date(dto.endedAt),
+            endedAt: dto.endedAt ? new Date(dto.endedAt) : undefined,
             isCompleted: dto.isCompleted,
+            isPublic: dto.isPublic,
         })
     }
 

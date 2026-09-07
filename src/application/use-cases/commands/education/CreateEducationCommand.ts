@@ -34,6 +34,7 @@ export class CreateEducationCommand {
             startedAt: education.startedAt.toISOString(),
             endedAt: education.endedAt?.toISOString() ?? null,
             isCompleted: education.isCompleted,
+            isPublic: education.isPublic,
         }
     }
 }
