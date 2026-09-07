@@ -56,8 +56,7 @@ describe('SocialController', () => {
         it('is protected by JwtAuthGuard', () => {
             // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
             const guards = Reflect.getMetadata(GUARDS_METADATA, SocialController.prototype.create) as
-                | unknown[]
-                | undefined
+                unknown[] | undefined
 
             expect(guards).toContain(JwtAuthGuard)
         })

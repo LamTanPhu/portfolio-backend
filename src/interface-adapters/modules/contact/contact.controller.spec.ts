@@ -64,8 +64,7 @@ describe('ContactController', () => {
         it('is protected by TurnstileGuard', () => {
             // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
             const guards = Reflect.getMetadata(GUARDS_METADATA, ContactController.prototype.handleSubmit) as
-                | unknown[]
-                | undefined
+                unknown[] | undefined
 
             expect(guards).toContain(TurnstileGuard)
         })
@@ -113,8 +112,7 @@ describe('ContactController', () => {
         it('is protected by JwtAuthGuard', () => {
             // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
             const guards = Reflect.getMetadata(GUARDS_METADATA, ContactController.prototype.findAll) as
-                | unknown[]
-                | undefined
+                unknown[] | undefined
 
             expect(guards).toContain(JwtAuthGuard)
         })
@@ -134,8 +132,7 @@ describe('ContactController', () => {
         it('is protected by JwtAuthGuard', () => {
             // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
             const guards = Reflect.getMetadata(GUARDS_METADATA, ContactController.prototype.delete) as
-                | unknown[]
-                | undefined
+                unknown[] | undefined
 
             expect(guards).toContain(JwtAuthGuard)
         })
