@@ -15,12 +15,14 @@ import { TrackPageViewCommand } from '../../../application/use-cases/commands/an
 import { TrackProjectViewCommand } from '../../../application/use-cases/commands/analytics/TrackProjectViewCommand'
 import { TrackResumeDownloadCommand } from '../../../application/use-cases/commands/analytics/TrackResumeDownloadCommand'
 import { GetPageViewsQuery } from '../../../application/use-cases/queries/analytics/GetPageViewsQuery'
+import { GetProjectViewsQuery } from '../../../application/use-cases/queries/analytics/GetProjectViewsQuery'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 
 const mockTrackPageView = { execute: jest.fn() }
 const mockTrackResumeDownload = { execute: jest.fn() }
 const mockTrackProjectView = { execute: jest.fn() }
 const mockGetPageViewsQuery = { execute: jest.fn() }
+const mockGetProjectViewsQuery = { execute: jest.fn() }
 
 const makeRequest = (overrides: Partial<Request> = {}): Request =>
     ({
@@ -42,6 +44,7 @@ describe('AnalyticsController', () => {
             controllers: [AnalyticsController],
             providers: [
                 { provide: GetPageViewsQuery, useValue: mockGetPageViewsQuery },
+                { provide: GetProjectViewsQuery, useValue: mockGetProjectViewsQuery },
                 { provide: TrackPageViewCommand, useValue: mockTrackPageView },
                 { provide: TrackResumeDownloadCommand, useValue: mockTrackResumeDownload },
                 { provide: TrackProjectViewCommand, useValue: mockTrackProjectView },
@@ -124,6 +127,26 @@ describe('AnalyticsController', () => {
 
             const result = await controller.getPageViews()
 
+            expect(result).toBe(stats)
+        })
+    })
+
+    describe('GET /analytics/project-views/:id', () => {
+        it('is protected by JwtAuthGuard — admin only', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
+            const guards = Reflect.getMetadata(GUARDS_METADATA, AnalyticsController.prototype.getProjectViews) as
+                unknown[] | undefined
+
+            expect(guards).toContain(JwtAuthGuard)
+        })
+
+        it('passes the parsed numeric id to GetProjectViewsQuery and returns its result', async () => {
+            const stats = { projectId: 42, totalViews: 20, daily: [{ date: '2026-02-01', count: 7 }] }
+            mockGetProjectViewsQuery.execute.mockResolvedValue(stats)
+
+            const result = await controller.getProjectViews(42)
+
+            expect(mockGetProjectViewsQuery.execute).toHaveBeenCalledWith(42)
             expect(result).toBe(stats)
         })
     })

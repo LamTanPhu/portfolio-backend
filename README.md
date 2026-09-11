@@ -131,6 +131,7 @@ All mutations use `PATCH` for updates, never `PUT` (the CORS config only allows 
 | `POST` \| `PATCH :id` \| `DELETE :id` | `/api/projects` | Project CRUD |
 | `POST` \| `PATCH :id` \| `DELETE :id` | `/api/certifications` \| `/api/education` \| `/api/jobs` \| `/api/skills` \| `/api/social` | Each resource CRUD'd on its own controller |
 | `GET` | `/api/analytics/page-views` | Aggregate stats |
+| `GET` | `/api/analytics/project-views/:id` | Per-project view stats (total + daily) |
 | `GET` | `/api/contact` | Submitted messages |
 | `DELETE` | `/api/contact/:id` | Delete a message |
 | `GET` | `/api/audit` | Paginated admin activity trail |

@@ -43,5 +43,11 @@ import { PrismaProjectWriteRepository } from '../../../infrastructure/database/r
         UpdateProjectCommand,
         DeleteProjectCommand,
     ],
+
+    // IProjectReadRepository exported so AnalyticsModule can check project
+    // existence before recording/reading a project view (see
+    // TrackProjectViewCommand / GetProjectViewsQuery) — same cross-module
+    // pattern AuthModule uses to export ITokenRepository.
+    exports: [{ provide: 'IProjectReadRepository', useExisting: PrismaProjectReadRepository }],
 })
 export class ProjectModule {}

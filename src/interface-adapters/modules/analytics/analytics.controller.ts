@@ -3,10 +3,12 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { Throttle } from '@nestjs/throttler'
 import type { Request } from 'express'
 import type { PageViewDTO } from '../../../application/dtos/PageViewDTO'
+import type { ProjectViewDTO } from '../../../application/dtos/ProjectViewDTO'
 import { TrackPageViewCommand } from '../../../application/use-cases/commands/analytics/TrackPageViewCommand'
 import { TrackProjectViewCommand } from '../../../application/use-cases/commands/analytics/TrackProjectViewCommand'
 import { TrackResumeDownloadCommand } from '../../../application/use-cases/commands/analytics/TrackResumeDownloadCommand'
 import { GetPageViewsQuery } from '../../../application/use-cases/queries/analytics/GetPageViewsQuery'
+import { GetProjectViewsQuery } from '../../../application/use-cases/queries/analytics/GetProjectViewsQuery'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { TrackPageViewDto } from './analytics.dto'
 
@@ -21,6 +23,7 @@ import { TrackPageViewDto } from './analytics.dto'
 export class AnalyticsController {
     constructor(
         private readonly getPageViewsQuery: GetPageViewsQuery,
+        private readonly getProjectViewsQuery: GetProjectViewsQuery,
         private readonly trackPageView: TrackPageViewCommand,
         private readonly trackResumeDownload: TrackResumeDownloadCommand,
         private readonly trackProjectView: TrackProjectViewCommand,
@@ -49,6 +52,7 @@ export class AnalyticsController {
     @ApiOperation({ summary: 'Track a project detail page view' })
     @ApiParam({ name: 'id', example: 1 })
     @ApiResponse({ status: 201, description: 'Project view recorded' })
+    @ApiResponse({ status: 404, description: 'Project not found' })
     async trackProject(@Param('id', ParseIntPipe) id: number): Promise<{ success: boolean }> {
         await this.trackProjectView.execute(id)
         return { success: true }
@@ -92,5 +96,22 @@ export class AnalyticsController {
     @ApiResponse({ status: 401, description: 'Unauthorized' })
     async getPageViews(): Promise<PageViewDTO[]> {
         return this.getPageViewsQuery.execute()
+    }
+
+    // ===========================================================================
+    // GET /api/analytics/project-views/:id — admin only
+    // Returns total + daily view breakdown for one project (read path for
+    // the data POST /analytics/project-view/:id records above).
+    // ===========================================================================
+    @Get('project-views/:id')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT')
+    @ApiOperation({ summary: 'Get view stats for one project — admin only' })
+    @ApiParam({ name: 'id', example: 1 })
+    @ApiResponse({ status: 200, description: 'Project view stats returned' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'Project not found' })
+    async getProjectViews(@Param('id', ParseIntPipe) id: number): Promise<ProjectViewDTO> {
+        return this.getProjectViewsQuery.execute(id)
     }
 }
