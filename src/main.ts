@@ -32,7 +32,7 @@ async function bootstrap(): Promise<void> {
             logger.log(`HTTPS enabled — certs loaded from ${keyPath} / ${certPath}`)
         } catch (error) {
             logger.error('USE_HTTPS=true but certificates could not be loaded!', error)
-            throw new Error(`HTTPS certificates required. Check CERT_KEY_PATH and CERT_CERT_PATH.`)
+            throw new Error(`HTTPS certificates required. Check CERT_KEY_PATH and CERT_CERT_PATH.`, { cause: error })
         }
     } else {
         logger.log('HTTPS disabled (USE_HTTPS != true) — running plain HTTP')
