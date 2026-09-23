@@ -36,6 +36,11 @@ export class ConfigValidationService {
         // ─── Anti-Bot (Turnstile) ───────────────────────────────────────
         this.validateRequired('TURNSTILE_SECRET_KEY', errors)
 
+        // ─── Anti-Bot (Snake Captcha) ────────────────────────────────────
+        // Signs/verifies the snake-game proof token — deliberately a
+        // separate secret from JWT_SECRET (see CaptchaModule).
+        this.validateRequired('SNAKE_CAPTCHA_SECRET', errors)
+
         // ─── Email (Resend) ─────────────────────────────────────────────
         this.validateRequired('RESEND_API_KEY', errors)
 

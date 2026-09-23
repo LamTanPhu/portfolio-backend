@@ -19,6 +19,7 @@ import { GetContactMessagesQuery } from '../../../application/use-cases/queries/
 import { DeleteContactMessageCommand } from '../../../application/use-cases/commands/contact/DeleteContactMessageCommand'
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { TurnstileGuard } from '../../guards/TurnstileGuard'
+import { SnakeCaptchaGuard } from '../../guards/SnakeCaptchaGuard'
 
 const mockSubmitContact = { execute: jest.fn() }
 const mockGetMessages = { execute: jest.fn() }
@@ -29,6 +30,7 @@ const makeDto = (overrides = {}) => ({
     email: 'jane@visitor.com',
     message: 'Hello, I would like to discuss a potential collaboration.',
     turnstileToken: '0x4AAAAAAA...',
+    snakeProofToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
     ...overrides,
 })
 
@@ -55,6 +57,8 @@ describe('ContactController', () => {
             .useValue({ canActivate: jest.fn(() => true) })
             .overrideGuard(TurnstileGuard)
             .useValue({ canActivate: jest.fn(() => true) })
+            .overrideGuard(SnakeCaptchaGuard)
+            .useValue({ canActivate: jest.fn(() => true) })
             .compile()
 
         controller = module.get<ContactController>(ContactController)
@@ -67,6 +71,14 @@ describe('ContactController', () => {
                 unknown[] | undefined
 
             expect(guards).toContain(TurnstileGuard)
+        })
+
+        it('is protected by SnakeCaptchaGuard', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
+            const guards = Reflect.getMetadata(GUARDS_METADATA, ContactController.prototype.handleSubmit) as
+                unknown[] | undefined
+
+            expect(guards).toContain(SnakeCaptchaGuard)
         })
 
         it('is NOT protected by JwtAuthGuard — this endpoint is public', () => {

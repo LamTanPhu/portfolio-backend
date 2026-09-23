@@ -25,6 +25,7 @@ import type { Request } from 'express'
 
 import { JwtAuthGuard } from '../../guards/JwtAuthGuard'
 import { TurnstileGuard } from '../../guards/TurnstileGuard'
+import { SnakeCaptchaGuard } from '../../guards/SnakeCaptchaGuard'
 
 import { DeleteContactMessageCommand } from '../../../application/use-cases/commands/contact/DeleteContactMessageCommand'
 import { SubmitContactCommand } from '../../../application/use-cases/commands/contact/SubmitContactCommand'
@@ -47,11 +48,11 @@ export class ContactController {
     // ===========================================================================
     @Post()
     @Throttle({ default: { limit: 3, ttl: 60_000 } }) // 3 messages per minute per IP
-    @UseGuards(TurnstileGuard)
+    @UseGuards(TurnstileGuard, SnakeCaptchaGuard)
     @ApiOperation({ summary: 'Submit a contact form message (public)' })
     @ApiResponse({ status: 201, description: 'Message received successfully' })
     @ApiResponse({ status: 400, description: 'Invalid input' })
-    @ApiResponse({ status: 403, description: 'Turnstile verification failed' })
+    @ApiResponse({ status: 403, description: 'Turnstile or snake captcha verification failed' })
     @ApiResponse({ status: 429, description: 'Too many requests — try again later' })
     async handleSubmit(
         @Body() dto: SubmitContactDto,

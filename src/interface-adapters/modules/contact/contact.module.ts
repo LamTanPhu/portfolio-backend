@@ -8,6 +8,7 @@
 import { Module } from '@nestjs/common'
 import { AuthModule } from '../auth/auth.module'
 import { CacheInfrastructureModule } from '../../../infrastructure/cache/cache.module'
+import { CaptchaModule } from '../captcha/captcha.module'
 
 import { ContactController } from './contact.controller'
 
@@ -24,7 +25,7 @@ import { MailService } from '../../../infrastructure/mail/MailService'
 import { NestLogger } from '../../../infrastructure/logging/NestLogger'
 
 @Module({
-    imports: [AuthModule, CacheInfrastructureModule],
+    imports: [AuthModule, CacheInfrastructureModule, CaptchaModule],
 
     controllers: [ContactController],
 

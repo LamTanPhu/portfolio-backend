@@ -25,6 +25,7 @@ import { AnalyticsModule } from './interface-adapters/modules/analytics/analytic
 import { AuditModule } from './interface-adapters/modules/audit/audit.module'
 import { AuthModule } from './interface-adapters/modules/auth/auth.module'
 import { BlogModule } from './interface-adapters/modules/blog/blog.module'
+import { CaptchaModule } from './interface-adapters/modules/captcha/captcha.module'
 import { CertificationModule } from './interface-adapters/modules/certification/certification.module'
 import { ContactModule } from './interface-adapters/modules/contact/contact.module'
 import { EducationModule } from './interface-adapters/modules/education/education.module'
@@ -96,6 +97,7 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
         SocialModule,
         AboutModule,
         ContactModule,
+        CaptchaModule,
         SpotifyModule,
         AnalyticsModule,
         UserModule,

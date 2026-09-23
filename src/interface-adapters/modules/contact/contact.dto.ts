@@ -47,4 +47,13 @@ export class SubmitContactDto {
     @IsString()
     @IsNotEmpty()
     turnstileToken!: string
+
+    @ApiProperty({
+        description:
+            'Proof token from POST /captcha/snake/verify — a second, in-house anti-bot check that runs alongside Turnstile',
+        example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    })
+    @IsString()
+    @IsNotEmpty()
+    snakeProofToken!: string
 }
