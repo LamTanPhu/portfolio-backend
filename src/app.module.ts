@@ -39,11 +39,11 @@ import { UserModule } from './interface-adapters/modules/user/user.module'
 
 // Global Providers
 import { ConfigValidationService } from './infrastructure/config/config-validation.service'
+import { DataRetentionTask } from './infrastructure/database/tasks/DataRetentionTask'
+import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
 import { DomainExceptionFilter } from './interface-adapters/filters/DomainExceptionFilter'
 import { DomainThrottlerGuard } from './interface-adapters/guards/DomainThrottlerGuard'
 import { AuditLogInterceptor } from './interface-adapters/interceptors/AuditLogInterceptor'
-import { TokenCleanupTask } from './infrastructure/database/tasks/TokenCleanupTask'
-import { DataRetentionTask } from './infrastructure/database/tasks/DataRetentionTask'
 
 @Module({
     imports: [
@@ -72,12 +72,11 @@ import { DataRetentionTask } from './infrastructure/database/tasks/DataRetention
         CacheModule.registerAsync({
             isGlobal: true,
             inject: [ConfigService],
-            useFactory: (configService: ConfigService) => ({
-                ttl: 300, // 5 min default — overridden per-call by CacheQueryService profiles
-                ...buildCacheStores(configService),
+            useFactory: async (configService: ConfigService) => ({
+                ttl: 300,
+                ...(await buildCacheStores(configService)),
             }),
         }),
-
         // Note: JWT is configured inside AuthModule (its own JwtModule.registerAsync),
         // not here at the root. A root-level registration used to exist too, but
         // nothing outside AuthModule ever injects JwtService — it was dead config

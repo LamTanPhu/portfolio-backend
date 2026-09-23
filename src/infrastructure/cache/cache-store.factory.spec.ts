@@ -26,27 +26,27 @@ function hasRedisClient(keyv: unknown): boolean {
 }
 
 describe('buildCacheStores', () => {
-    it('returns a single in-memory store when REDIS_URL is not set', () => {
+    it('returns a single in-memory store when REDIS_URL is not set', async () => {
         const result = buildCacheStores(makeConfigService(undefined))
 
-        expect(result.stores).toHaveLength(1)
+        expect((await result).stores).toHaveLength(1)
     })
 
-    it('returns Redis first, memory second when REDIS_URL is set to a well-formed URL', () => {
-        const result = buildCacheStores(makeConfigService('redis://user:pass@localhost:6379'))
+    it('returns Redis first, memory second when REDIS_URL is set to a well-formed URL', async () => {
+        const result = await buildCacheStores(makeConfigService('redis://user:pass@localhost:6379'))
 
         expect(result.stores).toHaveLength(2)
         // Redis-backed Keyv exposes a client with scanIterator; the plain
         // in-memory adapter does not — a reliable way to check ordering
         // without depending on internal class names.
-        const [primary, fallback] = result.stores!
+        const [primary, fallback] = result.stores
         expect(hasRedisClient(primary)).toBe(true)
         expect(hasRedisClient(fallback)).toBe(false)
     })
 
-    it('attaches an error listener to the Redis Keyv instance (for observability)', () => {
-        const result = buildCacheStores(makeConfigService('redis://user:pass@localhost:6379'))
-        const [redisKeyv] = result.stores!
+    it('attaches an error listener to the Redis Keyv instance (for observability)', async () => {
+        const result = await buildCacheStores(makeConfigService('redis://user:pass@localhost:6379'))
+        const [redisKeyv] = result.stores
 
         // Not required to prevent a crash — verified separately that this
         // library's emit() only throws on an unhandled 'error' event if
@@ -54,15 +54,15 @@ describe('buildCacheStores', () => {
         // neither keyv nor @keyv/redis do that (both default false). This
         // listener exists so a Redis outage is visible in logs instead of
         // silently degrading to memory-only with zero signal to notice it.
-        expect((redisKeyv as InspectableKeyv).listeners('error').length).toBeGreaterThan(0)
+        expect((redisKeyv as unknown as InspectableKeyv).listeners('error').length).toBeGreaterThan(0)
     })
 
-    it('falls back to in-memory only when REDIS_URL is malformed', () => {
+    it('falls back to in-memory only when REDIS_URL is malformed', async () => {
         // A URL missing the redis:// scheme is rejected synchronously by the
         // client constructor — this must not prevent the app from booting.
-        const result = buildCacheStores(makeConfigService('not-a-valid-url'))
+        const result = await buildCacheStores(makeConfigService('not-a-valid-url'))
 
         expect(result.stores).toHaveLength(1)
-        expect(hasRedisClient(result.stores![0])).toBe(false)
+        expect(hasRedisClient(result.stores[0])).toBe(false)
     })
 })
