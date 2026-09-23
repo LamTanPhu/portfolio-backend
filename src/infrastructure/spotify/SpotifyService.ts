@@ -109,7 +109,7 @@ export class SpotifyService implements ISpotifyService {
         })
 
         if (!res.ok) {
-            this.logger.error(`Spotify token fetch failed: ${res.status}`)
+            // this.logger.error(`Spotify token fetch failed: ${res.status}`)
             return ''
         }
 
