@@ -17,10 +17,21 @@
  * branch and replace it with the generic fallback message.
  *
  * req.ip is exercised both present ('127.0.0.1', the default in makeCtx)
- * and absent (undefined) across all three warn/error call sites in the
- * guard. Without the absent case, `req.ip ?? 'unknown'` never takes its
- * fallback branch at any of the three sites, which is what held this
- * file's branch coverage at ~78%, below its configured 90% threshold.
+ * and absent (null) across all three warn/error call sites in the guard.
+ * Without the absent case, `req.ip ?? 'unknown'` never takes its fallback
+ * branch at any of the three sites, which is what held this file's branch
+ * coverage at ~78%, below its configured 90% threshold.
+ *
+ * IMPORTANT: the "absent" sentinel passed to makeCtx must be `null`, not
+ * `undefined`. JavaScript's default-parameter substitution triggers on an
+ * explicit `undefined` argument exactly the same as an omitted one, so
+ * `makeCtx(body, undefined)` silently falls back to '127.0.0.1' instead of
+ * producing an absent ip — a real bug that shipped here once already (both
+ * the "normal" and "ip absent" variants of a test logged the same
+ * IP: 127.0.0.1 in CI, and total branch coverage didn't move at all after
+ * adding three new "absent ip" tests). `null` is never substituted by a
+ * default parameter, and `req.ip ?? 'unknown'` treats `null` and
+ * `undefined` identically, so it exercises the intended fallback branch.
  */
 
 import { ExecutionContext } from '@nestjs/common'
@@ -37,7 +48,7 @@ const mockSnakeCaptcha = {
     verifyProof: jest.fn(),
 }
 
-function makeCtx(body: Record<string, unknown> = {}, ip: string | undefined = '127.0.0.1'): ExecutionContext {
+function makeCtx(body: Record<string, unknown> = {}, ip: string | null = '127.0.0.1'): ExecutionContext {
     const req = { body, ip, method: 'POST', url: '/api/contact', headers: {} }
     return {
         switchToHttp: () => ({ getRequest: () => req }),
@@ -73,7 +84,7 @@ describe('SnakeCaptchaGuard', () => {
         })
 
         it('rejects a missing token even when req.ip is absent (exercises the "unknown" IP fallback)', async () => {
-            await expect(guard.canActivate(makeCtx({}, undefined))).rejects.toThrow(ValidationError)
+            await expect(guard.canActivate(makeCtx({}, null))).rejects.toThrow(ValidationError)
         })
     })
 
@@ -124,7 +135,7 @@ describe('SnakeCaptchaGuard', () => {
         it('rejects an invalid proof even when req.ip is absent (exercises the "unknown" IP fallback)', async () => {
             mockSnakeCaptcha.verifyProof.mockResolvedValue(false)
 
-            await expect(guard.canActivate(makeCtx({ snakeProofToken: 'bad-proof' }, undefined))).rejects.toThrow(
+            await expect(guard.canActivate(makeCtx({ snakeProofToken: 'bad-proof' }, null))).rejects.toThrow(
                 ValidationError,
             )
         })
@@ -146,7 +157,7 @@ describe('SnakeCaptchaGuard', () => {
         it('surfaces an unexpected error even when req.ip is absent (exercises the "unknown" IP fallback)', async () => {
             mockSnakeCaptcha.verifyProof.mockRejectedValue(new Error('cache unavailable'))
 
-            await expect(guard.canActivate(makeCtx({ snakeProofToken: 'some-proof' }, undefined))).rejects.toThrow(
+            await expect(guard.canActivate(makeCtx({ snakeProofToken: 'some-proof' }, null))).rejects.toThrow(
                 ValidationError,
             )
         })

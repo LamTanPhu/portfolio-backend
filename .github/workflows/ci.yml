@@ -126,12 +126,25 @@ jobs:
       # Dummy values — this is a throwaway CI database, not a real
       # deployment. ConfigValidationService requires these to be present
       # (non-empty) at boot; their actual values don't matter here since
-      # nothing in the e2e suite exercises Turnstile or Resend for real.
+      # nothing in the e2e suite exercises Turnstile, the snake captcha,
+      # or Resend for real (TurnstileGuard and SnakeCaptchaGuard both run
+      # against stubbed verifiers injected in test/utils/create-test-app.ts,
+      # not the real Cloudflare/JWT-signing implementations).
       JWT_SECRET: e2e-test-secret-do-not-use-in-production-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       COOKIE_SECRET: e2e-test-cookie-secret-do-not-use-in-production-aaaaaaaaaaaaaaaaaaaaaaaaaa
       ADMIN_EMAIL: admin@example.test
       ADMIN_PASSWORD: e2e-test-password
       TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+      # NEW: required by ConfigValidationService (CaptchaModule's JwtModule
+      # binds to this at boot to sign/verify snake-captcha proof tokens).
+      # Previously missing here — AppModule fails ConfigValidationService's
+      # startup check without it, which fails every e2e test before any of
+      # them even run, since createTestApp() boots the full AppModule.
+      # Only used by the real SnakeCaptchaService; the e2e suite never
+      # exercises real signing since StubSnakeCaptchaVerifier is injected
+      # instead, so the actual value here doesn't matter beyond being
+      # present and non-empty.
+      SNAKE_CAPTCHA_SECRET: e2e-test-snake-captcha-secret-do-not-use-in-production-aaaaaaaaaaaaaaaaaaaaaaaaaa
       RESEND_API_KEY: re_test_dummy_key
       # REDIS_URL intentionally unset — exercises the in-memory cache
       # fallback path, which is also what production runs on right now.
