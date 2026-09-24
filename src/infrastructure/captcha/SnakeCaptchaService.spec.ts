@@ -8,6 +8,15 @@
  * rather than imported, since they're intentionally private implementation
  * detail — the tests instead probe the resulting boundary behavior.
  *
+ * IMPORTANT: MIN_DURATION_MS (4200ms) > TIMING_GRACE_MS (2000ms). This means
+ * any test asserting a durationMs at or near the plausibility floor MUST
+ * also backdate the mocked `issuedAt` (mockCache.get) by at least
+ * `durationMs - TIMING_GRACE_MS`, or the service's elapsed-time check will
+ * reject the request regardless of whether the other checks pass. Tests
+ * that only care about a check *before* the timing check (e.g. eaten count,
+ * duration/moveCount floor rejections) don't need this, since they return
+ * null before the timing check ever runs.
+ *
  * Key behaviors tested:
  *  - issueChallenge() stores a fresh entry and returns its id
  *  - verifyCompletion(): unknown/expired challenge → null, no consumption
@@ -57,6 +66,17 @@ function makeInput(overrides: Partial<Parameters<SnakeCaptchaService['verifyComp
         moveCount: MIN_MOVE_COUNT + 10,
         ...overrides,
     }
+}
+
+/**
+ * Backdates the mocked challenge-issuance timestamp far enough that a given
+ * claimed `durationMs` clears the elapsed-time-vs-claimed-duration check
+ * (durationMs > elapsedSinceIssue + TIMING_GRACE_MS → reject). Adds a small
+ * buffer on top of the exact minimum so real wall-clock time spent between
+ * the mock setup and the service call doesn't flip the check.
+ */
+function issuedAtFor(durationMs: number) {
+    return Date.now() - Math.max(0, durationMs - TIMING_GRACE_MS) - 500
 }
 
 // =============================================================================
@@ -131,10 +151,11 @@ describe('SnakeCaptchaService', () => {
         })
 
         it('consumes (deletes) the challenge as soon as it is found, before any plausibility check', async () => {
-            mockCache.get.mockResolvedValue(Date.now())
+            const input = makeInput()
+            mockCache.get.mockResolvedValue(issuedAtFor(input.durationMs))
             mockJwt.signAsync.mockResolvedValue('proof-token')
 
-            await service.verifyCompletion(makeInput())
+            await service.verifyCompletion(input)
 
             expect(mockCache.del).toHaveBeenCalledWith(`snake-captcha:challenge:${CHALLENGE_ID}`)
             expect(mockCache.del).toHaveBeenCalledTimes(1)
@@ -173,8 +194,15 @@ describe('SnakeCaptchaService', () => {
         })
 
         it('accepts a durationMs exactly at the floor', async () => {
+            // Overrides the describe-level beforeEach: a durationMs of
+            // MIN_DURATION_MS (4200ms) exceeds TIMING_GRACE_MS (2000ms) on
+            // its own, so `issuedAt` must be backdated or this trips the
+            // elapsed-time check instead of testing what it's meant to.
+            mockCache.get.mockResolvedValue(issuedAtFor(MIN_DURATION_MS))
             mockJwt.signAsync.mockResolvedValue('proof-token')
+
             const result = await service.verifyCompletion(makeInput({ durationMs: MIN_DURATION_MS }))
+
             expect(result).toBe('proof-token')
         })
 
@@ -184,8 +212,15 @@ describe('SnakeCaptchaService', () => {
         })
 
         it('accepts a moveCount exactly at the minimum', async () => {
+            // Same timing-mock issue as above: makeInput()'s default
+            // durationMs (MIN_DURATION_MS + 10_000) also needs a backdated
+            // issuedAt to clear the elapsed-time check.
+            const input = makeInput({ moveCount: MIN_MOVE_COUNT })
+            mockCache.get.mockResolvedValue(issuedAtFor(input.durationMs))
             mockJwt.signAsync.mockResolvedValue('proof-token')
-            const result = await service.verifyCompletion(makeInput({ moveCount: MIN_MOVE_COUNT }))
+
+            const result = await service.verifyCompletion(input)
+
             expect(result).toBe('proof-token')
         })
 
@@ -213,23 +248,26 @@ describe('SnakeCaptchaService', () => {
     // verifyCompletion() — proof minting
     // ---------------------------------------------------------------------------
     describe('verifyCompletion() — proof minting', () => {
-        beforeEach(() => {
-            mockCache.get.mockResolvedValue(Date.now())
-        })
-
         it('returns the signed proof token when every check passes', async () => {
+            const input = makeInput()
+            // makeInput()'s default durationMs (14_200ms) exceeds
+            // TIMING_GRACE_MS, so issuedAt must be backdated accordingly —
+            // otherwise this never reaches jwt.signAsync at all.
+            mockCache.get.mockResolvedValue(issuedAtFor(input.durationMs))
             mockJwt.signAsync.mockResolvedValue('signed-proof-token')
 
-            const result = await service.verifyCompletion(makeInput())
+            const result = await service.verifyCompletion(input)
 
             expect(result).toBe('signed-proof-token')
             expect(mockJwt.signAsync).toHaveBeenCalledWith({ scope: 'snake-captcha-proof' }, { expiresIn: '5m' })
         })
 
         it('returns null when signing throws', async () => {
+            const input = makeInput()
+            mockCache.get.mockResolvedValue(issuedAtFor(input.durationMs))
             mockJwt.signAsync.mockRejectedValue(new Error('signing key unavailable'))
 
-            const result = await service.verifyCompletion(makeInput())
+            const result = await service.verifyCompletion(input)
 
             expect(result).toBeNull()
         })

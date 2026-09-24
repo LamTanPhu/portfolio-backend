@@ -13,13 +13,14 @@
  * ValidationPipe, so it never had to bootstrap this precisely — every spec
  * added after health.e2e-spec.ts does.
  *
- * ITurnstileVerifier is overridden with a deterministic stub — the real
- * TurnstileVerifier calls out to Cloudflare over the network, which has no
- * place in an offline test suite. SpotifyService is intentionally left
- * un-overridden: with no SPOTIFY_* env vars set (see .env.test),
- * SpotifyService.getAccessToken() already fails-silent with zero network
- * calls, so spotify.e2e-spec.ts exercises the real controller/query/service
- * wiring for free.
+ * ITurnstileVerifier and ISnakeCaptchaVerifier are both overridden with
+ * deterministic stubs — the real implementations either call out to
+ * Cloudflare over the network or expect a real played-out snake-game
+ * challenge/verify round trip, neither of which has a place in an offline
+ * test suite. SpotifyService is intentionally left un-overridden: with no
+ * SPOTIFY_* env vars set (see .env.test), SpotifyService.getAccessToken()
+ * already fails-silent with zero network calls, so spotify.e2e-spec.ts
+ * exercises the real controller/query/service wiring for free.
  */
 
 import type { INestApplication } from '@nestjs/common'
@@ -34,6 +35,7 @@ import type { Server } from 'http'
 import { AppModule } from '../../src/app.module'
 import { ValidationError } from '../../src/domain/errors/ValidationError'
 import { StubTurnstileVerifier } from './stub-turnstile-verifier'
+import { StubSnakeCaptchaVerifier } from './stub-snake-captcha-verifier'
 
 export async function createTestApp(): Promise<INestApplication<Server>> {
     const moduleFixture = await Test.createTestingModule({
@@ -41,6 +43,8 @@ export async function createTestApp(): Promise<INestApplication<Server>> {
     })
         .overrideProvider('ITurnstileVerifier')
         .useValue(new StubTurnstileVerifier())
+        .overrideProvider('ISnakeCaptchaVerifier')
+        .useValue(new StubSnakeCaptchaVerifier())
         .compile()
 
     const app = moduleFixture.createNestApplication<NestExpressApplication>()

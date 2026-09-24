@@ -1,18 +1,24 @@
 /**
  * @fileoverview contact.e2e-spec.ts
  *
- * Covers the public submission path (guarded by TurnstileGuard, throttled
- * 3/60s) and the admin list/delete path (JwtAuthGuard). The real
- * TurnstileVerifier is swapped for StubTurnstileVerifier in createTestApp(),
- * so "invalid token" here means the sentinel INVALID_TURNSTILE_TOKEN value,
- * not a real failed Cloudflare call.
+ * Covers the public submission path (guarded by TurnstileGuard AND
+ * SnakeCaptchaGuard, stacked together, throttled 3/60s) and the admin
+ * list/delete path (JwtAuthGuard). The real TurnstileVerifier and
+ * SnakeCaptchaService are swapped for StubTurnstileVerifier and
+ * StubSnakeCaptchaVerifier in createTestApp(), so "invalid token" here
+ * means the sentinel INVALID_TURNSTILE_TOKEN / INVALID_SNAKE_PROOF_TOKEN
+ * values, not a real failed Cloudflare call or a real played-out snake
+ * game. SubmitContactDto requires both turnstileToken and
+ * snakeProofToken — a request missing either fails ValidationPipe before
+ * either guard even runs.
  *
  * Request ordering matters: POST /api/contact is throttled to 3/60s
  * (ContactController's @Throttle), and every call to it — successful or
  * not — consumes one slot, because DomainThrottlerGuard (global) runs
- * before TurnstileGuard (route-level), so even a guard-rejected request
- * counts. This file makes exactly 3 calls to that route before the
- * dedicated rate-limit test below, which is deliberately the 4th.
+ * before TurnstileGuard/SnakeCaptchaGuard (route-level), so even a
+ * guard-rejected request counts. This file makes exactly 3 calls to that
+ * route before the dedicated rate-limit test below, which is deliberately
+ * the 4th.
  */
 
 import type { INestApplication } from '@nestjs/common'
@@ -52,6 +58,7 @@ describe('Contact (e2e)', () => {
                     email: 'jane@example.com',
                     message: 'Hello there, this is a test message.',
                     turnstileToken: INVALID_TURNSTILE_TOKEN,
+                    snakeProofToken: 'any-non-sentinel-token',
                 })
                 .expect(400)
         })
@@ -65,6 +72,7 @@ describe('Contact (e2e)', () => {
                     email: 'e2e-contact@example.com',
                     message: 'Hello there, this is a genuinely valid test message.',
                     turnstileToken: 'any-non-sentinel-token',
+                    snakeProofToken: 'any-non-sentinel-token',
                 })
                 .expect(201)
 
@@ -84,6 +92,7 @@ describe('Contact (e2e)', () => {
                     email: 'jane@example.com',
                     message: 'Hello there, this is a test message.',
                     turnstileToken: 'any-non-sentinel-token',
+                    snakeProofToken: 'any-non-sentinel-token',
                 })
                 .expect(429)
         })
