@@ -17,6 +17,13 @@
  * duration/moveCount floor rejections) don't need this, since they return
  * null before the timing check ever runs.
  *
+ * The reverse trap bit us once too: the "beyond grace" timing-rejection
+ * test must use a durationMs that ALSO clears MIN_DURATION_MS, or the
+ * request gets rejected by the earlier "implausibly fast" duration-floor
+ * check instead of ever reaching the elapsed-time branch it's meant to
+ * exercise — the assertion (`result` is `null`) still passes either way,
+ * silently testing the wrong code path and leaving that branch uncovered.
+ *
  * Key behaviors tested:
  *  - issueChallenge() stores a fresh entry and returns its id
  *  - verifyCompletion(): unknown/expired challenge → null, no consumption
@@ -228,7 +235,15 @@ describe('SnakeCaptchaService', () => {
             const issuedAt = Date.now() - 1000 // only 1s has actually passed
             mockCache.get.mockResolvedValue(issuedAt)
 
-            const result = await service.verifyCompletion(makeInput({ durationMs: 1000 + TIMING_GRACE_MS + 1 }))
+            // durationMs must ALSO clear MIN_DURATION_MS (4200ms), or this
+            // gets rejected by the earlier "implausibly fast" duration-floor
+            // check instead of ever reaching the elapsed-time branch this
+            // test is meant to exercise — which silently happened before
+            // this fix (durationMs was 3001ms, confirmed via the
+            // "Implausibly fast completion reported (3001ms)" log line
+            // rather than the intended "Claimed duration exceeds actual
+            // elapsed time" one), leaving that branch permanently uncovered.
+            const result = await service.verifyCompletion(makeInput({ durationMs: MIN_DURATION_MS + 5000 }))
 
             expect(result).toBeNull()
         })
