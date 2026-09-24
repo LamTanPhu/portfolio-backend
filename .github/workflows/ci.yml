@@ -53,7 +53,17 @@ jobs:
       # NEW: --coverage instead of the plain test run. Same tests, same
       # pass/fail outcome — this just additionally produces the coverage
       # report so the artifact upload below has something to publish.
+      #
+      # NODE_OPTIONS=--experimental-vm-modules: required for Jest to
+      # require() @nestjs/*'s ESM-only builds (no CJS entry point exists
+      # for them anymore as of Nest 12). Node 24.9+ alone isn't enough —
+      # Jest's sync-ESM path gates on `vm.SourceTextModule` existing at
+      # all, which only happens with this flag set, version notwithstanding.
+      # Cosmetic "ExperimentalWarning: VM Modules is an experimental
+      # feature" output afterward is expected and harmless.
       - name: Run unit tests with coverage
+        env:
+          NODE_OPTIONS: --experimental-vm-modules
         run: npm test -- --ci --coverage
 
       # NEW: publishes the HTML + lcov coverage report as a downloadable
@@ -125,6 +135,11 @@ jobs:
       RESEND_API_KEY: re_test_dummy_key
       # REDIS_URL intentionally unset — exercises the in-memory cache
       # fallback path, which is also what production runs on right now.
+      #
+      # NODE_OPTIONS: same reason as the test job above — Jest can't
+      # require() @nestjs/*'s ESM-only builds without this flag, even on
+      # Node 24.9+.
+      NODE_OPTIONS: --experimental-vm-modules
 
     steps:
       - name: Checkout code
