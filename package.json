@@ -194,7 +194,7 @@
     "test-exclude": "^8.0.0",
     "mysql2": "^3.23.1",
     "browserslist": "^4.28.7",
-    "multer": "2.3.0"
+    "multer": "2.4.0"
   },
   "allowScripts": {
     "bcrypt@6.0.0": true,
