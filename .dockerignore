@@ -1,0 +1,33 @@
+# VCS / CI
+.git
+.github
+
+# Dependencies & build output (rebuilt inside the image)
+node_modules
+dist
+coverage
+reports
+*.tsbuildinfo
+
+# Secrets — NEVER bake into an image
+.env
+.env.*
+!.env.example
+!.env.docker.example
+certificates
+prisma/seed.ts
+
+# Not needed at build/run time
+test
+docs
+scripts
+*.md
+.vscode
+.idea
+.DS_Store
+npm-debug.log*
+
+# Docker files themselves
+Dockerfile
+compose.yaml
+.dockerignore

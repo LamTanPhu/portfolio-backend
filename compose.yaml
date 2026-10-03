@@ -1,0 +1,66 @@
+# Portfolio Backend — local/test stack: Postgres + one-shot migrations + API.
+# Usage:   docker compose up -d --build
+# Needs:   .env.docker  (copy from .env.docker.example)
+
+name: portfolio
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    env_file: .env.docker               # POSTGRES_USER / POSTGRES_PASSWORD / POSTGRES_DB
+    volumes:
+      - pgdata:/var/lib/postgresql/data # named volume → data survives container removal
+    networks: [backend]
+    # No `ports:` on purpose — DB is reachable ONLY from other containers on `backend`.
+    # To inspect from the host, uncomment (loopback only, never 0.0.0.0):
+    # ports: ["127.0.0.1:5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    security_opt: ["no-new-privileges:true"]
+
+  migrate:
+    build:
+      context: .
+      target: migrate
+    image: portfolio-migrate:local
+    env_file: .env.docker
+    networks: [backend]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"                       # runs once per `up`, then exits 0
+
+  api:
+    build:
+      context: .
+      target: runtime
+    image: portfolio-api:local
+    restart: unless-stopped
+    init: true                          # proper signal handling / zombie reaping
+    env_file: .env.docker
+    networks: [backend]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    # Host bind: loopback by default. Set API_BIND=0.0.0.0 in your shell to expose on LAN.
+    ports:
+      - "${API_BIND:-127.0.0.1}:3001:3001"
+    # Hardening
+    read_only: true                     # app writes nothing to disk
+    tmpfs: ["/tmp"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 512m
+    pids_limit: 200
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pgdata:

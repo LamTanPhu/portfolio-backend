@@ -38,13 +38,19 @@ certificates/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
+# dotenv environment variable files — ignore EVERY .env.* variant (incl. .env.docker),
+# keep only the committed templates
 .env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-.env.test
+.env.*
+!.env.example
+!.env.docker.example
+
+# Database dumps / volume backups (contain real data)
+*.dump
+*.sql.gz
+pgdata.tgz
+backup_*
+
 # temp directory
 .temp
 .tmp
