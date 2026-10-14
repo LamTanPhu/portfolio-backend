@@ -20,7 +20,6 @@ import { ConflictError } from '../../../../domain/errors/ConflictError'
 import { NotFoundError } from '../../../../domain/errors/NotFoundError'
 import { PrismaBlogMapper } from '../../mappers/PrismaBlogMapper'
 import type { PrismaService } from '../../prisma/prisma.service'
-import type { TransactionalClient } from '../../../../application/ports/IUnitOfWork'
 
 const mockGlobalClient = {
     blog: {
@@ -105,7 +104,7 @@ describe('PrismaBlogWriteRepository', () => {
         it('runs on the transactional client when tx is provided, not the global client', async () => {
             const mockTx = { blog: { create: jest.fn().mockResolvedValue(makeRow()) } }
 
-            await repo.create(makeCreateInput(), mockTx as unknown as TransactionalClient)
+            await repo.create(makeCreateInput(), mockTx)
 
             expect(mockTx.blog.create).toHaveBeenCalledTimes(1)
             expect(mockGlobalClient.blog.create).not.toHaveBeenCalled()
@@ -175,7 +174,7 @@ describe('PrismaBlogWriteRepository', () => {
         it('runs on the transactional client when tx is provided', async () => {
             const mockTx = { blog: { update: jest.fn().mockResolvedValue(makeRow()) } }
 
-            await repo.update(1, { title: 'x' }, mockTx as unknown as TransactionalClient)
+            await repo.update(1, { title: 'x' }, mockTx)
 
             expect(mockTx.blog.update).toHaveBeenCalledTimes(1)
             expect(mockGlobalClient.blog.update).not.toHaveBeenCalled()
@@ -207,7 +206,7 @@ describe('PrismaBlogWriteRepository', () => {
         it('runs on the transactional client when tx is provided', async () => {
             const mockTx = { blog: { delete: jest.fn().mockResolvedValue(makeRow()) } }
 
-            await repo.delete(1, mockTx as unknown as TransactionalClient)
+            await repo.delete(1, mockTx)
 
             expect(mockTx.blog.delete).toHaveBeenCalledTimes(1)
             expect(mockGlobalClient.blog.delete).not.toHaveBeenCalled()

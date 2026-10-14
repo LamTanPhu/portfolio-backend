@@ -16,7 +16,6 @@
 
 import { PrismaRevokedTokenRepository } from './PrismaRevokedTokenRepository'
 import type { PrismaService } from '../prisma/prisma.service'
-import type { TransactionalClient } from '../../../application/ports/IUnitOfWork'
 
 const mockGlobalClient = {
     revokedToken: {
@@ -55,7 +54,7 @@ describe('PrismaRevokedTokenRepository', () => {
             const mockTx = { revokedToken: { create: jest.fn().mockResolvedValue({ id: 1 }) } }
             const expiresAt = new Date('2026-03-01T00:00:00.000Z')
 
-            await repo.revoke('jti-123', expiresAt, mockTx as unknown as TransactionalClient)
+            await repo.revoke('jti-123', expiresAt, mockTx)
 
             expect(mockTx.revokedToken.create).toHaveBeenCalledWith({ data: { jti: 'jti-123', expiresAt } })
             expect(mockGlobalClient.revokedToken.create).not.toHaveBeenCalled()
