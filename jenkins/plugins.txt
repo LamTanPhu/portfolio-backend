@@ -1,0 +1,10 @@
+# Minimal set for a multibranch pipeline against GitHub. Unpinned (latest
+# compatible) for a local lab; pin versions if this ever needs to be reproducible.
+workflow-aggregator
+pipeline-stage-view
+git
+github-branch-source
+configuration-as-code
+credentials-binding
+timestamper
+ws-cleanup

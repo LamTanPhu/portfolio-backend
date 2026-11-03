@@ -1,6 +1,8 @@
 # VCS / CI
 .git
 .github
+Jenkinsfile
+jenkins
 
 # Dependencies & build output (rebuilt inside the image)
 node_modules

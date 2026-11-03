@@ -1,0 +1,64 @@
+# Local backend CI lab. Start only when you want it:
+#   cd jenkins && cp .env.example .env   (then set a password)
+#   docker compose up -d --build
+# Stop:   docker compose down        Remove all data: docker compose down -v
+#
+# Uses port 8081 and its own project name, so it can run next to the frontend
+# lab (port 8080) without clashing.
+name: portfolio-backend-jenkins
+
+services:
+  # Throwaway database for the e2e stage. Same image and credentials as the
+  # `services: postgres` block in .github/workflows/ci.yml. It publishes no
+  # port, so only Jenkins (same compose network, host name "postgres") can reach it.
+  postgres:
+    image: postgres:16
+    container_name: portfolio-backend-jenkins-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: portfolio_test
+    tmpfs:
+      - /var/lib/postgresql/data   # disposable: wiped whenever the container stops
+    mem_limit: 512m
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d portfolio_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  jenkins:
+    build:
+      context: .
+      args:
+        NODE_IMAGE: node:26-bookworm-slim
+    image: portfolio-backend-jenkins:local
+    container_name: portfolio-backend-jenkins
+    restart: "no"            # on demand, not at every boot
+    init: true
+    mem_limit: 3g            # lower it if your machine is short on RAM
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Loopback only: Jenkins is never exposed to your network. No agent port.
+      - "127.0.0.1:8081:8080"
+    environment:
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Set JENKINS_ADMIN_PASSWORD in jenkins/.env}
+      JAVA_OPTS: -Djenkins.install.runSetupWizard=false -Xmx1g
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
+
+volumes:
+  jenkins_home:

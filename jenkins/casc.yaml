@@ -1,0 +1,17 @@
+# Jenkins Configuration as Code: replaces the setup wizard.
+jenkins:
+  systemMessage: "Local backend CI lab. GitHub Actions is the official CI."
+  # One build at a time: the e2e stage shares a single database.
+  numExecutors: 1
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+unclassified:
+  location:
+    url: "http://localhost:8081/"

@@ -66,3 +66,22 @@ updates:
               patterns:
                   - "*"
               update-types: ["patch", "minor"]
+
+    # Optional Jenkins lab (jenkins/): its image's base layers and the throwaway
+    # Postgres container. Separate ecosystems, because Dependabot reads Dockerfiles
+    # and compose files differently.
+    - package-ecosystem: "docker"
+      directory: "/jenkins"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      commit-message:
+          prefix: "chore(ci)"
+
+    - package-ecosystem: "docker-compose"
+      directory: "/jenkins"
+      schedule:
+          interval: "weekly"
+          day: "monday"
+      commit-message:
+          prefix: "chore(ci)"
