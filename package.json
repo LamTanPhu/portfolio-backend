@@ -59,7 +59,7 @@
     "@types/bcrypt": "^6.0.0",
     "@types/cache-manager": "^5.0.0",
     "@types/cookie-parser": "^1.4.10",
-    "@types/cron": "^2.0.1",
+    "@types/cron": "^2.4.3",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.6",
