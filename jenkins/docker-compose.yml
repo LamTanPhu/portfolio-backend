@@ -12,7 +12,7 @@ services:
   # `services: postgres` block in .github/workflows/ci.yml. It publishes no
   # port, so only Jenkins (same compose network, host name "postgres") can reach it.
   postgres:
-    image: postgres:16
+    image: postgres:19
     container_name: portfolio-backend-jenkins-db
     restart: "no"
     environment:
