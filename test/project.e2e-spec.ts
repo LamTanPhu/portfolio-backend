@@ -135,6 +135,77 @@ describe('Project (e2e)', () => {
         })
     })
 
+    // SECURITY regression: GET /:slug is public and unauthenticated. An unpublished
+    // project must be indistinguishable from a slug that never existed.
+    describe('GET /api/projects/:slug — unpublished projects are not public', () => {
+        it('returns 404 for an unpublished project, with the same body shape as a missing slug', async () => {
+            const hidden = await api(app).get(`/api/projects/${unpublishedProject.slug}`).expect(404)
+            const missing = await api(app).get('/api/projects/no-such-project-slug').expect(404)
+
+            expect(Object.keys(hidden.body as object).sort()).toEqual(Object.keys(missing.body as object).sort())
+        })
+
+        it('takes a project offline immediately when it is unpublished (a cached copy is dropped)', async () => {
+            await api(app).get(`/api/projects/${publishedProject.slug}`).expect(200) // warm the cache
+
+            await api(app)
+                .patch(`/api/projects/${publishedProject.id}`)
+                .set(...authHeader(accessToken))
+                .send({ isPublished: false })
+                .expect(200)
+            await api(app).get(`/api/projects/${publishedProject.slug}`).expect(404)
+
+            await api(app)
+                .patch(`/api/projects/${publishedProject.id}`)
+                .set(...authHeader(accessToken))
+                .send({ isPublished: true })
+                .expect(200)
+            await api(app).get(`/api/projects/${publishedProject.slug}`).expect(200)
+        })
+    })
+
+    describe('GET /api/projects/admin', () => {
+        it('rejects an unauthenticated request with 401 (it must not be read as a slug)', async () => {
+            await api(app).get('/api/projects/admin').expect(401)
+        })
+
+        it('lists published AND unpublished projects for an admin', async () => {
+            const res = await api(app)
+                .get('/api/projects/admin')
+                .set(...authHeader(accessToken))
+                .expect(200)
+            const ids = (res.body as ProjectSummary[]).map((p) => p.id)
+
+            expect(ids).toContain(publishedProject.id)
+            expect(ids).toContain(unpublishedProject.id)
+        })
+    })
+
+    describe('GET /api/projects/admin/:slug', () => {
+        it('rejects an unauthenticated request with 401', async () => {
+            await api(app).get(`/api/projects/admin/${unpublishedProject.slug}`).expect(401)
+        })
+
+        it('returns the full UNPUBLISHED project (description included) to an admin', async () => {
+            const res = await api(app)
+                .get(`/api/projects/admin/${unpublishedProject.slug}`)
+                .set(...authHeader(accessToken))
+                .expect(200)
+            const body = res.body as ProjectDetail
+
+            expect(body.id).toBe(unpublishedProject.id)
+            expect(body.isPublished).toBe(false)
+            expect(body.description.length).toBeGreaterThan(0)
+        })
+
+        it('returns 404 for an unknown slug', async () => {
+            await api(app)
+                .get('/api/projects/admin/no-such-project-slug')
+                .set(...authHeader(accessToken))
+                .expect(404)
+        })
+    })
+
     describe('PATCH /api/projects/:id', () => {
         it('requires authentication', async () => {
             await api(app).patch(`/api/projects/${unpublishedProject.id}`).send({ isPublished: true }).expect(401)

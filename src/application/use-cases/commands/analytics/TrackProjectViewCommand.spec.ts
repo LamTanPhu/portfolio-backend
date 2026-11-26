@@ -85,6 +85,14 @@ describe('TrackProjectViewCommand', () => {
         expect(mockRepo.increment).not.toHaveBeenCalled()
     })
 
+    // SECURITY regression: the public endpoint must not confirm that a draft id exists.
+    it('throws NotFoundError and never increments for an UNPUBLISHED project', async () => {
+        mockProjectRepo.findById.mockResolvedValue(makeProject({ isPublished: false }))
+
+        await expect(command.execute(42)).rejects.toThrow(NotFoundError)
+        expect(mockRepo.increment).not.toHaveBeenCalled()
+    })
+
     it('propagates an error if the view repository throws', async () => {
         mockRepo.increment.mockRejectedValue(new Error('db down'))
 

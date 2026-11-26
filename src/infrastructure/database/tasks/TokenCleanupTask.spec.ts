@@ -123,4 +123,25 @@ describe('TokenCleanupTask', () => {
             await expect(task.handleTokenCleanup()).resolves.not.toThrow()
         })
     })
+
+    // ===========================================================================
+    // Boot run — a sleeping host never fires the 2 AM cron
+    // ===========================================================================
+    describe('onApplicationBootstrap()', () => {
+        it('runs the expired-token cleanup once on boot', async () => {
+            task.onApplicationBootstrap()
+            await new Promise((resolve) => setImmediate(resolve))
+
+            expect(mockTokenRepo.deleteExpired).toHaveBeenCalledTimes(1)
+        })
+
+        it('returns synchronously and never throws, even when the DB is unreachable', async () => {
+            mockTokenRepo.deleteExpired.mockRejectedValue(new Error('DB cold'))
+
+            expect(task.onApplicationBootstrap()).toBeUndefined()
+            await new Promise((resolve) => setImmediate(resolve))
+
+            expect(errorSpy).toHaveBeenCalled()
+        })
+    })
 })

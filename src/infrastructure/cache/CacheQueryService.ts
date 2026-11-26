@@ -17,6 +17,7 @@ import type { Cache } from 'cache-manager'
 
 import type { ICacheQueryService, GetOrSetOptions } from '../../application/ports/ICacheQueryService'
 import { CACHE_TTL } from './cache.constants'
+import { DomainError } from '../../domain/errors/DomainError'
 import type { CacheProfile } from '../../application/ports/ICacheQueryService'
 import { deleteKeysMatchingPattern } from './cache-store-scan'
 
@@ -180,6 +181,14 @@ export class CacheQueryService implements ICacheQueryService {
                 return await fn()
             } catch (error) {
                 lastError = error
+                // A client-class DomainError (NotFound, Validation, ...) is
+                // deterministic: the same query returns the same answer, so
+                // retrying only adds latency and repeats the DB round-trip.
+                // Without this, every public 404 (an unknown slug, or an
+                // unpublished draft) cost ~900 ms and 3 queries — a cheap
+                // amplification vector for anyone probing slugs. Only
+                // transient/unknown failures (DB hiccups, 5xx) are retried.
+                if (error instanceof DomainError && error.statusCode < 500) break
                 if (attempt > retries) break
 
                 const delay = baseDelay * attempt

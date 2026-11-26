@@ -71,9 +71,12 @@ When Phase 1–4 pass, pick a target. Same image, different host:
 - Render can build straight from this `Dockerfile` (Runtime: Docker) — or keep the native Node runtime. If you choose native Node, fix the `start:prod` path first (see `DOCKER_GUIDE.md` §2 heads-up).
 - Use **Neon** for Postgres, not Render's free Postgres (expires after 30 days). Append `?sslmode=require` to `DATABASE_URL`. Do **not** deploy the `migrate` stage as a service — use Render's *Pre-Deploy Command* `npx prisma migrate deploy` (native runtime) or run the migrate image once from your PC against the Neon URL.
 - Set `TRUST_PROXY_HOPS=1`, `NODE_ENV=production`, `DATABASE_POOL_SIZE=3`, `FRONTEND_URL=<your real site>`.
-- **Cookie gotcha:** refresh cookie is `SameSite=Strict`. Frontend and API must be the same *site* (e.g. `www.you.dev` and `api.you.dev`). A frontend on `you.dev` calling `xyz.onrender.com` will **never** receive the cookie → login appears to work then refresh fails. Attach a custom subdomain to the Render service.
+- **Health check path: `/api/health/live`** (process only). Do not point Render's health check or an uptime pinger at `/api/health` — it queries the DB every call and keeps a scale-to-zero Neon compute awake 24/7, which exhausts the free monthly compute quota.
+- **Verify the client IP once** (the chain is browser → Vercel rewrite → Render, so `TRUST_PROXY_HOPS=1` may be wrong): set `DEBUG_CLIENT_IP=true`, open the site from two different networks, read the `[DEBUG_CLIENT_IP]` lines in the Render log, adjust `TRUST_PROXY_HOPS` until `req.ip` is your real IP, then delete `DEBUG_CLIENT_IP`. A wrong value puts every visitor in one rate-limit bucket and can break the admin token fingerprint.
+- Retention (contact messages 30 days, resume IPs, audit logs) also runs **once at every boot**, because a sleeping free-tier instance never fires the 2 AM / 3 AM crons.
+- **Cookie gotcha:** refresh cookie is `SameSite=Strict`. Frontend and API must be the same *site* (e.g. `www.you.dev` and `api.you.dev`). A frontend on `you.dev` calling `xyz.onrender.com` will **never** receive the cookie → login appears to work then refresh fails. Attach a custom subdomain to the Render service — or, as the frontend does, proxy `/api/*` through a same-origin rewrite so the browser only ever talks to one site.
 - Then add the `RENDER_DEPLOY_HOOK_URL` secret; your `cd.yml` takes it from there.
-- Free tier sleeps after 15 min idle → ~1 min cold start. Cron jobs (2 AM/3 AM) won't run reliably while asleep.
+- Free tier sleeps after 15 min idle → ~1 min cold start. The 2 AM/3 AM crons won't fire while asleep, so the retention and token-cleanup tasks also run once at every boot.
 
 **Oracle Always Free VM (Docker-native)**
 - Install Docker, copy `compose.yaml` + `.env.docker`, `docker compose up -d`. Put **Caddy** in front for automatic HTTPS (then `TRUST_PROXY_HOPS=1`, and bind the API to loopback/internal network only).

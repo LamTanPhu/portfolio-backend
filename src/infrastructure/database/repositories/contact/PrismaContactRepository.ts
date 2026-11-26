@@ -77,7 +77,7 @@ export class PrismaContactRepository implements IContactWriteRepository, IContac
         }
     }
 
-    // Single deleteMany — table stays tiny at a 7-day retention window,
+    // Single deleteMany — table stays tiny at a 30-day retention window,
     // batching (see PrismaRevokedTokenRepository) would be needless complexity.
     // Called on a schedule (daily, via DataRetentionTask) — not on hot path.
     async deleteOlderThan(cutoff: Date): Promise<void> {

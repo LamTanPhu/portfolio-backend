@@ -14,6 +14,8 @@ import { ProjectController } from './project.controller'
 // Use Cases
 import { GetPublishedProjectsQuery } from '../../../application/use-cases/queries/project/GetPublishedProjectsQuery'
 import { GetProjectBySlugQuery } from '../../../application/use-cases/queries/project/GetProjectBySlugQuery'
+import { GetAllProjectsQuery } from '../../../application/use-cases/queries/project/GetAllProjectsQuery'
+import { GetProjectForAdminQuery } from '../../../application/use-cases/queries/project/GetProjectForAdminQuery'
 import { CreateProjectCommand } from '../../../application/use-cases/commands/project/CreateProjectCommand'
 import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
 import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
@@ -39,6 +41,8 @@ import { PrismaProjectWriteRepository } from '../../../infrastructure/database/r
         // Use Cases
         GetPublishedProjectsQuery,
         GetProjectBySlugQuery,
+        GetAllProjectsQuery,
+        GetProjectForAdminQuery,
         CreateProjectCommand,
         UpdateProjectCommand,
         DeleteProjectCommand,

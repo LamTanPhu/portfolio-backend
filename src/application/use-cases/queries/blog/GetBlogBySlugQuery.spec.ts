@@ -82,4 +82,32 @@ describe('GetBlogBySlugQuery', () => {
 
         await expect(query.execute('does-not-exist')).rejects.toThrow(NotFoundError)
     })
+
+    // SECURITY regression: a draft must be indistinguishable from a missing post.
+    it('throws NotFoundError for an UNPUBLISHED blog, with the same message shape as a missing one', async () => {
+        repo.findBySlug.mockResolvedValue(makeBlog({ isPublished: false }))
+
+        await expect(query.execute('clean-architecture-nestjs')).rejects.toThrow(NotFoundError)
+        await expect(query.execute('clean-architecture-nestjs')).rejects.toThrow(
+            'Blog not found: clean-architecture-nestjs',
+        )
+    })
+
+    it('performs the published check inside the cache loader, so a draft is never cached', async () => {
+        repo.findBySlug.mockResolvedValue(makeBlog({ isPublished: false }))
+        let loaderThrew = false
+        cacheQuery.getOrSetWithProfile.mockImplementation(
+            async (_key: string, _profile: string, factory: () => Promise<unknown>) => {
+                try {
+                    return await factory()
+                } catch (error) {
+                    loaderThrew = true
+                    throw error
+                }
+            },
+        )
+
+        await expect(query.execute('draft-post')).rejects.toThrow(NotFoundError)
+        expect(loaderThrew).toBe(true)
+    })
 })

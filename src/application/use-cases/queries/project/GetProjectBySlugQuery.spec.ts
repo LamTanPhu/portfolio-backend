@@ -88,4 +88,12 @@ describe('GetProjectBySlugQuery', () => {
 
         await expect(query.execute('does-not-exist')).rejects.toThrow(NotFoundError)
     })
+
+    // SECURITY regression: a draft must be indistinguishable from a missing project.
+    it('throws NotFoundError for an UNPUBLISHED project, with the same message shape as a missing one', async () => {
+        repo.findBySlug.mockResolvedValue(makeProject({ isPublished: false }))
+
+        await expect(query.execute('my-portfolio-backend')).rejects.toThrow(NotFoundError)
+        await expect(query.execute('my-portfolio-backend')).rejects.toThrow('Project not found: my-portfolio-backend')
+    })
 })

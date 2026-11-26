@@ -13,6 +13,8 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { ProjectController } from './project.controller'
 import { GetPublishedProjectsQuery } from '../../../application/use-cases/queries/project/GetPublishedProjectsQuery'
 import { GetProjectBySlugQuery } from '../../../application/use-cases/queries/project/GetProjectBySlugQuery'
+import { GetAllProjectsQuery } from '../../../application/use-cases/queries/project/GetAllProjectsQuery'
+import { GetProjectForAdminQuery } from '../../../application/use-cases/queries/project/GetProjectForAdminQuery'
 import { CreateProjectCommand } from '../../../application/use-cases/commands/project/CreateProjectCommand'
 import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
 import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
@@ -21,6 +23,8 @@ import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 
 const mockGetPublished = { execute: jest.fn() }
 const mockGetBySlug = { execute: jest.fn() }
+const mockGetAll = { execute: jest.fn() }
+const mockGetForAdmin = { execute: jest.fn() }
 const mockCreate = { execute: jest.fn() }
 const mockUpdate = { execute: jest.fn() }
 const mockDelete = { execute: jest.fn() }
@@ -47,6 +51,8 @@ describe('ProjectController', () => {
             providers: [
                 { provide: GetPublishedProjectsQuery, useValue: mockGetPublished },
                 { provide: GetProjectBySlugQuery, useValue: mockGetBySlug },
+                { provide: GetAllProjectsQuery, useValue: mockGetAll },
+                { provide: GetProjectForAdminQuery, useValue: mockGetForAdmin },
                 { provide: CreateProjectCommand, useValue: mockCreate },
                 { provide: UpdateProjectCommand, useValue: mockUpdate },
                 { provide: DeleteProjectCommand, useValue: mockDelete },
@@ -67,6 +73,55 @@ describe('ProjectController', () => {
 
             expect(mockGetPublished.execute).toHaveBeenCalledWith()
             expect(result).toEqual([{ id: 1, name: 'P' }])
+        })
+    })
+
+    describe('GET /projects/admin', () => {
+        it('is protected by JwtAuthGuard', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
+            const guards = Reflect.getMetadata(GUARDS_METADATA, ProjectController.prototype.findAllAdmin) as
+                unknown[] | undefined
+
+            expect(guards).toContain(JwtAuthGuard)
+        })
+
+        it('delegates to GetAllProjectsQuery, including drafts', async () => {
+            mockGetAll.execute.mockResolvedValue([
+                { id: 1, isPublished: true },
+                { id: 2, isPublished: false },
+            ])
+
+            const result = await controller.findAllAdmin()
+
+            expect(mockGetAll.execute).toHaveBeenCalledWith()
+            expect(mockGetPublished.execute).not.toHaveBeenCalled()
+            expect(result).toHaveLength(2)
+        })
+
+        it('is declared before the public :slug route, or "admin" would be swallowed as a slug', () => {
+            const order = Object.getOwnPropertyNames(ProjectController.prototype)
+            expect(order.indexOf('findAllAdmin')).toBeLessThan(order.indexOf('findBySlug'))
+            expect(order.indexOf('findBySlugAdmin')).toBeLessThan(order.indexOf('findBySlug'))
+        })
+    })
+
+    describe('GET /projects/admin/:slug', () => {
+        it('is protected by JwtAuthGuard', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
+            const guards = Reflect.getMetadata(GUARDS_METADATA, ProjectController.prototype.findBySlugAdmin) as
+                unknown[] | undefined
+
+            expect(guards).toContain(JwtAuthGuard)
+        })
+
+        it('delegates to GetProjectForAdminQuery (drafts included), never to the public query', async () => {
+            mockGetForAdmin.execute.mockResolvedValue({ id: 2, slug: 'wip', isPublished: false })
+
+            const result = await controller.findBySlugAdmin('wip')
+
+            expect(mockGetForAdmin.execute).toHaveBeenCalledWith('wip')
+            expect(mockGetBySlug.execute).not.toHaveBeenCalled()
+            expect(result).toEqual(expect.objectContaining({ id: 2, isPublished: false }))
         })
     })
 

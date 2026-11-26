@@ -14,6 +14,7 @@ import { BlogController } from './blog.controller'
 import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
 import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
 import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
+import { GetBlogForAdminQuery } from '../../../application/use-cases/queries/blog/GetBlogForAdminQuery'
 import { SearchBlogsQuery } from '../../../application/use-cases/queries/blog/SearchBlogsQuery'
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
@@ -24,6 +25,7 @@ import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 const mockGetPublished = { execute: jest.fn() }
 const mockGetAll = { execute: jest.fn() }
 const mockGetBySlug = { execute: jest.fn() }
+const mockGetForAdmin = { execute: jest.fn() }
 const mockSearch = { execute: jest.fn() }
 const mockCreate = { execute: jest.fn() }
 const mockUpdate = { execute: jest.fn() }
@@ -44,6 +46,7 @@ describe('BlogController', () => {
                 { provide: GetPublishedBlogsQuery, useValue: mockGetPublished },
                 { provide: GetAllBlogsQuery, useValue: mockGetAll },
                 { provide: GetBlogBySlugQuery, useValue: mockGetBySlug },
+                { provide: GetBlogForAdminQuery, useValue: mockGetForAdmin },
                 { provide: SearchBlogsQuery, useValue: mockSearch },
                 { provide: CreateBlogCommand, useValue: mockCreate },
                 { provide: UpdateBlogCommand, useValue: mockUpdate },
@@ -84,6 +87,26 @@ describe('BlogController', () => {
 
             expect(mockGetAll.execute).toHaveBeenCalledWith()
             expect(result).toEqual([{ id: 1, title: 'Draft', slug: 'draft', isPublished: false }])
+        })
+    })
+
+    describe('GET /blogs/admin/:slug', () => {
+        it('is protected by JwtAuthGuard', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading Nest's route-guard metadata off the unbound method reference is intentional
+            const guards = Reflect.getMetadata(GUARDS_METADATA, BlogController.prototype.findBySlugAdmin) as
+                unknown[] | undefined
+
+            expect(guards).toContain(JwtAuthGuard)
+        })
+
+        it('delegates to GetBlogForAdminQuery (drafts included), never to the public query', async () => {
+            mockGetForAdmin.execute.mockResolvedValue({ id: 3, slug: 'draft-post', isPublished: false })
+
+            const result = await controller.findBySlugAdmin('draft-post')
+
+            expect(mockGetForAdmin.execute).toHaveBeenCalledWith('draft-post')
+            expect(mockGetBySlug.execute).not.toHaveBeenCalled()
+            expect(result).toEqual(expect.objectContaining({ id: 3, isPublished: false }))
         })
     })
 

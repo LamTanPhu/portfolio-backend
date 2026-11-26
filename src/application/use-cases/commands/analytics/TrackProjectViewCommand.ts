@@ -17,6 +17,10 @@ import type { IProjectReadRepository } from '../../../../domain/repositories/pro
 // generic 500 handler instead of a clean 404. Checking existence first
 // keeps this write on the same domain-error path as every other command
 // in the app.
+//
+// Published-only: this endpoint is public. Accepting (and answering 201 for)
+// the id of an unpublished project would let anyone enumerate which draft
+// ids exist, so a draft is reported as "not found" exactly like a missing id.
 // =============================================================================
 @Injectable()
 export class TrackProjectViewCommand {
@@ -30,7 +34,7 @@ export class TrackProjectViewCommand {
 
     async execute(projectId: number): Promise<void> {
         const project = await this.projectRepo.findById(projectId)
-        if (!project) {
+        if (!project?.isPublished) {
             throw new NotFoundError(`Project not found: ${projectId}`)
         }
 

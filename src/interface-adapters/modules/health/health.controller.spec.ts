@@ -100,4 +100,21 @@ describe('HealthController', () => {
 
         await expect(controller.check()).rejects.toThrow('unexpected failure')
     })
+
+    describe('live()', () => {
+        it('returns ok without touching the database or terminus', () => {
+            expect(controller.live()).toEqual({ status: 'ok' })
+
+            expect(mockCheckSystemHealthQuery.execute).not.toHaveBeenCalled()
+            expect(mockHealthCheckService.check).not.toHaveBeenCalled()
+        })
+
+        it('is exempt from rate limiting so platform probes are never 429d', () => {
+            // eslint-disable-next-line @typescript-eslint/unbound-method -- reading throttler metadata off the unbound method reference is intentional
+            const skipped = Reflect.getMetadata('THROTTLER:SKIPdefault', HealthController.prototype.live) as
+                boolean | undefined
+
+            expect(skipped).toBe(true)
+        })
+    })
 })

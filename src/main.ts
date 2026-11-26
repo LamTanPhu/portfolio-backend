@@ -9,6 +9,7 @@ import compression from 'compression'
 import { readFileSync } from 'fs'
 import { AppModule } from './app.module'
 import { ValidationError } from './domain/errors/ValidationError'
+import { clientIpDebugMiddleware } from './infrastructure/logging/client-ip-debug.middleware'
 
 async function bootstrap(): Promise<void> {
     const logger = new Logger('Bootstrap')
@@ -59,6 +60,15 @@ async function bootstrap(): Promise<void> {
     // Do NOT use `true` — it trusts all proxies and lets clients spoof their IP via a custom X-Forwarded-For header.
     const proxyHops = parseInt(process.env.TRUST_PROXY_HOPS ?? '1', 10)
     app.set('trust proxy', proxyHops)
+
+    // TEMPORARY diagnostic — set DEBUG_CLIENT_IP=true for ONE deploy, load the site
+    // from two different networks, read the log lines, then unset it. Logs only the
+    // page-view route (hit on every page load, so it sees the real proxy chain).
+    // See client-ip-debug.middleware.ts for how to read the output.
+    if (process.env.DEBUG_CLIENT_IP === 'true') {
+        app.use('/api/analytics/page-view', clientIpDebugMiddleware(logger))
+        logger.warn('DEBUG_CLIENT_IP is ON — client IPs are being logged. Unset it after the check.')
+    }
 
     // ─── Middleware ─────────────────────────────────────────────────────
     // @types/compression resolution quirk (esModuleInterop + this package's `export =`

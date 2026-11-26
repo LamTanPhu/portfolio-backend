@@ -3,6 +3,11 @@
  *
  * Returns full project details by slug.
  * Uses LONG cache profile (project details change infrequently).
+ *
+ * SECURITY: only PUBLISHED projects are visible here. An unpublished draft is
+ * reported as "not found", identical to a slug that does not exist, and the
+ * check runs inside the cache loader so a draft is never cached under the
+ * public key. Admins read drafts through GetProjectForAdminQuery instead.
  */
 
 import { Inject, Injectable } from '@nestjs/common'
@@ -26,7 +31,7 @@ export class GetProjectBySlugQuery {
     async execute(slug: string): Promise<ProjectDTO> {
         return this.cacheQuery.getOrSetWithProfile(`project:${slug}`, 'LONG', async () => {
             const project = await this.repo.findBySlug(slug)
-            if (!project) {
+            if (!project?.isPublished) {
                 throw new NotFoundError(`Project not found: ${slug}`)
             }
 

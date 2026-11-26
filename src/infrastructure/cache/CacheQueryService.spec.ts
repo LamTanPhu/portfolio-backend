@@ -16,6 +16,8 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { CACHE_MANAGER } from '@nestjs/cache-manager'
 import { Keyv } from 'keyv'
 import { CacheQueryService } from './CacheQueryService'
+import { NotFoundError } from '../../domain/errors/NotFoundError'
+import { InternalServerError } from '../../domain/errors/InternalServerError'
 
 // =============================================================================
 // Test-local types
@@ -199,6 +201,29 @@ describe('CacheQueryService', () => {
             const result = await service.getOrSet('my-key', 60, factory, { retries: 1 })
 
             expect(result).toBe('recovered-data')
+            expect(factory).toHaveBeenCalledTimes(2)
+        })
+
+        it('does NOT retry a client-class DomainError — a NotFoundError is deterministic', async () => {
+            mockCacheManager.get.mockResolvedValue(null)
+
+            const factory = jest.fn().mockRejectedValue(new NotFoundError('Blog not found: x'))
+
+            await expect(service.getOrSet('my-key', 60, factory, { retries: 2 })).rejects.toThrow(NotFoundError)
+
+            expect(factory).toHaveBeenCalledTimes(1)
+        })
+
+        it('still retries a server-class DomainError (5xx is potentially transient)', async () => {
+            mockCacheManager.get.mockResolvedValue(null)
+
+            const factory = jest
+                .fn()
+                .mockRejectedValueOnce(new InternalServerError('transient'))
+                .mockResolvedValueOnce('ok')
+
+            await expect(service.getOrSet('my-key', 60, factory, { retries: 1 })).resolves.toBe('ok')
+
             expect(factory).toHaveBeenCalledTimes(2)
         })
 

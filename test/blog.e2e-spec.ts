@@ -178,6 +178,79 @@ describe('Blog (e2e)', () => {
         })
     })
 
+    // SECURITY regression: GET /:slug is public and unauthenticated. An unpublished
+    // draft must be indistinguishable from a slug that never existed.
+    describe('GET /api/blogs/:slug — drafts are not public', () => {
+        it('returns 404 for an unpublished draft, with the same body shape as a missing slug', async () => {
+            const draft = await api(app).get(`/api/blogs/${draftPost.slug}`).expect(404)
+            const missing = await api(app).get('/api/blogs/this-slug-does-not-exist-anywhere').expect(404)
+
+            expect(Object.keys(draft.body as object).sort()).toEqual(Object.keys(missing.body as object).sort())
+            expect(JSON.stringify(draft.body)).not.toContain('nobody should see publicly')
+        })
+
+        it('does not return the draft even when it was read through the admin route first (no cache bleed)', async () => {
+            await api(app)
+                .get(`/api/blogs/admin/${draftPost.slug}`)
+                .set(...authHeader(accessToken))
+                .expect(200)
+
+            await api(app).get(`/api/blogs/${draftPost.slug}`).expect(404)
+        })
+
+        it('takes a post offline immediately when it is unpublished (a cached copy is dropped)', async () => {
+            await api(app).get(`/api/blogs/${publishedPost.slug}`).expect(200) // warm the cache
+
+            await api(app)
+                .patch(`/api/blogs/${publishedPost.id}`)
+                .set(...authHeader(accessToken))
+                .send({ isPublished: false })
+                .expect(200)
+            await api(app).get(`/api/blogs/${publishedPost.slug}`).expect(404)
+
+            await api(app)
+                .patch(`/api/blogs/${publishedPost.id}`)
+                .set(...authHeader(accessToken))
+                .send({ isPublished: true })
+                .expect(200)
+            await api(app).get(`/api/blogs/${publishedPost.slug}`).expect(200)
+        })
+    })
+
+    describe('GET /api/blogs/admin/:slug', () => {
+        it('rejects an unauthenticated request with 401', async () => {
+            await api(app).get(`/api/blogs/admin/${draftPost.slug}`).expect(401)
+        })
+
+        it('returns the full DRAFT (content included) to an admin', async () => {
+            const res = await api(app)
+                .get(`/api/blogs/admin/${draftPost.slug}`)
+                .set(...authHeader(accessToken))
+                .expect(200)
+            const body = res.body as BlogDetail
+
+            expect(body.id).toBe(draftPost.id)
+            expect(body.isPublished).toBe(false)
+            expect(body.content).toContain('nobody should see publicly')
+        })
+
+        it('also returns a published post', async () => {
+            const res = await api(app)
+                .get(`/api/blogs/admin/${publishedPost.slug}`)
+                .set(...authHeader(accessToken))
+                .expect(200)
+
+            expect((res.body as BlogDetail).id).toBe(publishedPost.id)
+        })
+
+        it('returns 404 for an unknown slug', async () => {
+            await api(app)
+                .get('/api/blogs/admin/this-slug-does-not-exist-anywhere')
+                .set(...authHeader(accessToken))
+                .expect(404)
+        })
+    })
+
     describe('PATCH /api/blogs/:id', () => {
         it('requires authentication', async () => {
             await api(app).patch(`/api/blogs/${draftPost.id}`).send({ title: 'New Title' }).expect(401)

@@ -26,6 +26,8 @@ import type { AuthenticatedRequest } from '../../guards/JwtAuthGuard'
 
 import { GetPublishedProjectsQuery } from '../../../application/use-cases/queries/project/GetPublishedProjectsQuery'
 import { GetProjectBySlugQuery } from '../../../application/use-cases/queries/project/GetProjectBySlugQuery'
+import { GetAllProjectsQuery } from '../../../application/use-cases/queries/project/GetAllProjectsQuery'
+import { GetProjectForAdminQuery } from '../../../application/use-cases/queries/project/GetProjectForAdminQuery'
 import { CreateProjectCommand } from '../../../application/use-cases/commands/project/CreateProjectCommand'
 import { UpdateProjectCommand } from '../../../application/use-cases/commands/project/UpdateProjectCommand'
 import { DeleteProjectCommand } from '../../../application/use-cases/commands/project/DeleteProjectCommand'
@@ -40,6 +42,8 @@ export class ProjectController {
     constructor(
         private readonly getPublishedQuery: GetPublishedProjectsQuery,
         private readonly getBySlugQuery: GetProjectBySlugQuery,
+        private readonly getAllQuery: GetAllProjectsQuery,
+        private readonly getForAdminQuery: GetProjectForAdminQuery,
         private readonly createCommand: CreateProjectCommand,
         private readonly updateCommand: UpdateProjectCommand,
         private readonly deleteCommand: DeleteProjectCommand,
@@ -54,9 +58,38 @@ export class ProjectController {
         return ProjectPresenter.toSummaryListResponse(dtos)
     }
 
+    // GET /api/projects/admin — every project, drafts included.
+    // Declared BEFORE the public ':slug' route: Express matches in declaration
+    // order, so 'admin' would otherwise be treated as a slug.
+    @Get('admin')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT')
+    @ApiOperation({ summary: 'Get all projects including drafts (Admin only)' })
+    @ApiResponse({ status: 200, description: 'All project summaries' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    async findAllAdmin(): Promise<ProjectSummaryDTO[]> {
+        const dtos = await this.getAllQuery.execute()
+        return ProjectPresenter.toSummaryListResponse(dtos)
+    }
+
+    // GET /api/projects/admin/:slug — one project, drafts included. This is the
+    // ONLY way to read an unpublished project.
+    @Get('admin/:slug')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT')
+    @ApiOperation({ summary: 'Get one project by slug, drafts included (Admin only)' })
+    @ApiParam({ name: 'slug', example: 'electric-motorcycle-rental-system' })
+    @ApiResponse({ status: 200, description: 'Project found' })
+    @ApiResponse({ status: 401, description: 'Unauthorized' })
+    @ApiResponse({ status: 404, description: 'Project not found' })
+    async findBySlugAdmin(@Param('slug') slug: string): Promise<ProjectDTO> {
+        const dto = await this.getForAdminQuery.execute(slug)
+        return ProjectPresenter.toResponse(dto)
+    }
+
     @Get(':slug')
     @Throttle({ default: { limit: 100, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get project by slug (Public)' })
+    @ApiOperation({ summary: 'Get a published project by slug (Public)' })
     @ApiParam({ name: 'slug', example: 'electric-motorcycle-rental-system' })
     @ApiResponse({ status: 200, description: 'Project found' })
     @ApiResponse({ status: 404, description: 'Project not found' })

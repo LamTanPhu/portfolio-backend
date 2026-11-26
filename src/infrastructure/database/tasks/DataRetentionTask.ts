@@ -12,21 +12,22 @@
  *
  * Retention windows (deliberately short — this data is either short-lived
  * by nature or genuinely doesn't need to be kept longer):
- *   - ContactMe:       7 days  — you'll have read/replied well before this.
+ *   - ContactMe:       30 days — long enough that a holiday or a failed
+ *                                notification email can't silently eat a message.
  *   - ResumeDownload:  14 days — long enough to review who's looked recently.
  *   - AuditLog:        47 days — see schema.prisma comment; this is a
  *                                recent-activity trail, not a permanent
  *                                accountability record.
  */
 
-import { Inject, Injectable, Logger } from '@nestjs/common'
+import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 
 import type { IContactWriteRepository } from '../../../domain/repositories/contact/IContactWriteRepository'
 import type { IResumeDownloadRepository } from '../../../domain/repositories/resume/IResumeDownloadRepository'
 import type { IAuditLogWriteRepository } from '../../../domain/repositories/audit/IAuditLogWriteRepository'
 
-const CONTACT_RETENTION_DAYS = 7
+const CONTACT_RETENTION_DAYS = 30
 const RESUME_RETENTION_DAYS = 14
 const AUDIT_LOG_RETENTION_DAYS = 47
 
@@ -35,7 +36,7 @@ function daysAgo(days: number): Date {
 }
 
 @Injectable()
-export class DataRetentionTask {
+export class DataRetentionTask implements OnApplicationBootstrap {
     private readonly logger = new Logger(DataRetentionTask.name)
 
     constructor(
@@ -48,6 +49,16 @@ export class DataRetentionTask {
         @Inject('IAuditLogWriteRepository')
         private readonly auditLogRepo: IAuditLogWriteRepository,
     ) {}
+
+    // Free-tier hosts sleep when idle, and a sleeping process never fires its
+    // 3 AM cron — visitor data (name, email, IP) would then outlive the retention
+    // windows above. Running the purge once per boot closes that gap: every wake-up
+    // enforces the windows. The deletes are idempotent and index-backed, so
+    // repeating them is cheap. Not awaited: cleanup() catches each resource's
+    // errors itself, and startup must never wait on housekeeping.
+    onApplicationBootstrap(): void {
+        void this.handleDataRetention()
+    }
 
     @Cron(CronExpression.EVERY_DAY_AT_3AM)
     async handleDataRetention(): Promise<void> {

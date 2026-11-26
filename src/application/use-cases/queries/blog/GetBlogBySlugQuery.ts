@@ -3,6 +3,13 @@
  *
  * Public query to fetch a single blog post by slug with caching.
  * Uses LONG cache profile (good balance between freshness and performance).
+ *
+ * SECURITY: only PUBLISHED posts are visible here. An unpublished draft is
+ * reported as "not found" — the same error, same message shape as a slug
+ * that does not exist — so a draft can neither be read nor confirmed to
+ * exist by guessing its slug. The check lives INSIDE the cache loader so a
+ * draft is never written to the public cache key in the first place.
+ * Admins read drafts through GetBlogForAdminQuery instead.
  */
 
 import { Inject, Injectable } from '@nestjs/common'
@@ -27,7 +34,7 @@ export class GetBlogBySlugQuery {
     async execute(slug: string): Promise<BlogDetailDTO> {
         return this.cacheQuery.getOrSetWithProfile(`blog:${slug}`, 'LONG', async () => {
             const blog = await this.repo.findBySlug(slug)
-            if (!blog) {
+            if (!blog?.isPublished) {
                 throw new NotFoundError(`Blog not found: ${slug}`)
             }
             return BlogMapper.toDetailDTO(blog)

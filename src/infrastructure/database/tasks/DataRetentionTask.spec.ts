@@ -82,7 +82,7 @@ describe('DataRetentionTask', () => {
             expect(mockAuditLogRepo.deleteOlderThan).toHaveBeenCalledTimes(1)
         })
 
-        it('uses a 7-day cutoff for contact messages', async () => {
+        it('uses a 30-day cutoff for contact messages', async () => {
             let captured: Date | undefined
             mockContactRepo.deleteOlderThan.mockImplementation((cutoff: Date) => {
                 captured = cutoff
@@ -92,7 +92,7 @@ describe('DataRetentionTask', () => {
             await task.handleDataRetention()
             const after = Date.now()
 
-            const expectedMs = 7 * 24 * 60 * 60 * 1000
+            const expectedMs = 30 * 24 * 60 * 60 * 1000
             expect(captured).toBeDefined()
             expect(before - captured!.getTime()).toBeGreaterThanOrEqual(expectedMs - 1000)
             expect(after - captured!.getTime()).toBeLessThanOrEqual(expectedMs + 1000)
@@ -195,6 +195,35 @@ describe('DataRetentionTask', () => {
             mockContactRepo.deleteOlderThan.mockRejectedValue('string error')
 
             await expect(task.handleDataRetention()).resolves.not.toThrow()
+        })
+    })
+
+    // ===========================================================================
+    // Boot run — a sleeping host never fires the 3 AM cron
+    // ===========================================================================
+    describe('onApplicationBootstrap()', () => {
+        it('runs the full retention cleanup once on boot', async () => {
+            task.onApplicationBootstrap()
+            await new Promise((resolve) => setImmediate(resolve))
+
+            expect(mockContactRepo.deleteOlderThan).toHaveBeenCalledTimes(1)
+            expect(mockResumeRepo.deleteOlderThan).toHaveBeenCalledTimes(1)
+            expect(mockAuditLogRepo.deleteOlderThan).toHaveBeenCalledTimes(1)
+        })
+
+        it('returns synchronously — startup never waits on housekeeping', () => {
+            mockContactRepo.deleteOlderThan.mockReturnValue(new Promise(() => {})) // never settles
+
+            expect(task.onApplicationBootstrap()).toBeUndefined()
+        })
+
+        it('does not crash startup when a cleanup fails', async () => {
+            mockContactRepo.deleteOlderThan.mockRejectedValue(new Error('DB cold'))
+
+            expect(() => task.onApplicationBootstrap()).not.toThrow()
+            await new Promise((resolve) => setImmediate(resolve))
+
+            expect(mockAuditLogRepo.deleteOlderThan).toHaveBeenCalledTimes(1)
         })
     })
 })

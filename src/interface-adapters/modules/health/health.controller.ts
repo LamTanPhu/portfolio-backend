@@ -4,6 +4,13 @@
  * Liveness + readiness probe for load balancers, container orchestrators
  * (Docker/Kubernetes), and uptime monitors.
  *
+ * Two probes, on purpose:
+ *   GET /health       readiness — also queries the database.
+ *   GET /health/live  liveness  — process only, touches NOTHING else.
+ * Point platform health checks and uptime pingers at /health/live. On a
+ * scale-to-zero database (e.g. Neon free) a probe that runs a query every few
+ * minutes keeps the compute awake 24/7 and burns the monthly compute quota.
+ *
  * Deliberately public — no JwtAuthGuard. An infra health check has no JWT
  * to present, and a probe endpoint that requires auth to tell you the app
  * is up defeats its own purpose.
@@ -24,6 +31,7 @@
 
 import { Controller, Get } from '@nestjs/common'
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger'
+import { SkipThrottle } from '@nestjs/throttler'
 import { HealthCheck, HealthCheckService, HealthIndicatorService } from '@nestjs/terminus'
 import { CheckSystemHealthQuery } from '../../../application/use-cases/queries/health/CheckSystemHealthQuery'
 
@@ -35,6 +43,17 @@ export class HealthController {
         private readonly healthIndicatorService: HealthIndicatorService,
         private readonly checkSystemHealthQuery: CheckSystemHealthQuery,
     ) {}
+
+    // Process-only liveness probe. Unthrottled: platform health checks poll every
+    // few seconds from a single address and a 429 here would get a healthy
+    // instance restarted. Safe to leave open — it does no I/O at all.
+    @Get('live')
+    @SkipThrottle()
+    @ApiOperation({ summary: 'Liveness check — process only, no database access (public)' })
+    @ApiResponse({ status: 200, description: 'The process is up and serving requests' })
+    live(): { status: 'ok' } {
+        return { status: 'ok' }
+    }
 
     @Get()
     @HealthCheck()

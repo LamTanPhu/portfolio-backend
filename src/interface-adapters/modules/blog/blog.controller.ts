@@ -29,6 +29,7 @@ import { Throttle } from '@nestjs/throttler'
 import { GetPublishedBlogsQuery } from '../../../application/use-cases/queries/blog/GetPublishedBlogsQuery'
 import { GetAllBlogsQuery } from '../../../application/use-cases/queries/blog/GetAllBlogsQuery'
 import { GetBlogBySlugQuery } from '../../../application/use-cases/queries/blog/GetBlogBySlugQuery'
+import { GetBlogForAdminQuery } from '../../../application/use-cases/queries/blog/GetBlogForAdminQuery'
 import { CreateBlogCommand } from '../../../application/use-cases/commands/blog/CreateBlogCommand'
 import { UpdateBlogCommand } from '../../../application/use-cases/commands/blog/UpdateBlogCommand'
 import { DeleteBlogCommand } from '../../../application/use-cases/commands/blog/DeleteBlogCommand'
@@ -44,6 +45,7 @@ export class BlogController {
         private readonly getPublishedQuery: GetPublishedBlogsQuery,
         private readonly getAllQuery: GetAllBlogsQuery,
         private readonly getBySlugQuery: GetBlogBySlugQuery,
+        private readonly getForAdminQuery: GetBlogForAdminQuery,
         private readonly searchQuery: SearchBlogsQuery,
         private readonly createCommand: CreateBlogCommand,
         private readonly updateCommand: UpdateBlogCommand,
@@ -74,6 +76,21 @@ export class BlogController {
     }
 
     // ===========================================================================
+    // GET /api/blogs/admin/:slug — admin only, drafts included
+    // Two path segments, so it can never be swallowed by the single-segment
+    // public GET /:slug below. This is the ONLY way to read an unpublished post.
+    // ===========================================================================
+    @Get('admin/:slug')
+    @UseGuards(JwtAuthGuard)
+    @ApiBearerAuth('JWT')
+    @ApiOperation({ summary: 'Get one blog post by slug, drafts included (Admin only)' })
+    @ApiParam({ name: 'slug', example: 'building-clean-architecture-nestjs' })
+    async findBySlugAdmin(@Param('slug') slug: string) {
+        const dto = await this.getForAdminQuery.execute(slug)
+        return BlogPresenter.toDetailResponse(dto)
+    }
+
+    // ===========================================================================
     // GET /api/blogs/search?q=... — public
     // Must come before GET /:slug — Nest/Express match routes in
     // declaration order, so a search here would otherwise be swallowed by
@@ -88,11 +105,11 @@ export class BlogController {
     }
 
     // ===========================================================================
-    // GET /api/blogs/:slug — public
+    // GET /api/blogs/:slug — public, PUBLISHED posts only (a draft is a 404)
     // ===========================================================================
     @Get(':slug')
     @Throttle({ default: { limit: 100, ttl: 60_000 } })
-    @ApiOperation({ summary: 'Get blog post by slug' })
+    @ApiOperation({ summary: 'Get a published blog post by slug' })
     @ApiParam({ name: 'slug', example: 'building-clean-architecture-nestjs' })
     async findBySlug(@Param('slug') slug: string) {
         const dto = await this.getBySlugQuery.execute(slug)

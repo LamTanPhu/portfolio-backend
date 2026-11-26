@@ -40,4 +40,19 @@ describe('Health (e2e)', () => {
         const body = res.body as HealthCheckResult
         expect(body.status).toBe('ok')
     })
+
+    // Liveness is process-only: platform health checks and uptime pingers hit it
+    // every few seconds, and on a scale-to-zero database any probe that queries it
+    // keeps the compute awake 24/7. Unthrottled, so a burst of probes is never a 429.
+    it('GET /api/health/live returns 200 without touching the database', async () => {
+        const res = await api(app).get('/api/health/live').expect(200)
+
+        expect((res.body as { status: string }).status).toBe('ok')
+    })
+
+    it('GET /api/health/live is never rate-limited', async () => {
+        for (let i = 0; i < 120; i++) {
+            await api(app).get('/api/health/live').expect(200)
+        }
+    })
 })

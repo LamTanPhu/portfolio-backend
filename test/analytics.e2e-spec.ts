@@ -23,6 +23,7 @@ describe('Analytics (e2e)', () => {
     let app: INestApplication<Server>
     let accessToken: string
     let projectId: number
+    let draftProjectId: number
     const route = `/e2e-analytics-${Date.now()}`
 
     beforeAll(async () => {
@@ -37,15 +38,31 @@ describe('Analytics (e2e)', () => {
                 description: 'Exists only so project-view tracking has a real id to target.',
                 techStack: ['TypeScript'],
                 isOpenSource: false,
+                // Project-view tracking is public and only accepts PUBLISHED projects.
+                isPublished: true,
             })
             .expect(201)
         projectId = (res.body as { id: number }).id
+
+        const draft = await api(app)
+            .post('/api/projects')
+            .set(...authHeader(accessToken))
+            .send({
+                name: unique('analytics-draft-project'),
+                description: 'An unpublished project — its id must not be confirmable by the public endpoint.',
+                techStack: ['TypeScript'],
+                isOpenSource: false,
+            })
+            .expect(201)
+        draftProjectId = (draft.body as { id: number }).id
     })
 
     afterAll(async () => {
-        await api(app)
-            .delete(`/api/projects/${projectId}`)
-            .set(...authHeader(accessToken))
+        for (const id of [projectId, draftProjectId]) {
+            await api(app)
+                .delete(`/api/projects/${id}`)
+                .set(...authHeader(accessToken))
+        }
         await app.close()
     })
 
@@ -68,6 +85,13 @@ describe('Analytics (e2e)', () => {
         it('accepts a view for an existing project', async () => {
             const res = await api(app).post(`/api/analytics/project-view/${projectId}`).expect(201)
             expect((res.body as { success: boolean }).success).toBe(true)
+        })
+
+        // SECURITY regression: this endpoint is public. Answering 201 for an
+        // unpublished project's id would let anyone enumerate which draft ids exist.
+        it('returns 404 for an UNPUBLISHED project, exactly like a missing id', async () => {
+            await api(app).post(`/api/analytics/project-view/${draftProjectId}`).expect(404)
+            await api(app).post('/api/analytics/project-view/999999999').expect(404)
         })
     })
 

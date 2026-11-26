@@ -84,9 +84,11 @@ RUN node -e "require('@prisma/client'); console.log('prisma client OK')"
 USER node
 EXPOSE 3001
 
-# Node image has no curl/wget — use node itself. /api/health also checks the DB.
+# Node image has no curl/wget — use node itself. Probes /api/health/live (process only):
+# the readiness route /api/health queries the DB every call, which would keep a
+# scale-to-zero database (Neon free) awake around the clock.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+    CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3001)+'/api/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # exec form → node is PID 1's child via compose `init: true` (or `docker run --init`)
 # so SIGTERM reaches Nest's shutdown hooks.
